@@ -1,6 +1,6 @@
 {
-	"packages/telemetry-models": "0.0.2-next.1",
-	"packages/telemetry-connector-entity-storage": "0.0.2-next.1",
-	"packages/telemetry-service": "0.0.2-next.1",
-	"packages/telemetry-rest-client": "0.0.2-next.1"
+	"packages/telemetry-models": "0.0.2-next.2",
+	"packages/telemetry-connector-entity-storage": "0.0.2-next.2",
+	"packages/telemetry-service": "0.0.2-next.2",
+	"packages/telemetry-rest-client": "0.0.2-next.2"
 }
