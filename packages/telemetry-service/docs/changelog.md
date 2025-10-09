@@ -1,5 +1,19 @@
 # @twin.org/telemetry-service - Changelog
 
+## [0.0.2-next.3](https://github.com/twinfoundation/telemetry/compare/telemetry-service-v0.0.2-next.2...telemetry-service-v0.0.2-next.3) (2025-10-09)
+
+
+### Features
+
+* add validate-locales ([24ed804](https://github.com/twinfoundation/telemetry/commit/24ed804f7ebc47036f323722bc18452729860c92))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.2-next.2 to 0.0.2-next.3
+
 ## [0.0.2-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-service-v0.0.2-next.1...telemetry-service-v0.0.2-next.2) (2025-08-29)
 
 

@@ -1,5 +1,12 @@
 # @twin.org/telemetry-models - Changelog
 
+## [0.0.2-next.3](https://github.com/twinfoundation/telemetry/compare/telemetry-models-v0.0.2-next.2...telemetry-models-v0.0.2-next.3) (2025-10-09)
+
+
+### Features
+
+* add validate-locales ([24ed804](https://github.com/twinfoundation/telemetry/commit/24ed804f7ebc47036f323722bc18452729860c92))
+
 ## [0.0.2-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-models-v0.0.2-next.1...telemetry-models-v0.0.2-next.2) (2025-08-29)
 
 
