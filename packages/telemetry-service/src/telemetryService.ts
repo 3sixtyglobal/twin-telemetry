@@ -19,7 +19,7 @@ export class TelemetryService implements ITelemetryComponent {
 	/**
 	 * Runtime name for the class.
 	 */
-	public readonly CLASS_NAME: string = nameof<TelemetryService>();
+	public static readonly CLASS_NAME: string = nameof<TelemetryService>();
 
 	/**
 	 * Telemetry connector used by the service.
@@ -43,7 +43,7 @@ export class TelemetryService implements ITelemetryComponent {
 	 * @returns Nothing.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
+		Guards.object<ITelemetryMetric>(TelemetryService.CLASS_NAME, nameof(metric), metric);
 
 		await this._telemetryConnector.createMetric(metric);
 	}
@@ -57,7 +57,7 @@ export class TelemetryService implements ITelemetryComponent {
 		metric: ITelemetryMetric;
 		value: ITelemetryMetricValue;
 	}> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
 		return this._telemetryConnector.getMetric(id);
 	}
 
@@ -67,8 +67,8 @@ export class TelemetryService implements ITelemetryComponent {
 	 * @returns Nothing.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.object<ITelemetryMetric>(TelemetryService.CLASS_NAME, nameof(metric), metric);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(metric.id), metric.id);
 		return this._telemetryConnector.updateMetric(metric);
 	}
 
@@ -84,8 +84,8 @@ export class TelemetryService implements ITelemetryComponent {
 		value: "inc" | "dec" | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
-		Guards.defined(this.CLASS_NAME, nameof(value), value);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
+		Guards.defined(TelemetryService.CLASS_NAME, nameof(value), value);
 		return this._telemetryConnector.addMetricValue(id, value, customData);
 	}
 
@@ -95,15 +95,15 @@ export class TelemetryService implements ITelemetryComponent {
 	 * @returns Nothing.
 	 */
 	public async removeMetric(id: string): Promise<void> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
 		return this._telemetryConnector.removeMetric(id);
 	}
 
 	/**
 	 * Query the metrics.
 	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -111,7 +111,7 @@ export class TelemetryService implements ITelemetryComponent {
 	public async query(
 		type?: MetricType,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metrics.
@@ -123,7 +123,7 @@ export class TelemetryService implements ITelemetryComponent {
 		 */
 		cursor?: string;
 	}> {
-		return this._telemetryConnector.query(type, cursor, pageSize);
+		return this._telemetryConnector.query(type, cursor, limit);
 	}
 
 	/**
@@ -131,8 +131,8 @@ export class TelemetryService implements ITelemetryComponent {
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -142,7 +142,7 @@ export class TelemetryService implements ITelemetryComponent {
 		timeStart?: number,
 		timeEnd?: number,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metric details.
@@ -157,7 +157,7 @@ export class TelemetryService implements ITelemetryComponent {
 		 */
 		cursor?: string;
 	}> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
-		return this._telemetryConnector.queryValues(id, timeStart, timeEnd, cursor, pageSize);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
+		return this._telemetryConnector.queryValues(id, timeStart, timeEnd, cursor, limit);
 	}
 }

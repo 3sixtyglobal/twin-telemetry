@@ -14,7 +14,7 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Runtime name for the class.
 	 */
-	public readonly CLASS_NAME: string = nameof<SilentTelemetryConnector>();
+	public static readonly CLASS_NAME: string = nameof<SilentTelemetryConnector>();
 
 	/**
 	 * Create a new metric.
@@ -32,7 +32,9 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 		metric: ITelemetryMetric;
 		value: ITelemetryMetricValue;
 	}> {
-		throw new NotSupportedError(this.CLASS_NAME, "getMetric");
+		throw new NotSupportedError(SilentTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "getMetric"
+		});
 	}
 
 	/**
@@ -67,8 +69,8 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Query the metrics.
 	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -76,7 +78,7 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	public async query(
 		type?: MetricType,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metrics.
@@ -88,7 +90,9 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 		 */
 		cursor?: string;
 	}> {
-		throw new NotSupportedError(this.CLASS_NAME, "query");
+		throw new NotSupportedError(SilentTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "query"
+		});
 	}
 
 	/**
@@ -96,8 +100,8 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -107,7 +111,7 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 		timeStart?: number,
 		timeEnd?: number,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metric details.
@@ -124,6 +128,8 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 		 */
 		cursor?: string;
 	}> {
-		throw new NotSupportedError(this.CLASS_NAME, "queryValues");
+		throw new NotSupportedError(SilentTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "queryValues"
+		});
 	}
 }

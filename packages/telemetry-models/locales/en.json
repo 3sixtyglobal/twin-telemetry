@@ -1,3 +1,7 @@
 {
-	"error": {}
+	"error": {
+		"silentTelemetryConnector": {
+			"notSupported": "The method \"{methodName}\" is not supported on silent telemetry connector."
+		}
+	}
 }

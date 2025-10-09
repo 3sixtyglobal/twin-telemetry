@@ -44,7 +44,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Runtime name for the class.
 	 */
-	public readonly CLASS_NAME: string = nameof<EntityStorageTelemetryConnector>();
+	public static readonly CLASS_NAME: string = nameof<EntityStorageTelemetryConnector>();
 
 	/**
 	 * The entity storage for the telemetry metrics.
@@ -85,21 +85,42 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.label), metric.label);
-		Guards.arrayOneOf(this.CLASS_NAME, nameof(metric.type), metric.type, Object.values(MetricType));
+		Guards.object<ITelemetryMetric>(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric),
+			metric
+		);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric.label),
+			metric.label
+		);
+		Guards.arrayOneOf(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric.type),
+			metric.type,
+			Object.values(MetricType)
+		);
 
 		if (Is.notEmpty(metric.description)) {
-			Guards.string(this.CLASS_NAME, nameof(metric.description), metric.description);
+			Guards.string(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				nameof(metric.description),
+				metric.description
+			);
 		}
 		if (Is.notEmpty(metric.unit)) {
-			Guards.string(this.CLASS_NAME, nameof(metric.unit), metric.unit);
+			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
 		}
 
 		const existingMetric = await this._metricStorage.get(metric.id);
 		if (Is.notEmpty(existingMetric)) {
-			throw new AlreadyExistsError(this.CLASS_NAME, "metricAlreadyExists", metric.id);
+			throw new AlreadyExistsError(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				"metricAlreadyExists",
+				metric.id
+			);
 		}
 
 		const telemetryMetric: TelemetryMetric = {
@@ -113,7 +134,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		await this._metricStorage.set(telemetryMetric);
 
 		await this._logging?.log({
-			source: this.CLASS_NAME,
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
 			message: "metricCreated",
 			level: "info",
 			data: { id: metric.id, type: metric.type, label: metric.label }
@@ -142,19 +163,35 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.label), metric.label);
+		Guards.object<ITelemetryMetric>(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric),
+			metric
+		);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric.label),
+			metric.label
+		);
 		if (Is.notEmpty(metric.description)) {
-			Guards.string(this.CLASS_NAME, nameof(metric.description), metric.description);
+			Guards.string(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				nameof(metric.description),
+				metric.description
+			);
 		}
 		if (Is.notEmpty(metric.unit)) {
-			Guards.string(this.CLASS_NAME, nameof(metric.unit), metric.unit);
+			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
 		}
 
 		const existingMetric = await this._metricStorage.get(metric.id);
 		if (Is.undefined(existingMetric)) {
-			throw new NotFoundError(this.CLASS_NAME, "metricNotFound", metric.id);
+			throw new NotFoundError(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				"metricNotFound",
+				metric.id
+			);
 		}
 
 		const telemetryMetric: TelemetryMetric = {
@@ -168,7 +205,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		await this._metricStorage.set(telemetryMetric);
 
 		await this._logging?.log({
-			source: this.CLASS_NAME,
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
 			message: "metricUpdated",
 			level: "info",
 			data: { id: metric.id, type: metric.type, label: metric.label }
@@ -187,11 +224,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		value: "inc" | "dec" | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		const existingMetric = await this._metricStorage.get(id);
 		if (Is.undefined(existingMetric)) {
-			throw new NotFoundError(this.CLASS_NAME, "metricNotFound", id);
+			throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
 		}
 
 		const existingMetricValue = await this._metricValueStorage.query(
@@ -216,7 +253,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			} else if (Is.integer(value) && value > 0) {
 				newValue += value;
 			} else {
-				throw new GeneralError(this.CLASS_NAME, "counterIncOnly");
+				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
 			}
 		} else if (existingMetric.type === MetricType.IncDecCounter) {
 			if (value === "inc") {
@@ -226,12 +263,15 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			} else if (Is.integer(value)) {
 				newValue += value;
 			} else {
-				throw new GeneralError(this.CLASS_NAME, "upDownCounterIncOrDecOnly");
+				throw new GeneralError(
+					EntityStorageTelemetryConnector.CLASS_NAME,
+					"upDownCounterIncOrDecOnly"
+				);
 			}
 		} else if (Is.number(value)) {
 			newValue = value;
 		} else {
-			throw new GeneralError(this.CLASS_NAME, "gaugeNoIncDec");
+			throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
 		}
 
 		const telemetryMetricValue: TelemetryMetricValue = {
@@ -245,7 +285,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		await this._metricValueStorage.set(telemetryMetricValue);
 
 		await this._logging?.log({
-			source: this.CLASS_NAME,
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
 			message: "metricValueCreated",
 			level: "info",
 			data: { id, value: newValue }
@@ -260,11 +300,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async removeMetric(id: string): Promise<void> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		const existingMetric = await this._metricStorage.get(id);
 		if (Is.undefined(existingMetric)) {
-			throw new NotFoundError(this.CLASS_NAME, "metricNotFound", id);
+			throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
 		}
 
 		await this._metricStorage.remove(id);
@@ -289,7 +329,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		} while (Is.stringValue(existingMetricValuesResult.cursor));
 
 		await this._logging?.log({
-			source: this.CLASS_NAME,
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
 			message: "metricRemoved",
 			level: "info",
 			data: { id }
@@ -299,8 +339,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Query the metrics.
 	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -308,7 +348,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	public async query(
 		type?: MetricType,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metrics.
@@ -343,7 +383,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			],
 			undefined,
 			cursor,
-			pageSize
+			limit
 		);
 
 		return {
@@ -357,8 +397,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -368,7 +408,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		timeStart?: number,
 		timeEnd?: number,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metric details.
@@ -385,11 +425,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		 */
 		cursor?: string;
 	}> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		const existingMetric = await this._metricStorage.get(id);
 		if (Is.undefined(existingMetric)) {
-			throw new NotFoundError(this.CLASS_NAME, "metricNotFound", id);
+			throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
 		}
 
 		const condition: EntityCondition<TelemetryMetricValue> = {
@@ -429,7 +469,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			],
 			undefined,
 			cursor,
-			pageSize
+			limit
 		);
 
 		return {

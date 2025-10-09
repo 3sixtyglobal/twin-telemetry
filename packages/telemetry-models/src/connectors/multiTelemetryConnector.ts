@@ -16,7 +16,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Runtime name for the class.
 	 */
-	public readonly CLASS_NAME: string = nameof<MultiTelemetryConnector>();
+	public static readonly CLASS_NAME: string = nameof<MultiTelemetryConnector>();
 
 	/**
 	 * The connectors to send the telemetry entries to.
@@ -29,9 +29,9 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 * @param options The options for the connector.
 	 */
 	constructor(options: IMultiTelemetryConnectorConstructorOptions) {
-		Guards.object(this.CLASS_NAME, nameof(options), options);
+		Guards.object(MultiTelemetryConnector.CLASS_NAME, nameof(options), options);
 		Guards.arrayValue(
-			this.CLASS_NAME,
+			MultiTelemetryConnector.CLASS_NAME,
 			nameof(options.telemetryConnectorTypes),
 			options.telemetryConnectorTypes
 		);
@@ -46,10 +46,15 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.label), metric.label);
-		Guards.arrayOneOf(this.CLASS_NAME, nameof(metric.type), metric.type, Object.values(MetricType));
+		Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(metric), metric);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.label), metric.label);
+		Guards.arrayOneOf(
+			MultiTelemetryConnector.CLASS_NAME,
+			nameof(metric.type),
+			metric.type,
+			Object.values(MetricType)
+		);
 
 		await Promise.allSettled(
 			this._telemetryConnectors.map(async telemetryConnector =>
@@ -67,7 +72,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		metric: ITelemetryMetric;
 		value: ITelemetryMetricValue;
 	}> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		// Since all the connectors should have the same data, we can just use the first one.
 		return this._telemetryConnectors[0].getMetric(id);
@@ -79,9 +84,9 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
-		Guards.object<ITelemetryMetric>(this.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(this.CLASS_NAME, nameof(metric.label), metric.label);
+		Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(metric), metric);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.label), metric.label);
 
 		await Promise.allSettled(
 			this._telemetryConnectors.map(async telemetryConnector =>
@@ -102,7 +107,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		value: "inc" | "dec" | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		const results = await Promise.allSettled(
 			this._telemetryConnectors.map(async telemetryConnector =>
@@ -119,7 +124,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async removeMetric(id: string): Promise<void> {
-		Guards.stringValue(this.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
 
 		await Promise.allSettled(
 			this._telemetryConnectors.map(async telemetryConnector => telemetryConnector.removeMetric(id))
@@ -129,8 +134,8 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Query the metrics.
 	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -138,7 +143,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	public async query(
 		type?: MetricType,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metrics.
@@ -154,7 +159,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		// If it throws anything other than not implemented, we should throw it.
 		for (const telemetryConnector of this._telemetryConnectors) {
 			try {
-				const result = await telemetryConnector.query(type, cursor, pageSize);
+				const result = await telemetryConnector.query(type, cursor, limit);
 				return result;
 			} catch (error) {
 				if (!BaseError.isErrorName(error, NotImplementedError.CLASS_NAME)) {
@@ -163,7 +168,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 			}
 		}
 
-		throw new NotImplementedError(this.CLASS_NAME, "query");
+		throw new NotImplementedError(MultiTelemetryConnector.CLASS_NAME, "query");
 	}
 
 	/**
@@ -171,8 +176,8 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -182,7 +187,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		timeStart?: number,
 		timeEnd?: number,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metric details.
@@ -203,13 +208,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		// If it throws anything other than not implemented, we should throw it.
 		for (const telemetryConnector of this._telemetryConnectors) {
 			try {
-				const result = await telemetryConnector.queryValues(
-					id,
-					timeStart,
-					timeEnd,
-					cursor,
-					pageSize
-				);
+				const result = await telemetryConnector.queryValues(id, timeStart, timeEnd, cursor, limit);
 				return result;
 			} catch (error) {
 				if (!BaseError.isErrorName(error, NotImplementedError.CLASS_NAME)) {
@@ -218,6 +217,6 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 			}
 		}
 
-		throw new NotImplementedError(this.CLASS_NAME, "queryValues");
+		throw new NotImplementedError(MultiTelemetryConnector.CLASS_NAME, "queryValues");
 	}
 }
