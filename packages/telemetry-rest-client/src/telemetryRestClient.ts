@@ -36,7 +36,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	public static readonly CLASS_NAME: string = nameof<TelemetryRestClient>();
 
 	/**
-	 * Create a new instance of TelemetryClient.
+	 * Create a new instance of TelemetryRestClient.
 	 * @param config The configuration for the client.
 	 */
 	constructor(config: IBaseRestClientConfig) {
