@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0.
 import { BaseError, Guards, NotImplementedError } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
-import { TelemetryConnectorFactory } from "../factories/telemetryConnectorFactory";
-import type { IMultiTelemetryConnectorConstructorOptions } from "../models/IMultiTelemetryConnectorConstructorOptions";
-import type { ITelemetryConnector } from "../models/ITelemetryConnector";
-import type { ITelemetryMetric } from "../models/ITelemetryMetric";
-import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue";
-import { MetricType } from "../models/metricType";
+import { TelemetryConnectorFactory } from "../factories/telemetryConnectorFactory.js";
+import type { IMultiTelemetryConnectorConstructorOptions } from "../models/IMultiTelemetryConnectorConstructorOptions.js";
+import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";
+import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
+import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue.js";
+import { MetricType } from "../models/metricType.js";
 
 /**
  * Class for performing telemetry operations on multiple connectors.
@@ -38,6 +38,14 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		this._telemetryConnectors = options.telemetryConnectorTypes.map(t =>
 			TelemetryConnectorFactory.get(t)
 		);
+	}
+
+	/**
+	 * Returns the class name of the component.
+	 * @returns The class name of the component.
+	 */
+	public className(): string {
+		return MultiTelemetryConnector.CLASS_NAME;
 	}
 
 	/**

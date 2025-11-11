@@ -1,7 +1,7 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { TelemetryConnectorFactory, type ITelemetryConnector } from "@twin.org/telemetry-models";
-import { TelemetryService } from "../src/telemetryService";
+import { TelemetryService } from "../src/telemetryService.js";
 
 describe("TelemetryService", () => {
 	test("Can create an instance", async () => {

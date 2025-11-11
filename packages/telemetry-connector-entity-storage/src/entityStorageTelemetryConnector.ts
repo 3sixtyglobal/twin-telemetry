@@ -28,9 +28,9 @@ import {
 	type ITelemetryMetricValue,
 	MetricType
 } from "@twin.org/telemetry-models";
-import type { TelemetryMetric } from "./entities/telemetryMetric";
-import type { TelemetryMetricValue } from "./entities/telemetryMetricValue";
-import type { IEntityStorageTelemetryConnectorConstructorOptions } from "./models/IEntityStorageTelemetryConnectorConstructorOptions";
+import type { TelemetryMetric } from "./entities/telemetryMetric.js";
+import type { TelemetryMetricValue } from "./entities/telemetryMetricValue.js";
+import type { IEntityStorageTelemetryConnectorConstructorOptions } from "./models/IEntityStorageTelemetryConnectorConstructorOptions.js";
 
 /**
  * Class for performing telemetry operations in entity storage.
@@ -77,6 +77,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		);
 
 		this._logging = ComponentFactory.getIfExists(options?.loggingComponentType ?? "logging");
+	}
+
+	/**
+	 * Returns the class name of the component.
+	 * @returns The class name of the component.
+	 */
+	public className(): string {
+		return EntityStorageTelemetryConnector.CLASS_NAME;
 	}
 
 	/**
@@ -323,7 +331,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			);
 			await Promise.allSettled(
 				existingMetricValuesResult.entities.map(async telemetryMetricValue => {
-					this._metricValueStorage.remove((telemetryMetricValue as TelemetryMetricValue).id);
+					await this._metricValueStorage.remove((telemetryMetricValue as TelemetryMetricValue).id);
 				})
 			);
 		} while (Is.stringValue(existingMetricValuesResult.cursor));

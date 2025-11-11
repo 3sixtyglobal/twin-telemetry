@@ -44,6 +44,14 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	}
 
 	/**
+	 * Returns the class name of the component.
+	 * @returns The class name of the component.
+	 */
+	public className(): string {
+		return TelemetryRestClient.CLASS_NAME;
+	}
+
+	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
 	 * @returns Nothing.

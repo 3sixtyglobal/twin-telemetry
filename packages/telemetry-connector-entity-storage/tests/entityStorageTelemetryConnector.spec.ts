@@ -4,10 +4,10 @@ import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
 import { nameof } from "@twin.org/nameof";
 import { MetricType } from "@twin.org/telemetry-models";
-import type { TelemetryMetric } from "../src/entities/telemetryMetric";
-import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue";
-import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryConnector";
-import { initSchema } from "../src/schema";
+import type { TelemetryMetric } from "../src/entities/telemetryMetric.js";
+import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";
+import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryConnector.js";
+import { initSchema } from "../src/schema.js";
 
 let telemetryMetricsEntityStorage: MemoryEntityStorageConnector<TelemetryMetric>;
 let telemetryMetricsValueEntityStorage: MemoryEntityStorageConnector<TelemetryMetricValue>;

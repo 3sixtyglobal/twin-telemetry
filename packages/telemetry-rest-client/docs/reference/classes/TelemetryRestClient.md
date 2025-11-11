@@ -16,7 +16,7 @@ Client for performing telemetry through to REST endpoints.
 
 > **new TelemetryRestClient**(`config`): `TelemetryRestClient`
 
-Create a new instance of TelemetryClient.
+Create a new instance of TelemetryRestClient.
 
 #### Parameters
 
@@ -43,6 +43,24 @@ The configuration for the client.
 Runtime name for the class.
 
 ## Methods
+
+### className()
+
+> **className**(): `string`
+
+Returns the class name of the component.
+
+#### Returns
+
+`string`
+
+The class name of the component.
+
+#### Implementation of
+
+`ITelemetryComponent.className`
+
+***
 
 ### createMetric()
 

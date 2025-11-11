@@ -1,9 +1,9 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IComponent } from "@twin.org/core";
-import type { ITelemetryMetric } from "./ITelemetryMetric";
-import type { ITelemetryMetricValue } from "./ITelemetryMetricValue";
-import type { MetricType } from "./metricType";
+import type { ITelemetryMetric } from "./ITelemetryMetric.js";
+import type { ITelemetryMetricValue } from "./ITelemetryMetricValue.js";
+import type { MetricType } from "./metricType.js";
 
 /**
  * Interface describing a telemetry connector.

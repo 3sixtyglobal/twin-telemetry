@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0.
 import { NotSupportedError } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
-import type { ITelemetryConnector } from "../models/ITelemetryConnector";
-import type { ITelemetryMetric } from "../models/ITelemetryMetric";
-import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue";
-import type { MetricType } from "../models/metricType";
+import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";
+import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
+import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue.js";
+import type { MetricType } from "../models/metricType.js";
 
 /**
  * Class for performing telemetry operations to nowhere.
@@ -15,6 +15,14 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	 * Runtime name for the class.
 	 */
 	public static readonly CLASS_NAME: string = nameof<SilentTelemetryConnector>();
+
+	/**
+	 * Returns the class name of the component.
+	 * @returns The class name of the component.
+	 */
+	public className(): string {
+		return SilentTelemetryConnector.CLASS_NAME;
+	}
 
 	/**
 	 * Create a new metric.

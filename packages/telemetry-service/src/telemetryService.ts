@@ -10,7 +10,7 @@ import {
 	type ITelemetryMetricValue,
 	type MetricType
 } from "@twin.org/telemetry-models";
-import type { ITelemetryServiceConstructorOptions } from "./models/ITelemetryServiceConstructorOptions";
+import type { ITelemetryServiceConstructorOptions } from "./models/ITelemetryServiceConstructorOptions.js";
 
 /**
  * Service for performing telemetry operations to a connector.
@@ -35,6 +35,14 @@ export class TelemetryService implements ITelemetryComponent {
 		this._telemetryConnector = TelemetryConnectorFactory.get(
 			options?.telemetryConnectorType ?? "telemetry"
 		);
+	}
+
+	/**
+	 * Returns the class name of the component.
+	 * @returns The class name of the component.
+	 */
+	public className(): string {
+		return TelemetryService.CLASS_NAME;
 	}
 
 	/**

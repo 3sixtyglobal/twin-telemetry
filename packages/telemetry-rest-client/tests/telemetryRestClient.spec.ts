@@ -1,6 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { TelemetryRestClient } from "../src/telemetryRestClient";
+import { TelemetryRestClient } from "../src/telemetryRestClient.js";
 
 describe("TelemetryRestClient", () => {
 	test("Can create an instance", async () => {
