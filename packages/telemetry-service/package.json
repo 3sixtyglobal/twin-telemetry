@@ -1,6 +1,6 @@
 {
 	"name": "@twin.org/telemetry-service",
-	"version": "0.0.3-next.0",
+	"version": "0.0.3-next.1",
 	"description": "Telemetry contract implementation and REST endpoint definitions",
 	"repository": {
 		"type": "git",
@@ -33,7 +33,7 @@
 		"@twin.org/core": "next",
 		"@twin.org/entity": "next",
 		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.0.3-next.0",
+		"@twin.org/telemetry-models": "0.0.3-next.1",
 		"@twin.org/web": "next"
 	},
 	"devDependencies": {
