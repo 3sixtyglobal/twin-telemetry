@@ -1,5 +1,12 @@
 # @twin.org/telemetry-models - Changelog
 
+## [0.0.3-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-models-v0.0.3-next.1...telemetry-models-v0.0.3-next.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* api data types ([2edc5ac](https://github.com/twinfoundation/telemetry/commit/2edc5ac665b996a1b29173cac3b389fa3ceafa34))
+
 ## [0.0.3-next.1](https://github.com/twinfoundation/telemetry/compare/telemetry-models-v0.0.3-next.0...telemetry-models-v0.0.3-next.1) (2025-11-11)
 
 

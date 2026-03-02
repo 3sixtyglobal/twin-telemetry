@@ -1,5 +1,19 @@
 # @twin.org/telemetry-connector-entity-storage - Changelog
 
+## [0.0.3-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.1...telemetry-connector-entity-storage-v0.0.3-next.2) (2026-03-02)
+
+
+### Miscellaneous Chores
+
+* **telemetry-connector-entity-storage:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.1 to 0.0.3-next.2
+
 ## [0.0.3-next.1](https://github.com/twinfoundation/telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.0...telemetry-connector-entity-storage-v0.0.3-next.1) (2025-11-11)
 
 
