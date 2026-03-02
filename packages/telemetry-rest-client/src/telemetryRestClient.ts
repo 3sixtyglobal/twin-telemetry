@@ -185,7 +185,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 			"GET",
 			{
 				query: {
-					type,
+					type: Coerce.string(type),
 					cursor,
 					limit: Coerce.string(limit)
 				}
@@ -236,8 +236,8 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 					id
 				},
 				query: {
-					timeStart,
-					timeEnd,
+					timeStart: Coerce.string(timeStart),
+					timeEnd: Coerce.string(timeEnd),
 					cursor,
 					limit: Coerce.string(limit)
 				}

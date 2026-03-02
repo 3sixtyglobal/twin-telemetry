@@ -269,7 +269,7 @@ export function generateRestRoutesTelemetry(
 					id: "telemetryListRequestExample",
 					request: {
 						query: {
-							type: MetricType.Counter
+							type: MetricType.Counter.toString()
 						}
 					}
 				}

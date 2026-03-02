@@ -12,7 +12,7 @@ The query parameters.
 
 #### type?
 
-> `optional` **type**: [`MetricType`](../type-aliases/MetricType.md)
+> `optional` **type**: `string`
 
 The type of the metric.
 
