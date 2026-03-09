@@ -1,6 +1,6 @@
 # TWIN Telemetry REST Client
 
-Telemetry contract implementation which can connect to REST endpoints.
+REST client for interacting with telemetry service endpoints.
 
 ## Installation
 

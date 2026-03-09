@@ -1,7 +1,7 @@
 {
 	"name": "@twin.org/telemetry-rest-client",
 	"version": "0.0.3-next.2",
-	"description": "Telemetry contract implementation which can connect to REST endpoints",
+	"description": "REST client for interacting with telemetry service endpoints.",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/twinfoundation/telemetry.git",

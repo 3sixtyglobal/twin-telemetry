@@ -1,6 +1,6 @@
 # TWIN Telemetry Connector Entity Storage
 
-Telemetry connector implementation using entity storage.
+Entity storage connector for persisting telemetry metrics.
 
 ## Installation
 

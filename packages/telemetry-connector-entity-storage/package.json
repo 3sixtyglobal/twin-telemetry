@@ -1,7 +1,7 @@
 {
 	"name": "@twin.org/telemetry-connector-entity-storage",
 	"version": "0.0.3-next.2",
-	"description": "Telemetry connector implementation using entity storage",
+	"description": "Entity storage connector for persisting telemetry metrics.",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/twinfoundation/telemetry.git",

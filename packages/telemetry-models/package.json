@@ -1,7 +1,7 @@
 {
 	"name": "@twin.org/telemetry-models",
 	"version": "0.0.3-next.2",
-	"description": "Models which define the structure of the telemetry connectors and services",
+	"description": "Shared telemetry models for connectors and services.",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/twinfoundation/telemetry.git",
