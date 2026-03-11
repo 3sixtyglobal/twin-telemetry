@@ -1,4 +1,4 @@
-# @twin.org/telemetry-service - Changelog
+# Changelog
 
 ## [0.0.3-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-service-v0.0.3-next.1...telemetry-service-v0.0.3-next.2) (2026-03-02)
 

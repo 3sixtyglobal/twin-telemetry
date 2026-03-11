@@ -1,4 +1,4 @@
-# @twin.org/telemetry-rest-client - Changelog
+# Changelog
 
 ## [0.0.3-next.2](https://github.com/twinfoundation/telemetry/compare/telemetry-rest-client-v0.0.3-next.1...telemetry-rest-client-v0.0.3-next.2) (2026-03-02)
 
