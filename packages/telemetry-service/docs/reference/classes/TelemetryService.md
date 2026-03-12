@@ -28,7 +28,7 @@ The options for the connector.
 
 ## Properties
 
-### CLASS\_NAME
+### CLASS\_NAME {#class_name}
 
 > `readonly` `static` **CLASS\_NAME**: `string`
 
@@ -36,7 +36,7 @@ Runtime name for the class.
 
 ## Methods
 
-### className()
+### className() {#classname}
 
 > **className**(): `string`
 
@@ -54,7 +54,7 @@ The class name of the component.
 
 ***
 
-### createMetric()
+### createMetric() {#createmetric}
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
@@ -80,7 +80,7 @@ Nothing.
 
 ***
 
-### getMetric()
+### getMetric() {#getmetric}
 
 > **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
 
@@ -106,7 +106,7 @@ The metric details and it's most recent value.
 
 ***
 
-### updateMetric()
+### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>
 
@@ -132,7 +132,7 @@ Nothing.
 
 ***
 
-### addMetricValue()
+### addMetricValue() {#addmetricvalue}
 
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
@@ -168,7 +168,7 @@ The created metric value id.
 
 ***
 
-### removeMetric()
+### removeMetric() {#removemetric}
 
 > **removeMetric**(`id`): `Promise`\<`void`\>
 
@@ -194,7 +194,7 @@ Nothing.
 
 ***
 
-### query()
+### query() {#query}
 
 > **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: `ITelemetryMetric`[]; `cursor?`: `string`; \}\>
 
@@ -237,7 +237,7 @@ NotImplementedError if the implementation does not support retrieval.
 
 ***
 
-### queryValues()
+### queryValues() {#queryvalues}
 
 > **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `entities`: `ITelemetryMetricValue`[]; `cursor?`: `string`; \}\>
 

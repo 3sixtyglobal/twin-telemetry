@@ -4,7 +4,7 @@ Create a new telemetry metric.
 
 ## Properties
 
-### body
+### body {#body}
 
 > **body**: [`ITelemetryMetric`](ITelemetryMetric.md)
 

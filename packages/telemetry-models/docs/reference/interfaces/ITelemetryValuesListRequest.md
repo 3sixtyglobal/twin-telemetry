@@ -4,7 +4,7 @@ Get the a list of the telemetry values.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 
@@ -18,7 +18,7 @@ The id of the metric.
 
 ***
 
-### query?
+### query? {#query}
 
 > `optional` **query**: `object`
 

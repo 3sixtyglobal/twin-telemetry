@@ -4,7 +4,7 @@ Interface describing a telemetry metric.
 
 ## Properties
 
-### id
+### id {#id}
 
 > **id**: `string`
 
@@ -12,7 +12,7 @@ The id of the metric.
 
 ***
 
-### label
+### label {#label}
 
 > **label**: `string`
 
@@ -20,7 +20,7 @@ The label of the metric.
 
 ***
 
-### type
+### type {#type}
 
 > **type**: [`MetricType`](../type-aliases/MetricType.md)
 
@@ -28,7 +28,7 @@ The type of the metric.
 
 ***
 
-### description?
+### description? {#description}
 
 > `optional` **description**: `string`
 
@@ -36,7 +36,7 @@ Description.
 
 ***
 
-### unit?
+### unit? {#unit}
 
 > `optional` **unit**: `string`
 

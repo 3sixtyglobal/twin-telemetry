@@ -4,7 +4,7 @@ Response for telemetry list request.
 
 ## Properties
 
-### body
+### body {#body}
 
 > **body**: `object`
 

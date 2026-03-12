@@ -8,7 +8,7 @@ Interface describing a telemetry connector.
 
 ## Methods
 
-### createMetric()
+### createMetric() {#createmetric}
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
@@ -30,7 +30,7 @@ Nothing.
 
 ***
 
-### getMetric()
+### getMetric() {#getmetric}
 
 > **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
 
@@ -52,7 +52,7 @@ The metric details and it's most recent value.
 
 ***
 
-### updateMetric()
+### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>
 
@@ -74,7 +74,7 @@ Nothing.
 
 ***
 
-### addMetricValue()
+### addMetricValue() {#addmetricvalue}
 
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
@@ -106,7 +106,7 @@ The created metric value id.
 
 ***
 
-### removeMetric()
+### removeMetric() {#removemetric}
 
 > **removeMetric**(`id`): `Promise`\<`void`\>
 
@@ -128,7 +128,7 @@ Nothing.
 
 ***
 
-### query()
+### query() {#query}
 
 > **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: [`ITelemetryMetric`](ITelemetryMetric.md)[]; `cursor?`: `string`; \}\>
 
@@ -167,7 +167,7 @@ NotImplementedError if the implementation does not support retrieval.
 
 ***
 
-### queryValues()
+### queryValues() {#queryvalues}
 
 > **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `entities`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md)[]; `cursor?`: `string`; \}\>
 

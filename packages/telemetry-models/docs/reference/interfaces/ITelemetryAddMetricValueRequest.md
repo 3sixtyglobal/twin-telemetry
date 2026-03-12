@@ -4,7 +4,7 @@ Add a telemetry metric value.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 
@@ -18,7 +18,7 @@ The id of the metric.
 
 ***
 
-### body
+### body {#body}
 
 > **body**: `object`
 

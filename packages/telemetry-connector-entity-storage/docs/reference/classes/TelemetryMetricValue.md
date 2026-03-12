@@ -14,7 +14,7 @@ Class defining a telemetry metric value.
 
 ## Properties
 
-### id
+### id {#id}
 
 > **id**: `string`
 
@@ -22,7 +22,7 @@ The value id.
 
 ***
 
-### metricId
+### metricId {#metricid}
 
 > **metricId**: `string`
 
@@ -30,7 +30,7 @@ The metric id.
 
 ***
 
-### ts
+### ts {#ts}
 
 > **ts**: `number`
 
@@ -38,7 +38,7 @@ The timestamp.
 
 ***
 
-### value
+### value {#value}
 
 > **value**: `number`
 
@@ -46,7 +46,7 @@ The value of the metric.
 
 ***
 
-### customData?
+### customData? {#customdata}
 
 > `optional` **customData**: `object`
 

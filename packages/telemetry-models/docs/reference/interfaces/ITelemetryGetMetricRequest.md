@@ -4,7 +4,7 @@ Get a telemetry metric.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 

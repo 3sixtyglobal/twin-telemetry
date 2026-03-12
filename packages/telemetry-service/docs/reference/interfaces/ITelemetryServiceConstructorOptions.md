@@ -4,14 +4,8 @@ The options for the telemetry service constructor.
 
 ## Properties
 
-### telemetryConnectorType?
+### telemetryConnectorType? {#telemetryconnectortype}
 
 > `optional` **telemetryConnectorType**: `string`
 
 The type of the telemetry connector to use.
-
-#### Default
-
-```ts
-telemetry
-```

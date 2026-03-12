@@ -14,7 +14,7 @@ Class defining a telemetry metric.
 
 ## Properties
 
-### id
+### id {#id}
 
 > **id**: `string`
 
@@ -22,7 +22,7 @@ The id.
 
 ***
 
-### label
+### label {#label}
 
 > **label**: `string`
 
@@ -30,7 +30,7 @@ The label.
 
 ***
 
-### type
+### type {#type}
 
 > **type**: `number`
 
@@ -38,7 +38,7 @@ The type of the metric.
 
 ***
 
-### unit?
+### unit? {#unit}
 
 > `optional` **unit**: `string`
 
@@ -46,7 +46,7 @@ The unit.
 
 ***
 
-### description?
+### description? {#description}
 
 > `optional` **description**: `string`
 
