@@ -10,6 +10,12 @@ The options for the entity storage telemetry connector constructor.
 
 The type of the entity storage connector to use.
 
+#### Default
+
+```ts
+telemetry-metric
+```
+
 ***
 
 ### telemetryMetricValueStorageConnectorType? {#telemetrymetricvaluestorageconnectortype}
@@ -17,6 +23,12 @@ The type of the entity storage connector to use.
 > `optional` **telemetryMetricValueStorageConnectorType**: `string`
 
 The type of the entity storage connector to use.
+
+#### Default
+
+```ts
+telemetry-metric-value
+```
 
 ***
 

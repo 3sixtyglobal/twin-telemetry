@@ -9,3 +9,9 @@ The options for the telemetry service constructor.
 > `optional` **telemetryConnectorType**: `string`
 
 The type of the telemetry connector to use.
+
+#### Default
+
+```ts
+telemetry
+```
