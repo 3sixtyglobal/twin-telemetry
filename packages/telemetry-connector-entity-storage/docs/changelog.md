@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.2...telemetry-connector-entity-storage-v0.0.3-next.3) (2026-05-06)
+
+
+### Features
+
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.2 to 0.0.3-next.3
+
 ## [0.0.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.1...telemetry-connector-entity-storage-v0.0.3-next.2) (2026-03-02)
 
 

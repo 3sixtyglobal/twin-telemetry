@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.2...telemetry-service-v0.0.3-next.3) (2026-05-06)
+
+
+### Miscellaneous Chores
+
+* **telemetry-service:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.2 to 0.0.3-next.3
+
 ## [0.0.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.1...telemetry-service-v0.0.3-next.2) (2026-03-02)
 
 
