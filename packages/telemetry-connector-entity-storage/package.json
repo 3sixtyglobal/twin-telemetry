@@ -4,7 +4,7 @@
 	"description": "Entity storage connector for persisting telemetry metrics.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/twinfoundation/telemetry.git",
+		"url": "git+https://github.com/iotaledger/telemetry.git",
 		"directory": "packages/telemetry-connector-entity-storage"
 	},
 	"author": "martyn.janes@iota.org",
@@ -83,7 +83,7 @@
 		"integration"
 	],
 	"bugs": {
-		"url": "git+https://github.com/twinfoundation/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }

@@ -4,7 +4,7 @@
 	"description": "Shared telemetry models for connectors and services.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/twinfoundation/telemetry.git",
+		"url": "git+https://github.com/iotaledger/telemetry.git",
 		"directory": "packages/telemetry-models"
 	},
 	"author": "martyn.janes@iota.org",
@@ -74,7 +74,7 @@
 		"schemas"
 	],
 	"bugs": {
-		"url": "git+https://github.com/twinfoundation/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }

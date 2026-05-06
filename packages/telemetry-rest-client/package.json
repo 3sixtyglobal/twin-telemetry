@@ -4,7 +4,7 @@
 	"description": "REST client for interacting with telemetry service endpoints.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/twinfoundation/telemetry.git",
+		"url": "git+https://github.com/iotaledger/telemetry.git",
 		"directory": "packages/telemetry-rest-client"
 	},
 	"author": "martyn.janes@iota.org",
@@ -75,7 +75,7 @@
 		"telemetry"
 	],
 	"bugs": {
-		"url": "git+https://github.com/twinfoundation/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }
