@@ -844,6 +844,7 @@
 	"components": {
 		"schemas": {
 			"Error": {
+				"description": "Model to describe serialized error.",
 				"type": "object",
 				"properties": {
 					"name": {
@@ -852,7 +853,7 @@
 					},
 					"message": {
 						"type": "string",
-						"description": "The message for the error."
+						"description": "The message for the error as an i18n key."
 					},
 					"source": {
 						"type": "string",
@@ -874,28 +875,24 @@
 				"required": [
 					"name",
 					"message"
-				],
-				"description": "Model to describe serialized error."
+				]
 			},
 			"MetricType": {
+				"description": "The types of metrics.",
 				"anyOf": [
 					{
-						"type": "number",
 						"const": 0,
 						"description": "Counter."
 					},
 					{
-						"type": "number",
 						"const": 1,
 						"description": "Increment Decrement Counter."
 					},
 					{
-						"type": "number",
 						"const": 2,
 						"description": "Gauge."
 					}
-				],
-				"description": "The types of metrics."
+				]
 			},
 			"TelemetryAddMetricValueRequest": {
 				"type": "object",
@@ -903,11 +900,9 @@
 					"value": {
 						"anyOf": [
 							{
-								"type": "string",
 								"const": "inc"
 							},
 							{
-								"type": "string",
 								"const": "dec"
 							},
 							{
@@ -964,6 +959,7 @@
 				"description": "The response payload."
 			},
 			"TelemetryMetric": {
+				"description": "Interface describing a telemetry metric.",
 				"type": "object",
 				"properties": {
 					"id": {
@@ -984,16 +980,20 @@
 					"unit": {
 						"type": "string",
 						"description": "The unit the metric describes."
+					},
+					"maxHistory": {
+						"type": "number",
+						"description": "The maximum number of values to retain; oldest are trimmed on each addMetricValue call.\nUnlimited when absent."
 					}
 				},
 				"required": [
 					"id",
 					"label",
 					"type"
-				],
-				"description": "Interface describing a telemetry metric."
+				]
 			},
 			"TelemetryMetricValue": {
+				"description": "Interface describing a telemetry metric value.",
 				"type": "object",
 				"properties": {
 					"id": {
@@ -1018,8 +1018,7 @@
 					"id",
 					"ts",
 					"value"
-				],
-				"description": "Interface describing a telemetry metric value."
+				]
 			},
 			"TelemetryUpdateMetricRequest": {
 				"type": "object",

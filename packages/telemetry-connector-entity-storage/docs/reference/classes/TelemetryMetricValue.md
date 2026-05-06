@@ -48,7 +48,7 @@ The value of the metric.
 
 ### customData? {#customdata}
 
-> `optional` **customData**: `object`
+> `optional` **customData?**: `object`
 
 The custom data for the metric value.
 

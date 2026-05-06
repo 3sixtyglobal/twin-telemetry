@@ -32,12 +32,12 @@ The label of the metric.
 
 #### description?
 
-> `optional` **description**: `string`
+> `optional` **description?**: `string`
 
 The description of the metric.
 
 #### unit?
 
-> `optional` **unit**: `string`
+> `optional` **unit?**: `string`
 
 The unit of the metric.

@@ -32,7 +32,7 @@ The value for the update operation.
 
 #### customData?
 
-> `optional` **customData**: `object`
+> `optional` **customData?**: `object`
 
 The custom data for the update operation.
 

@@ -156,9 +156,9 @@ The id of the metric.
 
 ##### value
 
-The value for the add operation.
+`number` \| `"inc"` \| `"dec"`
 
-`number` | `"inc"` | `"dec"`
+The value for the add operation.
 
 ##### customData?
 

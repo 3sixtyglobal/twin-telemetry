@@ -30,7 +30,7 @@ The type of the metric.
 
 ### description? {#description}
 
-> `optional` **description**: `string`
+> `optional` **description?**: `string`
 
 Description.
 
@@ -38,6 +38,15 @@ Description.
 
 ### unit? {#unit}
 
-> `optional` **unit**: `string`
+> `optional` **unit?**: `string`
 
 The unit the metric describes.
+
+***
+
+### maxHistory? {#maxhistory}
+
+> `optional` **maxHistory?**: `number`
+
+The maximum number of values to retain; oldest are trimmed on each addMetricValue call.
+Unlimited when absent.

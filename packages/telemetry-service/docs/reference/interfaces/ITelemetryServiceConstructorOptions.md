@@ -6,7 +6,7 @@ The options for the telemetry service constructor.
 
 ### telemetryConnectorType? {#telemetryconnectortype}
 
-> `optional` **telemetryConnectorType**: `string`
+> `optional` **telemetryConnectorType?**: `string`
 
 The type of the telemetry connector to use.
 

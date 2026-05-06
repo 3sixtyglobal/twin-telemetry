@@ -6,24 +6,24 @@ Get the a list of the telemetry metrics.
 
 ### query? {#query}
 
-> `optional` **query**: `object`
+> `optional` **query?**: `object`
 
 The query parameters.
 
 #### type?
 
-> `optional` **type**: `string`
+> `optional` **type?**: `string`
 
 The type of the metric.
 
 #### cursor?
 
-> `optional` **cursor**: `string`
+> `optional` **cursor?**: `string`
 
 The optional cursor to get next chunk.
 
 #### limit?
 
-> `optional` **limit**: `string`
+> `optional` **limit?**: `string`
 
 Limit the number of entities to return.

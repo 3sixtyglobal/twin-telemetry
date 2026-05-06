@@ -40,7 +40,7 @@ The type of the metric.
 
 ### unit? {#unit}
 
-> `optional` **unit**: `string`
+> `optional` **unit?**: `string`
 
 The unit.
 
@@ -48,6 +48,14 @@ The unit.
 
 ### description? {#description}
 
-> `optional` **description**: `string`
+> `optional` **description?**: `string`
 
 The description.
+
+***
+
+### maxHistory? {#maxhistory}
+
+> `optional` **maxHistory?**: `number`
+
+The maximum number of values to retain.

@@ -24,6 +24,6 @@ The metric values.
 
 #### cursor?
 
-> `optional` **cursor**: `string`
+> `optional` **cursor?**: `string`
 
 An optional cursor, when defined can be used to call find to get more entities.

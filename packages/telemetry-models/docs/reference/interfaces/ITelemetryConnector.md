@@ -90,9 +90,9 @@ The id of the metric.
 
 ##### value
 
-The value for the update operation.
+`number` \| `"inc"` \| `"dec"`
 
-`number` | `"inc"` | `"dec"`
+The value for the update operation.
 
 ##### customData?
 
