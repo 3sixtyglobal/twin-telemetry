@@ -18,7 +18,16 @@
 		"**/wordlists/**",
 		"changelog.md"
 	],
-	"words": ["abbrev", "autorelease", "nameof", "openapi", "Stiftung"],
+	"words": [
+		"abbrev",
+		"autorelease",
+		"nameof",
+		"openapi",
+		"reqps",
+		"Stiftung",
+		"timepicker",
+		"timezone"
+	],
 	"ignoreRegExpList": [
 		"/from\\s+(['\"]).*\\1/",
 		"/eslint-disable.*/",

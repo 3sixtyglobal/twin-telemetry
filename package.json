@@ -56,6 +56,7 @@
 	"workspaces": [
 		"packages/telemetry-models",
 		"packages/telemetry-connector-entity-storage",
+		"packages/telemetry-connector-opentelemetry",
 		"packages/telemetry-service",
 		"packages/telemetry-rest-client"
 	],

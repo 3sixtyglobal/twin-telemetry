@@ -1,0 +1,13 @@
+{
+	"error": {
+		"openTelemetryTelemetryConnector": {
+			"unknownReaderType": "The reader type \"{type}\" is not supported, valid values are: prometheus"
+		}
+	},
+	"info": {
+		"openTelemetryTelemetryConnector": {
+			"connectorStarted": "The connector was started with \"{readerCount}\" metric reader(s)",
+			"connectorStopped": "The connector was stopped"
+		}
+	}
+}

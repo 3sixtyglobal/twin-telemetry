@@ -30,4 +30,10 @@ export interface ITelemetryMetric {
 	 * The unit the metric describes.
 	 */
 	unit?: string;
+
+	/**
+	 * The maximum number of values to retain; oldest are trimmed on each addMetricValue call.
+	 * Unlimited when absent.
+	 */
+	maxHistory?: number;
 }

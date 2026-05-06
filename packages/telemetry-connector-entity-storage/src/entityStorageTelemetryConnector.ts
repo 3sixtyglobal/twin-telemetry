@@ -121,6 +121,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		if (Is.notEmpty(metric.unit)) {
 			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
 		}
+		if (Is.notEmpty(metric.maxHistory)) {
+			if (!Is.integer(metric.maxHistory) || metric.maxHistory <= 0) {
+				throw new GeneralError(
+					EntityStorageTelemetryConnector.CLASS_NAME,
+					"maxHistoryMustBePositiveInteger"
+				);
+			}
+		}
 
 		const existingMetric = await this._metricStorage.get(metric.id);
 		if (Is.notEmpty(existingMetric)) {
@@ -136,7 +144,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			label: metric.label,
 			type: metric.type,
 			unit: metric.unit ?? "",
-			description: metric.description ?? ""
+			description: metric.description ?? "",
+			maxHistory: metric.maxHistory
 		};
 
 		await this._metricStorage.set(telemetryMetric);
@@ -192,6 +201,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		if (Is.notEmpty(metric.unit)) {
 			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
 		}
+		if (Is.notEmpty(metric.maxHistory)) {
+			if (!Is.integer(metric.maxHistory) || metric.maxHistory <= 0) {
+				throw new GeneralError(
+					EntityStorageTelemetryConnector.CLASS_NAME,
+					"maxHistoryMustBePositiveInteger"
+				);
+			}
+		}
 
 		const existingMetric = await this._metricStorage.get(metric.id);
 		if (Is.undefined(existingMetric)) {
@@ -207,7 +224,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			label: metric.label,
 			type: existingMetric.type,
 			unit: metric.unit ?? existingMetric.unit,
-			description: metric.description ?? existingMetric.description
+			description: metric.description ?? existingMetric.description,
+			maxHistory: metric.maxHistory ?? existingMetric.maxHistory
 		};
 
 		await this._metricStorage.set(telemetryMetric);
@@ -291,6 +309,30 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		};
 
 		await this._metricValueStorage.set(telemetryMetricValue);
+
+		if (Is.integer(existingMetric.maxHistory) && existingMetric.maxHistory > 0) {
+			let trimCursor: string | undefined;
+			const allValueIds: string[] = [];
+			do {
+				const page = await this._metricValueStorage.query(
+					{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
+					[{ property: "ts", sortDirection: SortDirection.Ascending }],
+					undefined,
+					trimCursor
+				);
+				for (const entity of page.entities) {
+					allValueIds.push((entity as TelemetryMetricValue).id);
+				}
+				trimCursor = page.cursor;
+			} while (Is.stringValue(trimCursor));
+
+			const excessCount = allValueIds.length - existingMetric.maxHistory;
+			if (excessCount > 0) {
+				await Promise.allSettled(
+					allValueIds.slice(0, excessCount).map(async vid => this._metricValueStorage.remove(vid))
+				);
+			}
+		}
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,

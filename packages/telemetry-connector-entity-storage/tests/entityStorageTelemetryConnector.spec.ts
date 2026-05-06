@@ -387,6 +387,90 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(query1.entities.length).toEqual(3);
 	});
 
+	test("can create a metric with maxHistory", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 3
+		});
+
+		const store = telemetryMetricsEntityStorage.getStore();
+		expect(store?.[0].maxHistory).toEqual(3);
+	});
+
+	test("can fail to create a metric with non-positive maxHistory", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+
+		await expect(
+			telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter, maxHistory: 0 })
+		).rejects.toMatchObject({
+			name: "GeneralError",
+			message: "entityStorageTelemetryConnector.maxHistoryMustBePositiveInteger"
+		});
+
+		await expect(
+			telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 1.5
+			})
+		).rejects.toMatchObject({
+			name: "GeneralError",
+			message: "entityStorageTelemetryConnector.maxHistoryMustBePositiveInteger"
+		});
+	});
+
+	test("can update a metric maxHistory", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 5 });
+
+		const store = telemetryMetricsEntityStorage.getStore();
+		expect(store?.[0].maxHistory).toEqual(5);
+	});
+
+	test("prunes oldest values when maxHistory is exceeded", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 3
+		});
+
+		for (let i = 0; i < 5; i++) {
+			await telemetry.addMetricValue("test", "inc");
+			// Small delay so each value gets a unique Date.now() timestamp; without this,
+			// same-millisecond entries sort by insertion order under ts DESC, causing the
+			// accumulation query to read the oldest entry instead of the newest.
+			await new Promise<void>(resolve => setTimeout(resolve, 2));
+		}
+
+		const valueStore = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(3);
+
+		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+		expect(result.entities[0].value).toEqual(5);
+		expect(result.entities[1].value).toEqual(4);
+		expect(result.entities[2].value).toEqual(3);
+	});
+
+	test("does not prune when maxHistory is not set", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		for (let i = 0; i < 5; i++) {
+			await telemetry.addMetricValue("test", "inc");
+		}
+
+		const valueStore = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(5);
+	});
+
 	test("can query a metric and its values", async () => {
 		const telemetry = new EntityStorageTelemetryConnector();
 		await telemetry.createMetric({
