@@ -39,7 +39,6 @@ The version reported by the OpenTelemetry meter.
 Named metric-reader configurations keyed by an arbitrary id.
 Each entry's `type` field determines which exporter the connector instantiates
 in start(). Omit or pass an empty object for a no-op provider (useful for tests).
-Example: { "main": { type: "prometheus", port: 9464 } }
 
 #### Index Signature
 
