@@ -16,7 +16,7 @@ import { OpenTelemetryTelemetryConnector } from "../src/openTelemetryTelemetryCo
  * @returns A started connector instance.
  */
 async function makeConnector(): Promise<OpenTelemetryTelemetryConnector> {
-	const connector = new OpenTelemetryTelemetryConnector({ readers: {} });
+	const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
 	await connector.start();
 	return connector;
 }
@@ -41,7 +41,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 	});
 
 	test("can start and stop", async () => {
-		const connector = new OpenTelemetryTelemetryConnector({ readers: {} });
+		const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
 		await expect(connector.start()).resolves.toBeUndefined();
 		await expect(connector.stop()).resolves.toBeUndefined();
 	});
@@ -55,7 +55,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 	test("can create and query metrics before start", async () => {
 		// _inner is constructed eagerly so entity-storage operations work without calling start().
 		// OTEL instruments are simply not registered until start() is called.
-		const connector = new OpenTelemetryTelemetryConnector({ readers: {} });
+		const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
 		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 		const result = await connector.query();
 		expect(result.entities.length).toEqual(1);

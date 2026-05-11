@@ -12,6 +12,7 @@ import {
 	type ITelemetryMetricValue,
 	MetricType
 } from "@twin.org/telemetry-models";
+import type { IOpenTelemetryTelemetryConnectorConfig } from "./models/IOpenTelemetryTelemetryConnectorConfig.js";
 import type { IOpenTelemetryTelemetryConnectorConstructorOptions } from "./models/IOpenTelemetryTelemetryConnectorConstructorOptions.js";
 
 /**
@@ -34,10 +35,10 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	public static readonly CLASS_NAME: string = nameof<OpenTelemetryTelemetryConnector>();
 
 	/**
-	 * Constructor options, stored so start() can initialise the MeterProvider.
+	 * Config options, stored so start() can initialise the MeterProvider.
 	 * @internal
 	 */
-	private readonly _options: IOpenTelemetryTelemetryConnectorConstructorOptions;
+	private readonly _config: IOpenTelemetryTelemetryConnectorConfig;
 
 	/**
 	 * Internal entity-storage connector that owns all metric metadata and value history.
@@ -76,7 +77,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * @param options The options for the connector.
 	 */
 	constructor(options?: IOpenTelemetryTelemetryConnectorConstructorOptions) {
-		this._options = options ?? {};
+		this._config = options?.config ?? {};
 		this._inner = new EntityStorageTelemetryConnector({
 			loggingComponentType: options?.loggingComponentType,
 			telemetryMetricStorageConnectorType: options?.telemetryMetricStorageConnectorType,
@@ -105,7 +106,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		}
 
 		const readers: MetricReader[] = [];
-		for (const [, config] of Object.entries(this._options.readers ?? {})) {
+		for (const [, config] of Object.entries(this._config.readers ?? {})) {
 			if (config.type === "prometheus") {
 				// Dynamic import so @opentelemetry/exporter-prometheus is an optional peer dep;
 				// consumers only need to install it if they actually configure a Prometheus reader.
@@ -130,8 +131,8 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 
 		this._meterProvider = new MeterProvider({ readers });
 		this._meter = this._meterProvider.getMeter(
-			this._options.meterName ?? "twin-telemetry",
-			this._options.meterVersion ?? "0.0.1"
+			this._config.meterName ?? "twin-telemetry",
+			this._config.meterVersion ?? "1.0.0"
 		);
 
 		const nodeLogging = ComponentFactory.getIfExists<ILoggingComponent>(nodeLoggingComponentType);
@@ -139,7 +140,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 			source: OpenTelemetryTelemetryConnector.CLASS_NAME,
 			message: "connectorStarted",
 			level: "info",
-			data: { readerCount: Object.keys(this._options.readers ?? {}).length }
+			data: { readerCount: Object.keys(this._config.readers ?? {}).length }
 		});
 	}
 

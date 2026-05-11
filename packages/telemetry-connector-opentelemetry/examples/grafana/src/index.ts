@@ -36,10 +36,12 @@ EntityStorageConnectorFactory.register(
 //    start() initialises the MeterProvider and the exporter's HTTP endpoint.
 // ---------------------------------------------------------------------------
 const connector = new OpenTelemetryTelemetryConnector({
-	meterName: "twin-telemetry-demo",
-	meterVersion: "0.0.1",
-	readers: {
-		prometheus: { type: "prometheus", port: PROMETHEUS_PORT }
+	config: {
+		meterName: "twin-telemetry-demo",
+		meterVersion: "0.0.1",
+		readers: {
+			prometheus: { type: "prometheus", port: PROMETHEUS_PORT }
+		}
 	}
 });
 

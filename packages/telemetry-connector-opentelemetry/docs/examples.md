@@ -51,10 +51,12 @@ EntityStorageConnectorFactory.register(
 );
 
 const connector = new OpenTelemetryTelemetryConnector({
-  meterName: 'my-service',
-  meterVersion: '1.0.0',
-  readers: {
-    prometheus: { type: 'prometheus', port: 9464 }
+  config: {
+    meterName: 'my-service',
+    meterVersion: '1.0.0',
+    readers: {
+      prometheus: { type: 'prometheus', port: 9464 }
+    }
   }
 });
 
