@@ -1,5 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import type { OpenTelemetryReaderTypes } from "./openTelemetryReaderTypes.js";
 
 /**
  * Configuration for a Prometheus scrape-endpoint reader.
@@ -7,9 +8,9 @@
  */
 export interface IOpenTelemetryPrometheusReaderConfig {
 	/**
-	 * Discriminator — must be "prometheus".
+	 * Type.
 	 */
-	type: "prometheus";
+	type: typeof OpenTelemetryReaderTypes.Prometheus;
 
 	/**
 	 * TCP port the Prometheus HTTP server listens on.

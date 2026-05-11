@@ -14,7 +14,7 @@ export interface IOpenTelemetryTelemetryConnectorConfig {
 
 	/**
 	 * The version reported by the OpenTelemetry meter.
-	 * @default 0.0.1
+	 * @default 1.0.0
 	 */
 	meterVersion?: string;
 
