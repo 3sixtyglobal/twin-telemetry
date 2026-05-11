@@ -7,6 +7,7 @@
 ## Interfaces
 
 - [IOpenTelemetryPrometheusReaderConfig](interfaces/IOpenTelemetryPrometheusReaderConfig.md)
+- [IOpenTelemetryTelemetryConnectorConfig](interfaces/IOpenTelemetryTelemetryConnectorConfig.md)
 - [IOpenTelemetryTelemetryConnectorConstructorOptions](interfaces/IOpenTelemetryTelemetryConnectorConstructorOptions.md)
 
 ## Type Aliases
