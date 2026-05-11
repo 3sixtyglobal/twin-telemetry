@@ -13,3 +13,8 @@
 ## Type Aliases
 
 - [IOpenTelemetryReaderConfig](type-aliases/IOpenTelemetryReaderConfig.md)
+- [OpenTelemetryReaderTypes](type-aliases/OpenTelemetryReaderTypes.md)
+
+## Variables
+
+- [OpenTelemetryReaderTypes](variables/OpenTelemetryReaderTypes.md)

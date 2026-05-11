@@ -9,7 +9,7 @@ The connector instantiates a PrometheusExporter from these options in start().
 
 > **type**: `"prometheus"`
 
-Discriminator — must be "prometheus".
+Type.
 
 ***
 

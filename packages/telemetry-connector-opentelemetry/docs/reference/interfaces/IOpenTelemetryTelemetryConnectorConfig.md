@@ -27,7 +27,7 @@ The version reported by the OpenTelemetry meter.
 #### Default
 
 ```ts
-0.0.1
+1.0.0
 ```
 
 ***
