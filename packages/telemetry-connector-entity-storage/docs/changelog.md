@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.0.3-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.4...telemetry-connector-entity-storage-v0.0.3-next.5) (2026-05-11)
+
+
+### Features
+
+* add context id features ([#19](https://github.com/iotaledger/twin-telemetry/issues/19)) ([5942442](https://github.com/iotaledger/twin-telemetry/commit/5942442991fa7ad7afa9d8b7c4583326a8c4c9ae))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* add validate-locales ([24ed804](https://github.com/iotaledger/twin-telemetry/commit/24ed804f7ebc47036f323722bc18452729860c92))
+* eslint migration to flat config ([69ac91a](https://github.com/iotaledger/twin-telemetry/commit/69ac91a89d0b5bc63374a0bd314f770b557dabb4))
+* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update dependencies ([0e55c48](https://github.com/iotaledger/twin-telemetry/commit/0e55c48de4139c6fe66b823101ca17973e60847c))
+* update framework core ([4b10bcd](https://github.com/iotaledger/twin-telemetry/commit/4b10bcd4d3101151671bdcf9aef7c54f5937fc2a))
+* use shared store mechanism ([#7](https://github.com/iotaledger/twin-telemetry/issues/7)) ([806fe2c](https://github.com/iotaledger/twin-telemetry/commit/806fe2c2b7653d6b949c27ebf57bd13c3e040242))
+
+
+### Bug Fixes
+
+* Metric value entity update ([#5](https://github.com/iotaledger/twin-telemetry/issues/5)) ([6df47db](https://github.com/iotaledger/twin-telemetry/commit/6df47dbbdec4da70e94124463af8cc8debd93837))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.4 to 0.0.3-next.5
+
 ## [0.0.3-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.3...telemetry-connector-entity-storage-v0.0.3-next.4) (2026-05-11)
 
 
