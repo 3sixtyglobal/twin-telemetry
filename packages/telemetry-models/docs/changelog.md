@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.3...telemetry-models-v0.0.3-next.4) (2026-05-11)
+
+
+### Features
+
+* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+
 ## [0.0.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.2...telemetry-models-v0.0.3-next.3) (2026-05-06)
 
 
