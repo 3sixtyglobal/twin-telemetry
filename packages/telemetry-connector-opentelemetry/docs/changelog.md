@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.0.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.5...telemetry-connector-opentelemetry-v0.0.3-next.6) (2026-05-11)
+
+
+### Features
+
+* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.5 to 0.0.3-next.6
+    * @twin.org/telemetry-models bumped from 0.0.3-next.5 to 0.0.3-next.6
+
 ## [0.0.3-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.4...telemetry-connector-opentelemetry-v0.0.3-next.5) (2026-05-11)
 
 
