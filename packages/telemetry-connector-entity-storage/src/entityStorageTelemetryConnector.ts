@@ -328,9 +328,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 			const excessCount = allValueIds.length - existingMetric.maxHistory;
 			if (excessCount > 0) {
-				await Promise.allSettled(
-					allValueIds.slice(0, excessCount).map(async vid => this._metricValueStorage.remove(vid))
-				);
+				this._metricValueStorage.removeBatch(allValueIds.slice(0, excessCount));
 			}
 		}
 
@@ -371,10 +369,10 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				undefined,
 				existingMetricValuesResult?.cursor
 			);
-			await Promise.allSettled(
-				existingMetricValuesResult.entities.map(async telemetryMetricValue => {
-					await this._metricValueStorage.remove((telemetryMetricValue as TelemetryMetricValue).id);
-				})
+			await this._metricValueStorage.removeBatch(
+				(existingMetricValuesResult.entities as TelemetryMetricValue[]).map(
+					telemetryMetricValue => telemetryMetricValue.id
+				)
 			);
 		} while (Is.stringValue(existingMetricValuesResult.cursor));
 

@@ -148,6 +148,8 @@ describe("EntityStorageTelemetryConnector", () => {
 		await telemetry.addMetricValue("test", "inc");
 
 		const valueStore = telemetryMetricsValueEntityStorage.getStore();
+
+		console.log(valueStore);
 		expect(valueStore?.length).toEqual(1);
 		expect(valueStore?.[0].id.length).toEqual(32);
 		expect(valueStore?.[0].metricId).toEqual("test");
@@ -156,11 +158,12 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		await telemetry.addMetricValue("test", 5);
 
-		expect(valueStore?.length).toEqual(2);
-		expect(valueStore?.[1].id.length).toEqual(32);
-		expect(valueStore?.[1].metricId).toEqual("test");
-		expect(valueStore?.[1].ts).toBeLessThanOrEqual(Date.now());
-		expect(valueStore?.[1].value).toEqual(6);
+		const valueStore2 = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore2?.length).toEqual(2);
+		expect(valueStore2?.[1].id.length).toEqual(32);
+		expect(valueStore2?.[1].metricId).toEqual("test");
+		expect(valueStore2?.[1].ts).toBeLessThanOrEqual(Date.now());
+		expect(valueStore2?.[1].value).toEqual(6);
 	});
 
 	test("can fail to decrement a counter metric", async () => {
@@ -200,10 +203,11 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		await telemetry.addMetricValue("test", 5);
 
-		expect(valueStore?.[1].id.length).toEqual(32);
-		expect(valueStore?.[1].metricId).toEqual("test");
-		expect(valueStore?.[1].ts).toBeLessThanOrEqual(Date.now());
-		expect(valueStore?.[1].value).toEqual(6);
+		const valueStore2 = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore2?.[1].id.length).toEqual(32);
+		expect(valueStore2?.[1].metricId).toEqual("test");
+		expect(valueStore2?.[1].ts).toBeLessThanOrEqual(Date.now());
+		expect(valueStore2?.[1].value).toEqual(6);
 	});
 
 	test("can decrement an inc/dec counter metric", async () => {
@@ -227,10 +231,11 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		await telemetry.addMetricValue("test", -5);
 
-		expect(valueStore?.[1].id.length).toEqual(32);
-		expect(valueStore?.[1].metricId).toEqual("test");
-		expect(valueStore?.[1].ts).toBeLessThanOrEqual(Date.now());
-		expect(valueStore?.[1].value).toEqual(-6);
+		const valueStore2 = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore2?.[1].id.length).toEqual(32);
+		expect(valueStore2?.[1].metricId).toEqual("test");
+		expect(valueStore2?.[1].ts).toBeLessThanOrEqual(Date.now());
+		expect(valueStore2?.[1].value).toEqual(-6);
 	});
 
 	test("can fail to set a value to a non integer inc/dec counter metric", async () => {
@@ -270,10 +275,11 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		await telemetry.addMetricValue("test", 12);
 
-		expect(valueStore?.[1].id.length).toEqual(32);
-		expect(valueStore?.[1].metricId).toEqual("test");
-		expect(valueStore?.[1].ts).toBeLessThanOrEqual(Date.now());
-		expect(valueStore?.[1].value).toEqual(12);
+		const valueStore2 = telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore2?.[1].id.length).toEqual(32);
+		expect(valueStore2?.[1].metricId).toEqual("test");
+		expect(valueStore2?.[1].ts).toBeLessThanOrEqual(Date.now());
+		expect(valueStore2?.[1].value).toEqual(12);
 	});
 
 	test("can fail to inc a gauge metric", async () => {
@@ -329,8 +335,10 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStore?.length).toEqual(10);
 
 		await telemetry.removeMetric("test");
-		expect(store?.length).toEqual(0);
-		expect(valueStore?.length).toEqual(0);
+		const storeAfter = telemetryMetricsEntityStorage.getStore();
+		const valueStoreAfter = telemetryMetricsValueEntityStorage.getStore();
+		expect(storeAfter?.length).toEqual(0);
+		expect(valueStoreAfter?.length).toEqual(0);
 	});
 
 	test("can query metrics", async () => {
