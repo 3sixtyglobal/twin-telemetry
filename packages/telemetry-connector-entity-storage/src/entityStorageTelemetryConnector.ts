@@ -328,7 +328,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 			const excessCount = allValueIds.length - existingMetric.maxHistory;
 			if (excessCount > 0) {
-				this._metricValueStorage.removeBatch(allValueIds.slice(0, excessCount));
+				await this._metricValueStorage.removeBatch(allValueIds.slice(0, excessCount));
 			}
 		}
 
