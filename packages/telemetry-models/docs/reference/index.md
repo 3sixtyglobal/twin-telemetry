@@ -7,6 +7,8 @@
 
 ## Interfaces
 
+- [IMetricsCollectorComponent](interfaces/IMetricsCollectorComponent.md)
+- [IMetricsProducer](interfaces/IMetricsProducer.md)
 - [IMultiTelemetryConnectorConstructorOptions](interfaces/IMultiTelemetryConnectorConstructorOptions.md)
 - [ITelemetryComponent](interfaces/ITelemetryComponent.md)
 - [ITelemetryConnector](interfaces/ITelemetryConnector.md)
@@ -29,5 +31,6 @@
 
 ## Variables
 
+- [MetricsProducerFactory](variables/MetricsProducerFactory.md)
 - [TelemetryConnectorFactory](variables/TelemetryConnectorFactory.md)
 - [MetricType](variables/MetricType.md)

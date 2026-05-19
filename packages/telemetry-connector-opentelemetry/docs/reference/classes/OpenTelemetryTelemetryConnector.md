@@ -74,7 +74,6 @@ The class name of the component.
 > **start**(`nodeLoggingComponentType?`): `Promise`\<`void`\>
 
 Initialise the MeterProvider and configured exporters.
-Calling start() on an already-started connector is a no-op.
 
 #### Parameters
 
