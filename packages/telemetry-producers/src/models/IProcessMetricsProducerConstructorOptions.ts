@@ -7,7 +7,7 @@
 export interface IProcessMetricsProducerConstructorOptions {
 	/**
 	 * Type name of the telemetry component in `ComponentFactory`.
-	 * @default "telemetry"
+	 * @default telemetry
 	 */
 	telemetryComponentType?: string;
 
