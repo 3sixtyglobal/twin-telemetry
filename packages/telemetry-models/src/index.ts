@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0.
 export * from "./connectors/multiTelemetryConnector.js";
 export * from "./connectors/silentTelemetryConnector.js";
+export * from "./factories/metricsProducerFactory.js";
 export * from "./factories/telemetryConnectorFactory.js";
 export * from "./models/api/ITelemetryAddMetricValueRequest.js";
 export * from "./models/api/ITelemetryCreateMetricRequest.js";
@@ -13,6 +14,8 @@ export * from "./models/api/ITelemetryRemoveMetricRequest.js";
 export * from "./models/api/ITelemetryUpdateMetricRequest.js";
 export * from "./models/api/ITelemetryValuesListRequest.js";
 export * from "./models/api/ITelemetryValuesListResponse.js";
+export * from "./models/IMetricsCollectorComponent.js";
+export * from "./models/IMetricsProducer.js";
 export * from "./models/IMultiTelemetryConnectorConstructorOptions.js";
 export * from "./models/ITelemetryComponent.js";
 export * from "./models/ITelemetryConnector.js";

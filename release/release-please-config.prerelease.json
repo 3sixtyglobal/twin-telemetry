@@ -29,6 +29,10 @@
 		"packages/telemetry-rest-client": {
 			"package-name": "telemetry-rest-client",
 			"changelog-path": "docs/changelog.md"
+		},
+		"packages/telemetry-producers": {
+			"package-name": "telemetry-producers",
+			"changelog-path": "docs/changelog.md"
 		}
 	},
 	"plugins": [
@@ -41,7 +45,8 @@
 				"telemetry-connector-entity-storage",
 				"telemetry-connector-opentelemetry",
 				"telemetry-service",
-				"telemetry-rest-client"
+				"telemetry-rest-client",
+				"telemetry-producers"
 			]
 		}
 	]

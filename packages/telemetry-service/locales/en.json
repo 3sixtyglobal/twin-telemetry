@@ -1,1 +1,7 @@
-{}
+{
+	"error": {
+		"metricsCollectorService": {
+			"producerCollectionFailed": "Failed to collect metrics from producer \"{producer}\""
+		}
+	}
+}

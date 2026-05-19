@@ -112,23 +112,6 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		await connector.stop();
 	});
 
-	test("can fail to create a duplicate metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await expect(
-			connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter })
-		).rejects.toMatchObject({
-			name: "AlreadyExistsError",
-			message: "entityStorageTelemetryConnector.metricAlreadyExists"
-		});
-		await connector.stop();
-	});
-
 	test("can update metric details", async () => {
 		const connector = await makeConnector();
 		await connector.createMetric({

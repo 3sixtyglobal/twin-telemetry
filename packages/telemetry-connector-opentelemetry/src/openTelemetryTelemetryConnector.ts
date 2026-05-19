@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0.
 import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
 import { MeterProvider, type MetricReader } from "@opentelemetry/sdk-metrics";
-import { ComponentFactory, GeneralError, Is } from "@twin.org/core";
+import { AlreadyExistsError, BaseError, ComponentFactory, GeneralError, Is } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import { EntityStorageTelemetryConnector } from "@twin.org/telemetry-connector-entity-storage";
@@ -62,13 +62,13 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * The MeterProvider that owns all instruments. Set by start(), cleared by stop().
 	 * @internal
 	 */
-	private _meterProvider: MeterProvider | undefined;
+	private _meterProvider?: MeterProvider;
 
 	/**
 	 * The Meter used to create instruments. Set by start(), cleared by stop().
 	 * @internal
 	 */
-	private _meter: Meter | undefined;
+	private _meter?: Meter;
 
 	/**
 	 * Create a new instance of OpenTelemetryTelemetryConnector.
@@ -96,7 +96,6 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 
 	/**
 	 * Initialise the MeterProvider and configured exporters.
-	 * Calling start() on an already-started connector is a no-op.
 	 * @param nodeLoggingComponentType The node logging component type.
 	 * @returns Nothing.
 	 */
@@ -151,22 +150,20 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async stop(nodeLoggingComponentType?: string): Promise<void> {
-		if (Is.undefined(this._meterProvider)) {
-			return;
+		if (!Is.undefined(this._meterProvider)) {
+			await this._meterProvider.shutdown();
+			this._meterProvider = undefined;
+			this._meter = undefined;
+			this._instruments.clear();
+
+			const nodeLogging = ComponentFactory.getIfExists<ILoggingComponent>(nodeLoggingComponentType);
+			await nodeLogging?.log({
+				source: OpenTelemetryTelemetryConnector.CLASS_NAME,
+				message: "connectorStopped",
+				level: "info",
+				data: {}
+			});
 		}
-
-		await this._meterProvider.shutdown();
-		this._meterProvider = undefined;
-		this._meter = undefined;
-		this._instruments.clear();
-
-		const nodeLogging = ComponentFactory.getIfExists<ILoggingComponent>(nodeLoggingComponentType);
-		await nodeLogging?.log({
-			source: OpenTelemetryTelemetryConnector.CLASS_NAME,
-			message: "connectorStopped",
-			level: "info",
-			data: {}
-		});
 	}
 
 	/**
@@ -177,12 +174,22 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * @returns Nothing.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		// Entity storage performs all validation and throws AlreadyExistsError on duplicates.
-		await this._inner.createMetric(metric);
+		try {
+			await this._inner.createMetric(metric);
+		} catch (err) {
+			// Entity storage performs all validation and throws AlreadyExistsError on duplicates.
+			// OTP doesn't care about duplicates and will create a new instrument instance on each call
+			// so we catch this error and ignore it to allow the OTEL instruments to be registered.
+			if (!BaseError.isErrorName(err, AlreadyExistsError.CLASS_NAME)) {
+				throw err;
+			}
+		}
 
-		// Register an OTEL instrument only when the MeterProvider is running.
+		// Register an OTEL instrument when the MeterProvider is running.
+		// This runs even when the metric already exists in storage so instruments
+		// survive process restarts (AlreadyExistsError path).
 		const meter = this._meter;
-		if (meter !== undefined) {
+		if (meter !== undefined && !this._instruments.has(metric.id)) {
 			const instrumentOptions = {
 				description: metric.description,
 				unit: metric.unit

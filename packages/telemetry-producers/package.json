@@ -1,13 +1,13 @@
 {
-	"name": "@twin.org/telemetry-service",
+	"name": "@twin.org/telemetry-producers",
 	"version": "0.0.3-next.6",
-	"description": "Telemetry service implementation with REST entry points.",
+	"description": "Metrics producers for collecting Node.js process and system telemetry.",
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/iotaledger/telemetry.git",
-		"directory": "packages/telemetry-service"
+		"directory": "packages/telemetry-producers"
 	},
-	"author": "martyn.janes@iota.org",
+	"author": "adrian.sanchez.sequeira@iota.org",
 	"license": "Apache-2.0",
 	"type": "module",
 	"engines": {
@@ -23,25 +23,19 @@
 		"test:coverage": "vitest --run --coverage --config ./vitest.config.ts --no-cache",
 		"docs:clean": "rimraf docs/reference",
 		"docs:generate": "typedoc --options typedoc.config.mjs",
-		"docs:api": "ts-to-openapi ./ts-to-openapi.json ./docs/open-api/spec.json",
-		"docs": "npm run docs:clean && npm run docs:generate && npm run docs:api",
+		"docs": "npm run docs:clean && npm run docs:generate",
 		"dist": "npm run clean && npm run build && npm run validate-locales && npm run test:build && npm run test",
 		"dist:no-test": "npm run clean && npm run build && npm run test:build"
 	},
 	"dependencies": {
-		"@twin.org/api-models": "next",
 		"@twin.org/core": "next",
-		"@twin.org/entity": "next",
-		"@twin.org/logging-models": "next",
 		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.0.3-next.6",
-		"@twin.org/web": "next"
+		"@twin.org/telemetry-models": "0.0.3-next.6"
 	},
 	"devDependencies": {
 		"@twin.org/nameof-transformer": "next",
 		"@twin.org/nameof-vitest-plugin": "next",
 		"@twin.org/validate-locales": "next",
-		"@twin.org/ts-to-openapi": "next",
 		"@vitest/coverage-v8": "4.1.5",
 		"copyfiles": "2.4.1",
 		"nodemon": "3.1.14",
