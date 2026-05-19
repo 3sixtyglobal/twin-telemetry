@@ -16,7 +16,7 @@
 		"inlineSources": true,
 		"declaration": true,
 		"declarationDir": "dist/types",
-		"types": ["node"],
+		"types": [],
 		"plugins": [{ "transform": "@twin.org/nameof-transformer" }],
 		"skipLibCheck": true
 	},
