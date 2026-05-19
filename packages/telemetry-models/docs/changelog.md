@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.6...telemetry-models-v0.0.3-next.7) (2026-05-19)
+
+
+### Features
+
+* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+
 ## [0.0.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.5...telemetry-models-v0.0.3-next.6) (2026-05-11)
 
 

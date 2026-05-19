@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.6...telemetry-connector-entity-storage-v0.0.3-next.7) (2026-05-19)
+
+
+### Miscellaneous Chores
+
+* **telemetry-connector-entity-storage:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.6 to 0.0.3-next.7
+
 ## [0.0.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.5...telemetry-connector-entity-storage-v0.0.3-next.6) (2026-05-11)
 
 
