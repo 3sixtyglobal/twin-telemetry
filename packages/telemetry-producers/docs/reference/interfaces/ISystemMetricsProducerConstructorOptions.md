@@ -13,7 +13,7 @@ Type name of the telemetry component in `ComponentFactory`.
 #### Default
 
 ```ts
-"telemetry"
+telemetry
 ```
 
 ***
