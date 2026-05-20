@@ -10,6 +10,7 @@ import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
 	type ITelemetryMetricValue,
+	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
 import type { IOpenTelemetryTelemetryConnectorConfig } from "./models/IOpenTelemetryTelemetryConnectorConfig.js";
@@ -251,7 +252,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 */
 	public async addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		// Entity storage validates and persists first; throws NotFoundError if metric not found.
@@ -266,12 +267,15 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 
 				// Value already validated by inner connector — dispatch unconditionally.
 				if (metricType === MetricType.Counter) {
-					(instrument as Counter).add(value === "inc" ? 1 : (value as number), attributes);
+					(instrument as Counter).add(
+						value === MetricCounterOperation.Increment ? 1 : (value as number),
+						attributes
+					);
 				} else if (metricType === MetricType.IncDecCounter) {
 					let delta: number;
-					if (value === "inc") {
+					if (value === MetricCounterOperation.Increment) {
 						delta = 1;
-					} else if (value === "dec") {
+					} else if (value === MetricCounterOperation.Decrement) {
 						delta = -1;
 					} else {
 						delta = value;

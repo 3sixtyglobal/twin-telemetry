@@ -8,7 +8,7 @@ import {
 	type TelemetryMetricValue,
 	initSchema
 } from "@twin.org/telemetry-connector-entity-storage";
-import { MetricType } from "@twin.org/telemetry-models";
+import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
 import { OpenTelemetryTelemetryConnector } from "../src/openTelemetryTelemetryConnector.js";
 
 /**
@@ -146,7 +146,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await connector.addMetricValue("api-requests", "inc");
+		await connector.addMetricValue("api-requests", MetricCounterOperation.Increment);
 
 		const { value } = await connector.getMetric("api-requests");
 		expect(value.value).toEqual(1);
@@ -176,7 +176,9 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await expect(connector.addMetricValue("test", "dec")).rejects.toMatchObject({
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Decrement)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.counterIncOnly"
 		});
@@ -206,7 +208,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.IncDecCounter
 		});
 
-		await connector.addMetricValue("test", "inc");
+		await connector.addMetricValue("test", MetricCounterOperation.Increment);
 
 		const { value } = await connector.getMetric("test");
 		expect(value.value).toEqual(1);
@@ -236,7 +238,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.IncDecCounter
 		});
 
-		await connector.addMetricValue("test", "dec");
+		await connector.addMetricValue("test", MetricCounterOperation.Decrement);
 
 		const { value } = await connector.getMetric("test");
 		expect(value.value).toEqual(-1);
@@ -282,7 +284,9 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Gauge
 		});
 
-		await expect(connector.addMetricValue("test", "inc")).rejects.toMatchObject({
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Increment)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
 		});
@@ -297,7 +301,9 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Gauge
 		});
 
-		await expect(connector.addMetricValue("test", "dec")).rejects.toMatchObject({
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Decrement)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
 		});
@@ -313,7 +319,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		});
 
 		for (let i = 0; i < 5; i++) {
-			await connector.addMetricValue("test", "inc");
+			await connector.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
 		let result = await connector.query();
@@ -388,7 +394,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		});
 
 		for (let i = 0; i < 50; i++) {
-			await connector.addMetricValue("test", "inc");
+			await connector.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
 		const page1 = await connector.queryValues("test", undefined, undefined, undefined, 20);
@@ -413,7 +419,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		const valueId = await connector.addMetricValue("test", "inc", {
+		const valueId = await connector.addMetricValue("test", MetricCounterOperation.Increment, {
 			route: "/api/health",
 			statusCode: 200,
 			success: true
@@ -439,7 +445,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		const valueId = await connector.addMetricValue("test", "inc");
+		const valueId = await connector.addMetricValue("test", MetricCounterOperation.Increment);
 		expect(valueId.length).toEqual(32);
 		await connector.stop();
 	});
@@ -452,7 +458,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await connector.addMetricValue("test", "inc", {
+		await connector.addMetricValue("test", MetricCounterOperation.Increment, {
 			tags: ["a", "b", "c"],
 			codes: [200, 404],
 			flags: [true, false]

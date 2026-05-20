@@ -8,6 +8,7 @@ import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
 	type ITelemetryMetricValue,
+	type MetricCounterOperation,
 	type MetricType
 } from "@twin.org/telemetry-models";
 import type { ITelemetryServiceConstructorOptions } from "./models/ITelemetryServiceConstructorOptions.js";
@@ -89,7 +90,7 @@ export class TelemetryService implements ITelemetryComponent {
 	 */
 	public async addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);

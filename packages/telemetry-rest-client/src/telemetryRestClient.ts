@@ -22,6 +22,7 @@ import type {
 	ITelemetryUpdateMetricRequest,
 	ITelemetryValuesListRequest,
 	ITelemetryValuesListResponse,
+	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
 import { HeaderTypes } from "@twin.org/web";
@@ -118,7 +119,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	 */
 	public async addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);

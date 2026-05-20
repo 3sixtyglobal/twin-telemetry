@@ -26,6 +26,7 @@ import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
 	type ITelemetryMetricValue,
+	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
 import type { TelemetryMetric } from "./entities/telemetryMetric.js";
@@ -247,7 +248,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 */
 	public async addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
@@ -274,7 +275,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		let newValue = Is.notEmpty(lastMetric) ? (lastMetric.value as number) : 0;
 
 		if (existingMetric.type === MetricType.Counter) {
-			if (value === "inc") {
+			if (value === MetricCounterOperation.Increment) {
 				newValue++;
 			} else if (Is.integer(value) && value > 0) {
 				newValue += value;
@@ -282,9 +283,9 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
 			}
 		} else if (existingMetric.type === MetricType.IncDecCounter) {
-			if (value === "inc") {
+			if (value === MetricCounterOperation.Increment) {
 				newValue++;
-			} else if (value === "dec") {
+			} else if (value === MetricCounterOperation.Decrement) {
 				newValue--;
 			} else if (Is.integer(value)) {
 				newValue += value;

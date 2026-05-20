@@ -1,5 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import type { MetricCounterOperation } from "../metricCounterOperation.js";
 
 /**
  * Add a telemetry metric value.
@@ -22,7 +23,7 @@ export interface ITelemetryAddMetricValueRequest {
 		/**
 		 * The value for the update operation.
 		 */
-		value: "inc" | "dec" | number;
+		value: MetricCounterOperation | number;
 
 		/**
 		 * The custom data for the update operation.

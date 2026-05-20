@@ -3,6 +3,7 @@
 import type { IComponent } from "@twin.org/core";
 import type { ITelemetryMetric } from "./ITelemetryMetric.js";
 import type { ITelemetryMetricValue } from "./ITelemetryMetricValue.js";
+import type { MetricCounterOperation } from "./metricCounterOperation.js";
 import type { MetricType } from "./metricType.js";
 
 /**
@@ -42,7 +43,7 @@ export interface ITelemetryConnector extends IComponent {
 	 */
 	addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string>;
 

@@ -5,6 +5,7 @@ import { nameof } from "@twin.org/nameof";
 import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";
 import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
 import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue.js";
+import type { MetricCounterOperation } from "../models/metricCounterOperation.js";
 import type { MetricType } from "../models/metricType.js";
 
 /**
@@ -61,7 +62,7 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	 */
 	public async addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		return "";

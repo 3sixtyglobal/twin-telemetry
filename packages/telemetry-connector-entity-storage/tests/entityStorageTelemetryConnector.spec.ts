@@ -3,7 +3,7 @@
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
 import { nameof } from "@twin.org/nameof";
-import { MetricType } from "@twin.org/telemetry-models";
+import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
 import type { TelemetryMetric } from "../src/entities/telemetryMetric.js";
 import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";
 import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryConnector.js";
@@ -145,7 +145,7 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await telemetry.addMetricValue("test", "inc");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
 		const valueStore = telemetryMetricsValueEntityStorage.getStore();
 
@@ -176,7 +176,9 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await expect(telemetry.addMetricValue("test", "dec")).rejects.toMatchObject({
+		await expect(
+			telemetry.addMetricValue("test", MetricCounterOperation.Decrement)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.counterIncOnly"
 		});
@@ -192,7 +194,7 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.IncDecCounter
 		});
 
-		await telemetry.addMetricValue("test", "inc", undefined);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment, undefined);
 
 		const valueStore = telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(1);
@@ -220,7 +222,7 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.IncDecCounter
 		});
 
-		await telemetry.addMetricValue("test", "dec");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Decrement);
 
 		const valueStore = telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(1);
@@ -292,7 +294,9 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.Gauge
 		});
 
-		await expect(telemetry.addMetricValue("test", "inc")).rejects.toMatchObject({
+		await expect(
+			telemetry.addMetricValue("test", MetricCounterOperation.Increment)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
 		});
@@ -308,7 +312,9 @@ describe("EntityStorageTelemetryConnector", () => {
 			type: MetricType.Gauge
 		});
 
-		await expect(telemetry.addMetricValue("test", "dec")).rejects.toMatchObject({
+		await expect(
+			telemetry.addMetricValue("test", MetricCounterOperation.Decrement)
+		).rejects.toMatchObject({
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
 		});
@@ -325,7 +331,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		for (let i = 0; i < 10; i++) {
-			await telemetry.addMetricValue("test", "inc");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
 		const store = telemetryMetricsEntityStorage.getStore();
@@ -451,7 +457,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		for (let i = 0; i < 5; i++) {
-			await telemetry.addMetricValue("test", "inc");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 			// Small delay so each value gets a unique Date.now() timestamp; without this,
 			// same-millisecond entries sort by insertion order under ts DESC, causing the
 			// accumulation query to read the oldest entry instead of the newest.
@@ -472,7 +478,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		for (let i = 0; i < 5; i++) {
-			await telemetry.addMetricValue("test", "inc");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
 		const valueStore = telemetryMetricsValueEntityStorage.getStore();
@@ -490,7 +496,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		for (let i = 0; i < 50; i++) {
-			await telemetry.addMetricValue("test", "inc");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
 		const store = telemetryMetricsEntityStorage.getStore();
