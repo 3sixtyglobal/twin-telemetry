@@ -3,6 +3,7 @@
 import { ComponentFactory } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import {
+	MetricHelper,
 	MetricType,
 	type IMetricsProducer,
 	type ITelemetryComponent
@@ -53,25 +54,25 @@ export class ProcessMetricsProducer implements IMetricsProducer {
 	 * Register all process metrics with the telemetry component.
 	 */
 	public async register(): Promise<void> {
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "process_memory_rss_bytes",
 			label: "RSS memory",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "process_memory_heap_used_bytes",
 			label: "Heap used",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "process_memory_heap_total_bytes",
 			label: "Heap total",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "process_uptime_seconds",
 			label: "Process uptime",
 			type: MetricType.Gauge,
@@ -84,10 +85,15 @@ export class ProcessMetricsProducer implements IMetricsProducer {
 	 */
 	public async collect(): Promise<void> {
 		const mem = process.memoryUsage();
-		await this._telemetry.addMetricValue("process_memory_rss_bytes", mem.rss);
-		await this._telemetry.addMetricValue("process_memory_heap_used_bytes", mem.heapUsed);
-		await this._telemetry.addMetricValue("process_memory_heap_total_bytes", mem.heapTotal);
-		await this._telemetry.addMetricValue(
+		await MetricHelper.metricValue(this._telemetry, "process_memory_rss_bytes", mem.rss);
+		await MetricHelper.metricValue(this._telemetry, "process_memory_heap_used_bytes", mem.heapUsed);
+		await MetricHelper.metricValue(
+			this._telemetry,
+			"process_memory_heap_total_bytes",
+			mem.heapTotal
+		);
+		await MetricHelper.metricValue(
+			this._telemetry,
 			"process_uptime_seconds",
 			Number(process.uptime().toFixed(1))
 		);

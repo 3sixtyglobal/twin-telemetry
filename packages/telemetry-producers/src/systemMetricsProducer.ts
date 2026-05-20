@@ -4,6 +4,7 @@ import * as os from "node:os";
 import { ComponentFactory } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import {
+	MetricHelper,
 	MetricType,
 	type IMetricsProducer,
 	type ITelemetryComponent
@@ -61,37 +62,37 @@ export class SystemMetricsProducer implements IMetricsProducer {
 	 * Register all system metrics with the telemetry component.
 	 */
 	public async register(): Promise<void> {
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_cpu_usage_percent",
 			label: "CPU usage",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_memory_total_bytes",
 			label: "Memory total",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_memory_used_bytes",
 			label: "Memory used",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_memory_free_bytes",
 			label: "Memory free",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_memory_usage_percent",
 			label: "Memory usage",
 			type: MetricType.Gauge,
 			maxHistory: this._maxHistory
 		});
-		await this._telemetry.createMetric({
+		await MetricHelper.createMetric(this._telemetry, {
 			id: "system_uptime_seconds",
 			label: "System uptime",
 			type: MetricType.Gauge,
@@ -129,14 +130,23 @@ export class SystemMetricsProducer implements IMetricsProducer {
 		const free = os.freemem();
 		const used = total - free;
 
-		await this._telemetry.addMetricValue("system_cpu_usage_percent", Number(avgCpu.toFixed(2)));
-		await this._telemetry.addMetricValue("system_memory_total_bytes", total);
-		await this._telemetry.addMetricValue("system_memory_used_bytes", used);
-		await this._telemetry.addMetricValue("system_memory_free_bytes", free);
-		await this._telemetry.addMetricValue(
+		await MetricHelper.metricValue(
+			this._telemetry,
+			"system_cpu_usage_percent",
+			Number(avgCpu.toFixed(2))
+		);
+		await MetricHelper.metricValue(this._telemetry, "system_memory_total_bytes", total);
+		await MetricHelper.metricValue(this._telemetry, "system_memory_used_bytes", used);
+		await MetricHelper.metricValue(this._telemetry, "system_memory_free_bytes", free);
+		await MetricHelper.metricValue(
+			this._telemetry,
 			"system_memory_usage_percent",
 			Number(((100 * used) / total).toFixed(2))
 		);
-		await this._telemetry.addMetricValue("system_uptime_seconds", Number(os.uptime().toFixed(1)));
+		await MetricHelper.metricValue(
+			this._telemetry,
+			"system_uptime_seconds",
+			Number(os.uptime().toFixed(1))
+		);
 	}
 }
