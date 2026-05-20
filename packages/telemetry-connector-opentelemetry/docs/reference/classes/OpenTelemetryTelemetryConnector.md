@@ -227,7 +227,7 @@ The id of the metric.
 
 ##### value
 
-`number` \| `"inc"` \| `"dec"`
+`number` \| `MetricCounterOperation`
 
 The value for the operation.
 

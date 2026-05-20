@@ -4,6 +4,7 @@
 
 - [MultiTelemetryConnector](classes/MultiTelemetryConnector.md)
 - [SilentTelemetryConnector](classes/SilentTelemetryConnector.md)
+- [MetricHelper](classes/MetricHelper.md)
 
 ## Interfaces
 
@@ -27,10 +28,12 @@
 
 ## Type Aliases
 
+- [MetricCounterOperation](type-aliases/MetricCounterOperation.md)
 - [MetricType](type-aliases/MetricType.md)
 
 ## Variables
 
 - [MetricsProducerFactory](variables/MetricsProducerFactory.md)
 - [TelemetryConnectorFactory](variables/TelemetryConnectorFactory.md)
+- [MetricCounterOperation](variables/MetricCounterOperation.md)
 - [MetricType](variables/MetricType.md)

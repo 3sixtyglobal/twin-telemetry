@@ -877,6 +877,19 @@
 					"message"
 				]
 			},
+			"MetricCounterOperation": {
+				"description": "The types of metric counter operations.",
+				"anyOf": [
+					{
+						"const": "inc",
+						"description": "Increment Counter."
+					},
+					{
+						"const": "dec",
+						"description": "Decrement Counter."
+					}
+				]
+			},
 			"MetricType": {
 				"description": "The types of metrics.",
 				"anyOf": [
@@ -900,10 +913,7 @@
 					"value": {
 						"anyOf": [
 							{
-								"const": "inc"
-							},
-							{
-								"const": "dec"
+								"$ref": "#/components/schemas/MetricCounterOperation"
 							},
 							{
 								"type": "number"

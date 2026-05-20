@@ -26,7 +26,7 @@ The data to be used in the update.
 
 #### value
 
-> **value**: `number` \| `"inc"` \| `"dec"`
+> **value**: `number` \| [`MetricCounterOperation`](../type-aliases/MetricCounterOperation.md)
 
 The value for the update operation.
 

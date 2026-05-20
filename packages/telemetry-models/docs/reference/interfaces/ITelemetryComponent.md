@@ -90,7 +90,7 @@ The id of the metric.
 
 ##### value
 
-`number` \| `"inc"` \| `"dec"`
+`number` \| [`MetricCounterOperation`](../type-aliases/MetricCounterOperation.md)
 
 The value for the add operation.
 
