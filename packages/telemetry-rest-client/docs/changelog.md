@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.10](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.0.3-next.9...telemetry-rest-client-v0.0.3-next.10) (2026-05-20)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.9 to 0.0.3-next.10
+
 ## [0.0.3-next.9](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.0.3-next.8...telemetry-rest-client-v0.0.3-next.9) (2026-05-20)
 
 

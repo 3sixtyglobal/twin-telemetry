@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.10](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.0.3-next.9...telemetry-producers-v0.0.3-next.10) (2026-05-20)
+
+
+### Features
+
+* use metric helper to swallow exceptions ([64e26cb](https://github.com/iotaledger/twin-telemetry/commit/64e26cb9bc725d4884b1dfeb9b13f2c754b568c2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.9 to 0.0.3-next.10
+
 ## [0.0.3-next.9](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.0.3-next.8...telemetry-producers-v0.0.3-next.9) (2026-05-20)
 
 
