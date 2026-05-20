@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.0.3-next.9](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.8...telemetry-connector-entity-storage-v0.0.3-next.9) (2026-05-20)
+
+
+### Features
+
+* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+
+
+### Bug Fixes
+
+* getStore snapshots ([33e664c](https://github.com/iotaledger/twin-telemetry/commit/33e664cc99e02e3e96635760f93e0ef64a3a6ec8))
+* getStore snapshots ([439b54c](https://github.com/iotaledger/twin-telemetry/commit/439b54c786ae187bc3bf8946a41d4d855710b3fb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.8 to 0.0.3-next.9
+
 ## [0.0.3-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.0.3-next.7...telemetry-connector-entity-storage-v0.0.3-next.8) (2026-05-19)
 
 
