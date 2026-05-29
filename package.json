@@ -4,7 +4,7 @@
 	"description": "Telemetry",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/iotaledger/telemetry.git"
+		"url": "git+https://github.com/iotaledger/twin-telemetry.git"
 	},
 	"author": "martyn.janes@iota.org",
 	"license": "Apache-2.0",
@@ -63,7 +63,7 @@
 	],
 	"type": "module",
 	"bugs": {
-		"url": "git+https://github.com/iotaledger/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/twin-telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }
