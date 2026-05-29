@@ -4,7 +4,7 @@
 	"description": "Metrics producers for collecting Node.js process and system telemetry.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/iotaledger/telemetry.git",
+		"url": "git+https://github.com/iotaledger/twin-telemetry.git",
 		"directory": "packages/telemetry-producers"
 	},
 	"author": "adrian.sanchez.sequeira@iota.org",
@@ -75,7 +75,7 @@
 		"business-logic"
 	],
 	"bugs": {
-		"url": "git+https://github.com/iotaledger/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/twin-telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }

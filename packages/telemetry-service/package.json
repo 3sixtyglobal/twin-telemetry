@@ -4,7 +4,7 @@
 	"description": "Telemetry service implementation with REST entry points.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/iotaledger/telemetry.git",
+		"url": "git+https://github.com/iotaledger/twin-telemetry.git",
 		"directory": "packages/telemetry-service"
 	},
 	"author": "martyn.janes@iota.org",
@@ -80,7 +80,7 @@
 		"business-logic"
 	],
 	"bugs": {
-		"url": "git+https://github.com/iotaledger/telemetry/issues"
+		"url": "git+https://github.com/iotaledger/twin-telemetry/issues"
 	},
 	"homepage": "https://twindev.org"
 }
