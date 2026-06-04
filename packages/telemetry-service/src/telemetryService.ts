@@ -1,6 +1,8 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { Guards } from "@twin.org/core";
+import type { ITenantComponent } from "@twin.org/api-models";
+import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
+import { ComponentFactory, Guards, Is } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import {
 	TelemetryConnectorFactory,
@@ -29,12 +31,21 @@ export class TelemetryService implements ITelemetryComponent {
 	private readonly _telemetryConnector: ITelemetryConnector;
 
 	/**
+	 * Tenant component for internal use, if configured.
+	 * @internal
+	 */
+	private readonly _tenantComponent?: ITenantComponent;
+
+	/**
 	 * Create a new instance of TelemetryService.
 	 * @param options The options for the connector.
 	 */
 	constructor(options?: ITelemetryServiceConstructorOptions) {
 		this._telemetryConnector = TelemetryConnectorFactory.get(
 			options?.telemetryConnectorType ?? "telemetry"
+		);
+		this._tenantComponent = ComponentFactory.getIfExists<ITenantComponent>(
+			options?.tenantComponentType ?? "tenant"
 		);
 	}
 
@@ -54,7 +65,17 @@ export class TelemetryService implements ITelemetryComponent {
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		Guards.object<ITelemetryMetric>(TelemetryService.CLASS_NAME, nameof(metric), metric);
 
-		await this._telemetryConnector.createMetric(metric);
+		// Create metric must be run once per tenant in multi tenant mode
+		// if the tenant id is not already set in the context
+		// as these are most likely startup metrics run outside of a tenant context
+		const contextIds = (await ContextIdStore.getContextIds()) ?? {};
+		if (Is.stringValue(contextIds[ContextIdKeys.Tenant]) || Is.empty(this._tenantComponent)) {
+			await this._telemetryConnector.createMetric(metric);
+		} else {
+			await this._tenantComponent.runPerTenant(async () =>
+				this._telemetryConnector.createMetric(metric)
+			);
+		}
 	}
 
 	/**

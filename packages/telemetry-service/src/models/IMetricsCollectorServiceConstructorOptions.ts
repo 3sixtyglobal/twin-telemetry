@@ -13,6 +13,12 @@ export interface IMetricsCollectorServiceConstructorOptions {
 	loggingComponentType?: string;
 
 	/**
+	 * The type of the tenant component to use for partitioned producers.
+	 * @default tenant
+	 */
+	tenantComponentType?: string;
+
+	/**
 	 * The configuration options for the metrics collector service.
 	 */
 	config?: IMetricsCollectorServiceConfig;

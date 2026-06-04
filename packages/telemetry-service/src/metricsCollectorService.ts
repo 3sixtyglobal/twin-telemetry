@@ -1,6 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { BaseError, ComponentFactory } from "@twin.org/core";
+import type { ITenantComponent } from "@twin.org/api-models";
+import { BaseError, ComponentFactory, Is } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import {
@@ -20,8 +21,15 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 	/**
 	 * Resolved logging component for internal use.
+	 * @internal
 	 */
 	private readonly _loggingComponent?: ILoggingComponent;
+
+	/**
+	 * Tenant component if configured.
+	 * @internal
+	 */
+	private readonly _tenantComponent?: ITenantComponent;
 
 	/**
 	 * Polling interval in milliseconds.
@@ -48,6 +56,9 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	constructor(options?: IMetricsCollectorServiceConstructorOptions) {
 		this._loggingComponent = ComponentFactory.getIfExists<ILoggingComponent>(
 			options?.loggingComponentType ?? "logging"
+		);
+		this._tenantComponent = ComponentFactory.getIfExists<ITenantComponent>(
+			options?.tenantComponentType ?? "tenant"
 		);
 
 		const intervalMs = options?.config?.intervalMs ?? 60_000;
@@ -79,7 +90,11 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 		const producers = names.map(name => MetricsProducerFactory.get(name));
 
 		for (const producer of producers) {
-			await producer.register();
+			if (!Is.empty(this._tenantComponent)) {
+				await this._tenantComponent.runPerTenant(async () => producer.register());
+			} else {
+				await producer.register();
+			}
 		}
 
 		await this.tick();
@@ -106,7 +121,11 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 		for (const producer of producers) {
 			try {
-				await producer.collect();
+				if (!Is.empty(this._tenantComponent)) {
+					await this._tenantComponent.runPerTenant(async () => producer.collect());
+				} else {
+					await producer.collect();
+				}
 			} catch (err) {
 				await this._loggingComponent?.log({
 					source: MetricsCollectorService.CLASS_NAME,

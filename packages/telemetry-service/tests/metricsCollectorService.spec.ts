@@ -1,5 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import type { ITenantComponent } from "@twin.org/api-models";
+import { ComponentFactory } from "@twin.org/core";
 import { MetricsProducerFactory, type IMetricsProducer } from "@twin.org/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
 
@@ -139,6 +141,72 @@ describe("MetricsCollectorService", () => {
 	});
 
 	describe("tick()", () => {
+		const TENANT_COMPONENT_TYPE = "test-tenant-component";
+
+		afterEach(() => {
+			try {
+				ComponentFactory.unregister(TENANT_COMPONENT_TYPE);
+			} catch {}
+		});
+
+		function makeTenantComponent(
+			runPerTenant: (fn: () => Promise<void>) => Promise<void>
+		): ITenantComponent {
+			return {
+				className: () => "mock-tenant-component",
+				runPerTenant
+			};
+		}
+
+		test("node-partitioned producer uses runPerTenant when tenantComponent is present", async () => {
+			const collectCalls: string[] = [];
+			let runPerTenantCalled = false;
+
+			ComponentFactory.register(TENANT_COMPONENT_TYPE, () =>
+				makeTenantComponent(async fn => {
+					runPerTenantCalled = true;
+					await fn();
+				})
+			);
+
+			MetricsProducerFactory.register("partitioned", () =>
+				makeProducer({
+					collect: async () => {
+						collectCalls.push("partitioned");
+					}
+				})
+			);
+
+			const service = new MetricsCollectorService({
+				config: { intervalMs: 60_000 },
+				tenantComponentType: TENANT_COMPONENT_TYPE
+			});
+			await service.start();
+			await service.stop();
+
+			expect(runPerTenantCalled).toBe(true);
+			expect(collectCalls).toContain("partitioned");
+		});
+
+		test("node-partitioned producer calls collect directly when no tenantComponent is registered", async () => {
+			const collectCalls: string[] = [];
+
+			MetricsProducerFactory.register("partitioned", () =>
+				makeProducer({
+					collect: async () => {
+						collectCalls.push("partitioned");
+					}
+				})
+			);
+
+			// No tenantComponentType supplied — ComponentFactory.getIfExists returns undefined
+			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
+			await service.start();
+			await service.stop();
+
+			expect(collectCalls).toContain("partitioned");
+		});
+
 		test("continues collecting even when one producer throws", async () => {
 			const collected: string[] = [];
 			MetricsProducerFactory.register("bad", () =>

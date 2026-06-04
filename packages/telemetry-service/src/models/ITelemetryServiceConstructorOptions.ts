@@ -10,4 +10,10 @@ export interface ITelemetryServiceConstructorOptions {
 	 * @default telemetry
 	 */
 	telemetryConnectorType?: string;
+
+	/**
+	 * The type of the tenant component to use for partition iteration.
+	 * @default tenant
+	 */
+	tenantComponentType?: string;
 }
