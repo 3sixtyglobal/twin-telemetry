@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.11](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.10...telemetry-service-v0.0.3-next.11) (2026-06-04)
+
+
+### Features
+
+* system metrics partitioning ([#38](https://github.com/iotaledger/twin-telemetry/issues/38)) ([3914183](https://github.com/iotaledger/twin-telemetry/commit/3914183bc17d0fd0adc8e30b7bb7aaee5d75e986))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.10 to 0.0.3-next.11
+
 ## [0.0.3-next.10](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.9...telemetry-service-v0.0.3-next.10) (2026-05-20)
 
 
