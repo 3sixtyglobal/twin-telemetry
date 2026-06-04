@@ -18,6 +18,20 @@ logging
 
 ***
 
+### tenantComponentType? {#tenantcomponenttype}
+
+> `optional` **tenantComponentType?**: `string`
+
+The type of the tenant component to use for partitioned producers.
+
+#### Default
+
+```ts
+tenant
+```
+
+***
+
 ### config? {#config}
 
 > `optional` **config?**: [`IMetricsCollectorServiceConfig`](IMetricsCollectorServiceConfig.md)
