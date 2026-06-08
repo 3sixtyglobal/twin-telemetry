@@ -1,6 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { entity, property } from "@twin.org/entity";
+import { entity, property, SortDirection } from "@twin.org/entity";
 
 /**
  * Class defining a telemetry metric value.
@@ -22,7 +22,7 @@ export class TelemetryMetricValue {
 	/**
 	 * The timestamp.
 	 */
-	@property({ type: "integer", format: "uint64" })
+	@property({ type: "integer", format: "uint64", sortDirection: SortDirection.Descending })
 	public ts!: number;
 
 	/**
