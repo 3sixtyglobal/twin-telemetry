@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3-next.12](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.11...telemetry-models-v0.0.3-next.12) (2026-06-08)
+
+
+### Miscellaneous Chores
+
+* **telemetry-models:** Synchronize repo versions
+
 ## [0.0.3-next.11](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.0.3-next.10...telemetry-models-v0.0.3-next.11) (2026-06-04)
 
 
