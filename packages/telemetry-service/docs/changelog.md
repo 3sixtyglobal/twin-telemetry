@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.3-next.13](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.12...telemetry-service-v0.0.3-next.13) (2026-06-11)
+
+
+### Features
+
+* organization identifiers ([#42](https://github.com/iotaledger/twin-telemetry/issues/42)) ([1cea68c](https://github.com/iotaledger/twin-telemetry/commit/1cea68c858deea67ab3364c93db56928e0064ec3))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.0.3-next.12 to 0.0.3-next.13
+
 ## [0.0.3-next.12](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.0.3-next.11...telemetry-service-v0.0.3-next.12) (2026-06-08)
 
 
