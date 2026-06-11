@@ -12,8 +12,8 @@ export interface ITelemetryServiceConstructorOptions {
 	telemetryConnectorType?: string;
 
 	/**
-	 * The type of the tenant component to use for partition iteration.
-	 * @default tenant
+	 * The type of the platform component to use for partition iteration.
+	 * @default platform
 	 */
-	tenantComponentType?: string;
+	platformComponentType?: string;
 }

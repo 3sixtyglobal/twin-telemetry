@@ -77,7 +77,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			options?.telemetryMetricValueStorageConnectorType ?? "telemetry-metric-value"
 		);
 
-		this._logging = ComponentFactory.getIfExists(options?.loggingComponentType ?? "logging");
+		this._logging = ComponentFactory.getIfExists(options?.loggingComponentType);
 	}
 
 	/**

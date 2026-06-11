@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { ITenantComponent } from "@twin.org/api-models";
-import { BaseError, ComponentFactory, Is } from "@twin.org/core";
+import type { IPlatformComponent } from "@twin.org/api-models";
+import { BaseError, ComponentFactory } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import {
@@ -26,10 +26,10 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	private readonly _loggingComponent?: ILoggingComponent;
 
 	/**
-	 * Tenant component if configured.
+	 * Platform component.
 	 * @internal
 	 */
-	private readonly _tenantComponent?: ITenantComponent;
+	private readonly _platformComponent: IPlatformComponent;
 
 	/**
 	 * Polling interval in milliseconds.
@@ -55,10 +55,10 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	 */
 	constructor(options?: IMetricsCollectorServiceConstructorOptions) {
 		this._loggingComponent = ComponentFactory.getIfExists<ILoggingComponent>(
-			options?.loggingComponentType ?? "logging"
+			options?.loggingComponentType
 		);
-		this._tenantComponent = ComponentFactory.getIfExists<ITenantComponent>(
-			options?.tenantComponentType ?? "tenant"
+		this._platformComponent = ComponentFactory.get<IPlatformComponent>(
+			options?.platformComponentType ?? "platform"
 		);
 
 		const intervalMs = options?.config?.intervalMs ?? 60_000;
@@ -90,11 +90,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 		const producers = names.map(name => MetricsProducerFactory.get(name));
 
 		for (const producer of producers) {
-			if (!Is.empty(this._tenantComponent)) {
-				await this._tenantComponent.runPerTenant(async () => producer.register());
-			} else {
-				await producer.register();
-			}
+			await this._platformComponent.execute(async () => producer.register());
 		}
 
 		await this.tick();
@@ -121,11 +117,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 		for (const producer of producers) {
 			try {
-				if (!Is.empty(this._tenantComponent)) {
-					await this._tenantComponent.runPerTenant(async () => producer.collect());
-				} else {
-					await producer.collect();
-				}
+				await this._platformComponent.execute(async () => producer.collect());
 			} catch (err) {
 				await this._loggingComponent?.log({
 					source: MetricsCollectorService.CLASS_NAME,

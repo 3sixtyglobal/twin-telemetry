@@ -7,16 +7,15 @@ import type { IMetricsCollectorServiceConfig } from "./IMetricsCollectorServiceC
  */
 export interface IMetricsCollectorServiceConstructorOptions {
 	/**
-	 * The type of the logging component to use.
-	 * @default logging
+	 * The type of the logging component to use, can be undefined for no logging.
 	 */
 	loggingComponentType?: string;
 
 	/**
-	 * The type of the tenant component to use for partitioned producers.
-	 * @default tenant
+	 * The type of the platform component to use for partitioned producers.
+	 * @default platform
 	 */
-	tenantComponentType?: string;
+	platformComponentType?: string;
 
 	/**
 	 * The configuration options for the metrics collector service.

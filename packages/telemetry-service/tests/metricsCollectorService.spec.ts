@@ -1,9 +1,12 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { ITenantComponent } from "@twin.org/api-models";
+import type { IPlatformComponent } from "@twin.org/api-models";
 import { ComponentFactory } from "@twin.org/core";
 import { MetricsProducerFactory, type IMetricsProducer } from "@twin.org/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
+
+const DEFAULT_PLATFORM_TYPE = "platform";
+const CUSTOM_PLATFORM_TYPE = "test-platform-component";
 
 function makeProducer(overrides: Partial<IMetricsProducer> = {}): IMetricsProducer {
 	return {
@@ -14,12 +17,37 @@ function makeProducer(overrides: Partial<IMetricsProducer> = {}): IMetricsProduc
 	};
 }
 
+function makePlatformComponent(
+	isMultiTenant: boolean,
+	execute: (fn: () => Promise<void>) => Promise<void>
+): IPlatformComponent {
+	return {
+		className: () => "mock-platform-component",
+		isMultiTenant: () => isMultiTenant,
+		execute
+	};
+}
+
+function makeSingleTenantPassthrough(): IPlatformComponent {
+	return makePlatformComponent(false, async fn => fn());
+}
+
 describe("MetricsCollectorService", () => {
 	beforeEach(() => {
-		// Clear factory state between tests
 		for (const name of MetricsProducerFactory.names()) {
 			MetricsProducerFactory.unregister(name);
 		}
+		// Always provide a default platform component so the service can be constructed.
+		ComponentFactory.register(DEFAULT_PLATFORM_TYPE, makeSingleTenantPassthrough);
+	});
+
+	afterEach(() => {
+		try {
+			ComponentFactory.unregister(DEFAULT_PLATFORM_TYPE);
+		} catch {}
+		try {
+			ComponentFactory.unregister(CUSTOM_PLATFORM_TYPE);
+		} catch {}
 	});
 
 	describe("constructor", () => {
@@ -123,10 +151,64 @@ describe("MetricsCollectorService", () => {
 			await service.start();
 			await service.stop();
 
-			// Both register and collect must use instance with the same id
 			const registerInstance = instanceIds.find(e => e.startsWith("register:"))?.split(":")[1];
 			const collectInstance = instanceIds.find(e => e.startsWith("collect:"))?.split(":")[1];
 			expect(registerInstance).toBe(collectInstance);
+		});
+
+		test("registers producers via run() for each tenant in multi-tenant mode", async () => {
+			const registered: string[] = [];
+
+			ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
+				makePlatformComponent(true, async fn => {
+					await fn(); // tenant A
+					await fn(); // tenant B
+				})
+			);
+
+			MetricsProducerFactory.register("p1", () =>
+				makeProducer({
+					register: async () => {
+						registered.push("p1");
+					}
+				})
+			);
+
+			const service = new MetricsCollectorService({
+				config: { intervalMs: 60_000 },
+				platformComponentType: CUSTOM_PLATFORM_TYPE
+			});
+			await service.start();
+			await service.stop();
+
+			expect(registered).toHaveLength(2);
+		});
+
+		test("skips register when multi-tenant and no active tenant", async () => {
+			const registered: string[] = [];
+
+			ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
+				makePlatformComponent(true, async () => {
+					// no tenants active — fn is never called
+				})
+			);
+
+			MetricsProducerFactory.register("p1", () =>
+				makeProducer({
+					register: async () => {
+						registered.push("p1");
+					}
+				})
+			);
+
+			const service = new MetricsCollectorService({
+				config: { intervalMs: 60_000 },
+				platformComponentType: CUSTOM_PLATFORM_TYPE
+			});
+			await service.start();
+			await service.stop();
+
+			expect(registered).toHaveLength(0);
 		});
 	});
 
@@ -135,100 +217,151 @@ describe("MetricsCollectorService", () => {
 			const service = new MetricsCollectorService({ config: { intervalMs: 100 } });
 			await service.start();
 			await service.stop();
-			// After stop, ticking manually should not throw
 			await expect(service.tick()).resolves.toBeUndefined();
 		});
 	});
 
 	describe("tick()", () => {
-		const TENANT_COMPONENT_TYPE = "test-tenant-component";
+		describe("single-tenant mode", () => {
+			test("calls collect via run() once per producer", async () => {
+				const collected: string[] = [];
+				MetricsProducerFactory.register("p1", () =>
+					makeProducer({
+						collect: async () => {
+							collected.push("p1");
+						}
+					})
+				);
+				MetricsProducerFactory.register("p2", () =>
+					makeProducer({
+						collect: async () => {
+							collected.push("p2");
+						}
+					})
+				);
 
-		afterEach(() => {
-			try {
-				ComponentFactory.unregister(TENANT_COMPONENT_TYPE);
-			} catch {}
-		});
+				const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
+				await service.start();
+				await service.stop();
 
-		function makeTenantComponent(
-			runPerTenant: (fn: () => Promise<void>) => Promise<void>
-		): ITenantComponent {
-			return {
-				className: () => "mock-tenant-component",
-				runPerTenant
-			};
-		}
-
-		test("node-partitioned producer uses runPerTenant when tenantComponent is present", async () => {
-			const collectCalls: string[] = [];
-			let runPerTenantCalled = false;
-
-			ComponentFactory.register(TENANT_COMPONENT_TYPE, () =>
-				makeTenantComponent(async fn => {
-					runPerTenantCalled = true;
-					await fn();
-				})
-			);
-
-			MetricsProducerFactory.register("partitioned", () =>
-				makeProducer({
-					collect: async () => {
-						collectCalls.push("partitioned");
-					}
-				})
-			);
-
-			const service = new MetricsCollectorService({
-				config: { intervalMs: 60_000 },
-				tenantComponentType: TENANT_COMPONENT_TYPE
+				expect(collected).toContain("p1");
+				expect(collected).toContain("p2");
 			});
-			await service.start();
-			await service.stop();
 
-			expect(runPerTenantCalled).toBe(true);
-			expect(collectCalls).toContain("partitioned");
+			test("continues collecting even when one producer throws", async () => {
+				const collected: string[] = [];
+				MetricsProducerFactory.register("bad", () =>
+					makeProducer({
+						collect: async () => {
+							throw new Error("boom");
+						}
+					})
+				);
+				MetricsProducerFactory.register("good", () =>
+					makeProducer({
+						collect: async () => {
+							collected.push("good");
+						}
+					})
+				);
+
+				const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
+				await service.start();
+				await service.stop();
+
+				expect(collected).toContain("good");
+			});
 		});
 
-		test("node-partitioned producer calls collect directly when no tenantComponent is registered", async () => {
-			const collectCalls: string[] = [];
+		describe("multi-tenant mode", () => {
+			test("calls collect once per active tenant for each producer", async () => {
+				const collectCalls: string[] = [];
 
-			MetricsProducerFactory.register("partitioned", () =>
-				makeProducer({
-					collect: async () => {
-						collectCalls.push("partitioned");
-					}
-				})
-			);
+				ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
+					makePlatformComponent(true, async fn => {
+						await fn(); // tenant A
+						await fn(); // tenant B
+					})
+				);
 
-			// No tenantComponentType supplied — ComponentFactory.getIfExists returns undefined
-			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
-			await service.start();
-			await service.stop();
+				MetricsProducerFactory.register("p1", () =>
+					makeProducer({
+						collect: async () => {
+							collectCalls.push("p1");
+						}
+					})
+				);
 
-			expect(collectCalls).toContain("partitioned");
-		});
+				const service = new MetricsCollectorService({
+					config: { intervalMs: 60_000 },
+					platformComponentType: CUSTOM_PLATFORM_TYPE
+				});
+				await service.start();
+				await service.stop();
 
-		test("continues collecting even when one producer throws", async () => {
-			const collected: string[] = [];
-			MetricsProducerFactory.register("bad", () =>
-				makeProducer({
-					collect: async () => {
-						throw new Error("boom");
-					}
-				})
-			);
-			MetricsProducerFactory.register("good", () =>
-				makeProducer({
-					collect: async () => {
-						collected.push("good");
-					}
-				})
-			);
+				expect(collectCalls.filter(c => c === "p1")).toHaveLength(2);
+			});
 
-			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
-			await service.start();
-			await service.stop();
+			test("skips collection when no active tenant", async () => {
+				const collectCalls: string[] = [];
 
-			expect(collected).toContain("good");
+				ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
+					makePlatformComponent(true, async () => {
+						// no active tenants — fn is never invoked
+					})
+				);
+
+				MetricsProducerFactory.register("p1", () =>
+					makeProducer({
+						collect: async () => {
+							collectCalls.push("p1");
+						}
+					})
+				);
+
+				const service = new MetricsCollectorService({
+					config: { intervalMs: 60_000 },
+					platformComponentType: CUSTOM_PLATFORM_TYPE
+				});
+				await service.start();
+				await service.stop();
+
+				expect(collectCalls).toHaveLength(0);
+			});
+
+			test("continues collecting remaining producers when one throws", async () => {
+				const collected: string[] = [];
+
+				ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
+					makePlatformComponent(true, async fn => {
+						await fn();
+					})
+				);
+
+				MetricsProducerFactory.register("bad", () =>
+					makeProducer({
+						collect: async () => {
+							throw new Error("tenant error");
+						}
+					})
+				);
+				MetricsProducerFactory.register("good", () =>
+					makeProducer({
+						collect: async () => {
+							collected.push("good");
+						}
+					})
+				);
+
+				const service = new MetricsCollectorService({
+					config: { intervalMs: 60_000 },
+					platformComponentType: CUSTOM_PLATFORM_TYPE
+				});
+				await service.start();
+				await service.stop();
+
+				expect(collected).toContain("good");
+			});
 		});
 	});
 });
