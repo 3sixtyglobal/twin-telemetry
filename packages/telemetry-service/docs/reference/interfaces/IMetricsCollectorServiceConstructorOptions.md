@@ -8,26 +8,20 @@ The options for the metrics collector service constructor.
 
 > `optional` **loggingComponentType?**: `string`
 
-The type of the logging component to use.
-
-#### Default
-
-```ts
-logging
-```
+The type of the logging component to use, can be undefined for no logging.
 
 ***
 
-### tenantComponentType? {#tenantcomponenttype}
+### platformComponentType? {#platformcomponenttype}
 
-> `optional` **tenantComponentType?**: `string`
+> `optional` **platformComponentType?**: `string`
 
-The type of the tenant component to use for partitioned producers.
+The type of the platform component to use for partitioned producers.
 
 #### Default
 
 ```ts
-tenant
+platform
 ```
 
 ***
