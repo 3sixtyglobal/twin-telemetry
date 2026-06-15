@@ -22,16 +22,24 @@ async function makeConnector(): Promise<OpenTelemetryTelemetryConnector> {
 }
 
 describe("OpenTelemetryTelemetryConnector", () => {
+	let metricStorage: MemoryEntityStorageConnector<TelemetryMetric>;
+	let metricValueStorage: MemoryEntityStorageConnector<TelemetryMetricValue>;
+
 	beforeEach(() => {
 		initSchema();
-		const metricStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
+		metricStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
 			entitySchema: nameof<TelemetryMetric>()
 		});
-		const metricValueStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
+		metricValueStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
 			entitySchema: nameof<TelemetryMetricValue>()
 		});
 		EntityStorageConnectorFactory.register("telemetry-metric", () => metricStorage);
 		EntityStorageConnectorFactory.register("telemetry-metric-value", () => metricValueStorage);
+	});
+
+	afterEach(async () => {
+		await metricStorage.teardown();
+		await metricValueStorage.teardown();
 	});
 
 	test("can construct", async () => {
