@@ -28,10 +28,12 @@ describe("OpenTelemetryTelemetryConnector", () => {
 	beforeEach(() => {
 		initSchema();
 		metricStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
-			entitySchema: nameof<TelemetryMetric>()
+			entitySchema: nameof<TelemetryMetric>(),
+			config: { storageKey: "telemetry-metric" }
 		});
 		metricValueStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
-			entitySchema: nameof<TelemetryMetricValue>()
+			entitySchema: nameof<TelemetryMetricValue>(),
+			config: { storageKey: "telemetry-metric-value" }
 		});
 		EntityStorageConnectorFactory.register("telemetry-metric", () => metricStorage);
 		EntityStorageConnectorFactory.register("telemetry-metric-value", () => metricValueStorage);

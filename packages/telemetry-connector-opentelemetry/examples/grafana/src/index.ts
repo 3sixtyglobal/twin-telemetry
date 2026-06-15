@@ -21,13 +21,18 @@ const EMIT_INTERVAL_MS = 2000;
 initSchema();
 EntityStorageConnectorFactory.register(
 	"telemetry-metric",
-	() => new MemoryEntityStorageConnector<TelemetryMetric>({ entitySchema: "TelemetryMetric" })
+	() =>
+		new MemoryEntityStorageConnector<TelemetryMetric>({
+			entitySchema: "TelemetryMetric",
+			config: { storageKey: "telemetry-metric" }
+		})
 );
 EntityStorageConnectorFactory.register(
 	"telemetry-metric-value",
 	() =>
 		new MemoryEntityStorageConnector<TelemetryMetricValue>({
-			entitySchema: "TelemetryMetricValue"
+			entitySchema: "TelemetryMetricValue",
+			config: { storageKey: "telemetry-metric-value" }
 		})
 );
 
