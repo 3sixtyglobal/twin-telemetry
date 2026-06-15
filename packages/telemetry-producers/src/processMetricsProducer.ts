@@ -52,6 +52,7 @@ export class ProcessMetricsProducer implements IMetricsProducer {
 
 	/**
 	 * Register all process metrics with the telemetry component.
+	 * @returns A promise that resolves when all process metrics have been registered.
 	 */
 	public async register(): Promise<void> {
 		await MetricHelper.createMetric(this._telemetry, {
@@ -82,6 +83,7 @@ export class ProcessMetricsProducer implements IMetricsProducer {
 
 	/**
 	 * Collect and push current process metric values.
+	 * @returns A promise that resolves when all process metric values have been recorded.
 	 */
 	public async collect(): Promise<void> {
 		const mem = process.memoryUsage();

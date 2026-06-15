@@ -16,14 +16,14 @@ export interface IMetricsProducer extends IComponent {
 	/**
 	 * Register every metric this producer emits with the telemetry component.
 	 * Called once when the orchestrating service starts.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when all metrics have been registered.
 	 */
 	register(): Promise<void>;
 
 	/**
 	 * Push the current values for every metric this producer emits.
 	 * Called on every poll cycle.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when all metric values have been recorded.
 	 */
 	collect(): Promise<void>;
 }

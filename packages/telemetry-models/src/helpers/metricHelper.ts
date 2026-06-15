@@ -13,6 +13,7 @@ export class MetricHelper {
 	 * Create multiple metrics if they don't already exist, swallowing any already exists errors.
 	 * @param telemetryComponent The telemetry component to use for creating the metrics.
 	 * @param metrics The telemetry metrics to create.
+	 * @returns A promise that resolves when all metrics have been created or confirmed to exist.
 	 */
 	public static async createMetrics(
 		telemetryComponent: ITelemetryComponent | undefined,
@@ -29,6 +30,7 @@ export class MetricHelper {
 	 * Create a metric if it doesn't already exist, swallowing any already exists errors.
 	 * @param telemetryComponent The telemetry component to use for creating the metric.
 	 * @param metric The telemetry metric to create.
+	 * @returns A promise that resolves when the metric has been created or confirmed to exist.
 	 */
 	public static async createMetric(
 		telemetryComponent: ITelemetryComponent | undefined,
@@ -51,6 +53,7 @@ export class MetricHelper {
 	 * @param telemetryComponent The telemetry component to use for incrementing the metric.
 	 * @param id The metric ID.
 	 * @param customData Optional custom data for the increment.
+	 * @returns A promise that resolves when the increment has been recorded or the error swallowed.
 	 */
 	public static async metricIncrement(
 		telemetryComponent: ITelemetryComponent | undefined,
@@ -72,6 +75,7 @@ export class MetricHelper {
 	 * @param telemetryComponent The telemetry component to use for decrementing the metric.
 	 * @param id The metric ID.
 	 * @param customData Optional custom data for the decrement.
+	 * @returns A promise that resolves when the decrement has been recorded or the error swallowed.
 	 */
 	public static async metricDecrement(
 		telemetryComponent: ITelemetryComponent | undefined,
@@ -94,6 +98,7 @@ export class MetricHelper {
 	 * @param id The metric ID.
 	 * @param value The metric value to set.
 	 * @param customData Optional custom data for setting the value.
+	 * @returns A promise that resolves when the value has been recorded or the error swallowed.
 	 */
 	public static async metricValue(
 		telemetryComponent: ITelemetryComponent | undefined,

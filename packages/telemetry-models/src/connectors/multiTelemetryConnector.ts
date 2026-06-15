@@ -52,7 +52,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been created on all connectors.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(metric), metric);
@@ -90,7 +90,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Update metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been updated on all connectors.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
 		Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(metric), metric);
@@ -130,7 +130,7 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been removed from all connectors.
 	 */
 	public async removeMetric(id: string): Promise<void> {
 		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);

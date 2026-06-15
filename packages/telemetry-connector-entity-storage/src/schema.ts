@@ -6,7 +6,7 @@ import { TelemetryMetric } from "./entities/telemetryMetric.js";
 import { TelemetryMetricValue } from "./entities/telemetryMetricValue.js";
 
 /**
- * Initialize the schema for the telemetry connector entity storage.
+ * Registers entity schemas for telemetry connector entity storage.
  */
 export function initSchema(): void {
 	EntitySchemaFactory.register(nameof<TelemetryMetric>(), () =>

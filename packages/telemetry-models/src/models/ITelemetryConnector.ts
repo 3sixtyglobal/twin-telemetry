@@ -13,7 +13,7 @@ export interface ITelemetryConnector extends IComponent {
 	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been created.
 	 */
 	createMetric(metric: ITelemetryMetric): Promise<void>;
 
@@ -30,7 +30,7 @@ export interface ITelemetryConnector extends IComponent {
 	/**
 	 * Update metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been updated.
 	 */
 	updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void>;
 
@@ -50,7 +50,7 @@ export interface ITelemetryConnector extends IComponent {
 	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric and all its values have been removed.
 	 */
 	removeMetric(id: string): Promise<void>;
 

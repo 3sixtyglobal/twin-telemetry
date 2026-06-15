@@ -91,7 +91,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been created.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		Guards.object<ITelemetryMetric>(
@@ -178,7 +178,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Update metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been updated.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
 		Guards.object<ITelemetryMetric>(
@@ -244,7 +244,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @param id The id of the metric.
 	 * @param value The value for the add operation.
 	 * @param customData The custom data for the metric value.
-	 * @returns Nothing.
+	 * @returns The id of the newly created metric value entry.
 	 */
 	public async addMetricValue(
 		id: string,
@@ -346,7 +346,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric and all its values have been removed.
 	 */
 	public async removeMetric(id: string): Promise<void> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
@@ -442,7 +442,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Query the metrics.
+	 * Query the metric values.
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
@@ -450,7 +450,6 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
-	 * @throws NotImplementedError if the implementation does not support retrieval.
 	 */
 	public async queryValues(
 		id: string,

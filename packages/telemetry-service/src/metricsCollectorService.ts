@@ -79,6 +79,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 	/**
 	 * Start the service: register all producers and begin the polling cycle.
+	 * @returns A promise that resolves after the first collection tick has completed.
 	 */
 	public async start(): Promise<void> {
 		if (this._running) {
@@ -98,6 +99,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 	/**
 	 * Stop the service and cancel the pending timer.
+	 * @returns A promise that resolves when the service has stopped.
 	 */
 	public async stop(): Promise<void> {
 		this._running = false;
@@ -110,6 +112,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	/**
 	 * One collection cycle across all registered producers.
 	 * Public so tests can drive it deterministically.
+	 * @returns A promise that resolves when all producers have been polled and the next tick scheduled.
 	 */
 	public async tick(): Promise<void> {
 		const names = MetricsProducerFactory.names();
@@ -135,7 +138,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	}
 
 	/**
-	 * Schedule the next tick. Re-schedules itself after each tick completes.
+	 * Schedule the next tick after the configured interval.
 	 * @internal
 	 */
 	private scheduleNext(): void {

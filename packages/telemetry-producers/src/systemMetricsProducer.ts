@@ -60,6 +60,7 @@ export class SystemMetricsProducer implements IMetricsProducer {
 
 	/**
 	 * Register all system metrics with the telemetry component.
+	 * @returns A promise that resolves when all system metrics have been registered.
 	 */
 	public async register(): Promise<void> {
 		await MetricHelper.createMetric(this._telemetry, {
@@ -102,6 +103,7 @@ export class SystemMetricsProducer implements IMetricsProducer {
 
 	/**
 	 * Collect and push current system metric values.
+	 * @returns A promise that resolves when all system metric values have been recorded.
 	 */
 	public async collect(): Promise<void> {
 		const currCpuTimes = os.cpus().map(c => c.times);

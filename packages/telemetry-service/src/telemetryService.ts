@@ -60,7 +60,7 @@ export class TelemetryService implements ITelemetryComponent {
 	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been created.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		Guards.object<ITelemetryMetric>(TelemetryService.CLASS_NAME, nameof(metric), metric);
@@ -97,7 +97,7 @@ export class TelemetryService implements ITelemetryComponent {
 	/**
 	 * Update metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been updated.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
 		Guards.object<ITelemetryMetric>(TelemetryService.CLASS_NAME, nameof(metric), metric);
@@ -125,7 +125,7 @@ export class TelemetryService implements ITelemetryComponent {
 	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric and all its values have been removed.
 	 */
 	public async removeMetric(id: string): Promise<void> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);

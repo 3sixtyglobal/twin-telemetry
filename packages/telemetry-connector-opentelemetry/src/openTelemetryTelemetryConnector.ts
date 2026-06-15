@@ -98,7 +98,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Initialise the MeterProvider and configured exporters.
 	 * @param nodeLoggingComponentType The node logging component type.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the MeterProvider is running.
 	 */
 	public async start(nodeLoggingComponentType?: string): Promise<void> {
 		if (!Is.undefined(this._meterProvider)) {
@@ -148,7 +148,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * Shut down the MeterProvider and release resources.
 	 * Calling stop() on a connector that has not been started is a no-op.
 	 * @param nodeLoggingComponentType The node logging component type.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the MeterProvider has shut down.
 	 */
 	public async stop(nodeLoggingComponentType?: string): Promise<void> {
 		if (!Is.undefined(this._meterProvider)) {
@@ -172,7 +172,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * The definition is always persisted via the inner entity-storage connector.
 	 * If the MeterProvider is running the corresponding OTEL instrument is also registered.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been persisted and the OTEL instrument registered.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		try {
@@ -232,7 +232,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * are NOT propagated to the registered MeterProvider and will not appear at the
 	 * OTEL backend (Prometheus, OTLP, etc.).
 	 * @param metric The metric details (type cannot be changed).
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the persisted metadata has been updated.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
 		return this._inner.updateMetric(metric);
@@ -297,7 +297,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	 * of the process. Re-creating a metric with the same id but a different MetricType
 	 * is therefore not safe.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric and its value history have been removed.
 	 */
 	public async removeMetric(id: string): Promise<void> {
 		this._instruments.delete(id);
