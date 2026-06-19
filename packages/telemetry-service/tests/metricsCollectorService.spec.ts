@@ -24,7 +24,8 @@ function makePlatformComponent(
 	return {
 		className: () => "mock-platform-component",
 		isMultiTenant: () => isMultiTenant,
-		execute
+		execute,
+		getLocalOriginContext: async () => undefined
 	};
 }
 

@@ -9,7 +9,8 @@ describe("TelemetryService", () => {
 		ComponentFactory.register("platform", () => ({
 			className: () => "mock-platform",
 			isMultiTenant: () => false,
-			execute: async (fn: () => Promise<void>) => fn()
+			execute: async (fn: () => Promise<void>) => fn(),
+			getLocalOriginContext: async () => undefined
 		}));
 	});
 
