@@ -38,6 +38,8 @@ The telemetry metrics to create.
 
 `Promise`\<`void`\>
 
+A promise that resolves when all metrics have been created or confirmed to exist.
+
 ***
 
 ### createMetric() {#createmetric}
@@ -63,6 +65,8 @@ The telemetry metric to create.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when the metric has been created or confirmed to exist.
 
 ***
 
@@ -94,6 +98,8 @@ Optional custom data for the increment.
 
 `Promise`\<`void`\>
 
+A promise that resolves when the increment has been recorded or the error swallowed.
+
 ***
 
 ### metricDecrement() {#metricdecrement}
@@ -123,6 +129,8 @@ Optional custom data for the decrement.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when the decrement has been recorded or the error swallowed.
 
 ***
 
@@ -159,3 +167,5 @@ Optional custom data for setting the value.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when the value has been recorded or the error swallowed.

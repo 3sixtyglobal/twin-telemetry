@@ -26,7 +26,7 @@ Called once when the orchestrating service starts.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when all metrics have been registered.
 
 ***
 
@@ -41,4 +41,4 @@ Called on every poll cycle.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when all metric values have been recorded.

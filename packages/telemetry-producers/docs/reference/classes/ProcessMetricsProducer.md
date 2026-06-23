@@ -64,6 +64,8 @@ Register all process metrics with the telemetry component.
 
 `Promise`\<`void`\>
 
+A promise that resolves when all process metrics have been registered.
+
 #### Implementation of
 
 `IMetricsProducer.register`
@@ -79,6 +81,8 @@ Collect and push current process metric values.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when all process metric values have been recorded.
 
 #### Implementation of
 

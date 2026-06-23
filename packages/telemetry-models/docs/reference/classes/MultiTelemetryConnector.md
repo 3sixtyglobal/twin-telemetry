@@ -72,7 +72,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been created on all connectors.
 
 #### Implementation of
 
@@ -124,7 +124,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been updated on all connectors.
 
 #### Implementation of
 
@@ -186,7 +186,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been removed from all connectors.
 
 #### Implementation of
 

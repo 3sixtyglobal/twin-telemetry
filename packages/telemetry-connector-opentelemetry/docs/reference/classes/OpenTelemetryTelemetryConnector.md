@@ -87,7 +87,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the MeterProvider is running.
 
 #### Implementation of
 
@@ -114,7 +114,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the MeterProvider has shut down.
 
 #### Implementation of
 
@@ -142,7 +142,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been persisted and the OTEL instrument registered.
 
 #### Implementation of
 
@@ -198,7 +198,7 @@ The metric details (type cannot be changed).
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the persisted metadata has been updated.
 
 #### Implementation of
 
@@ -269,7 +269,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric and its value history have been removed.
 
 #### Implementation of
 

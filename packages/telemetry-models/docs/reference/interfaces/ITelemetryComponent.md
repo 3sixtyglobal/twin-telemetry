@@ -26,7 +26,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been created.
 
 ***
 
@@ -70,7 +70,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been updated.
 
 ***
 
@@ -124,7 +124,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric and all its values have been removed.
 
 ***
 

@@ -62,7 +62,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been created.
 
 #### Implementation of
 
@@ -114,7 +114,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been updated.
 
 #### Implementation of
 
@@ -150,7 +150,7 @@ The custom data for the update operation.
 
 `Promise`\<`string`\>
 
-The created metric value id..
+The created metric value id.
 
 #### Implementation of
 
@@ -176,7 +176,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric and all its values have been removed.
 
 #### Implementation of
 

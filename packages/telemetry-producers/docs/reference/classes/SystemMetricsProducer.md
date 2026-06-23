@@ -64,6 +64,8 @@ Register all system metrics with the telemetry component.
 
 `Promise`\<`void`\>
 
+A promise that resolves when all system metrics have been registered.
+
 #### Implementation of
 
 `IMetricsProducer.register`
@@ -79,6 +81,8 @@ Collect and push current system metric values.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when all system metric values have been recorded.
 
 #### Implementation of
 

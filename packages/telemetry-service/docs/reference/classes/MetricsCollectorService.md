@@ -26,6 +26,10 @@ The options for the service.
 
 `MetricsCollectorService`
 
+#### Throws
+
+If intervalMs is not a finite positive number.
+
 ## Properties
 
 ### CLASS\_NAME {#class_name}
@@ -64,6 +68,8 @@ Start the service: register all producers and begin the polling cycle.
 
 `Promise`\<`void`\>
 
+A promise that resolves after the first collection tick has completed.
+
 #### Implementation of
 
 `IMetricsCollectorComponent.start`
@@ -79,6 +85,8 @@ Stop the service and cancel the pending timer.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when the service has stopped.
 
 #### Implementation of
 
@@ -96,3 +104,5 @@ Public so tests can drive it deterministically.
 #### Returns
 
 `Promise`\<`void`\>
+
+A promise that resolves when all producers have been polled and the next tick scheduled.

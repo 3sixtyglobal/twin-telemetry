@@ -80,7 +80,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been created.
 
 #### Implementation of
 
@@ -132,7 +132,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been updated.
 
 #### Implementation of
 
@@ -168,7 +168,7 @@ The custom data for the metric value.
 
 `Promise`\<`string`\>
 
-Nothing.
+The id of the newly created metric value entry.
 
 #### Implementation of
 
@@ -194,7 +194,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric and all its values have been removed.
 
 #### Implementation of
 
@@ -249,7 +249,7 @@ NotImplementedError if the implementation does not support retrieval.
 
 > **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `entities`: `ITelemetryMetricValue`[]; `cursor?`: `string`; \}\>
 
-Query the metrics.
+Query the metric values.
 
 #### Parameters
 
@@ -289,10 +289,6 @@ Limit the number of entities to return.
 
 All the entities for the storage matching the conditions,
 and a cursor which can be used to request more entities.
-
-#### Throws
-
-NotImplementedError if the implementation does not support retrieval.
 
 #### Implementation of
 
