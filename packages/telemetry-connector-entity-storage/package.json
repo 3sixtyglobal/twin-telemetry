@@ -1,6 +1,6 @@
 {
 	"name": "@twin.org/telemetry-connector-entity-storage",
-	"version": "0.0.3-next.13",
+	"version": "0.9.0-next.0",
 	"description": "Entity storage connector for persisting telemetry metrics.",
 	"repository": {
 		"type": "git",
@@ -28,18 +28,18 @@
 		"dist:no-test": "npm run clean && npm run build && npm run test:build"
 	},
 	"dependencies": {
-		"@twin.org/core": "next",
-		"@twin.org/entity": "next",
-		"@twin.org/entity-storage-models": "next",
-		"@twin.org/logging-models": "next",
-		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.0.3-next.13"
+		"@twin.org/core": "0.9.0-next.1",
+		"@twin.org/entity": "0.9.0-next.1",
+		"@twin.org/entity-storage-models": "0.9.0-next.1",
+		"@twin.org/logging-models": "0.9.0-next.1",
+		"@twin.org/nameof": "0.9.0-next.1",
+		"@twin.org/telemetry-models": "0.9.0-next.0"
 	},
 	"devDependencies": {
-		"@twin.org/entity-storage-connector-memory": "next",
-		"@twin.org/nameof-transformer": "next",
-		"@twin.org/nameof-vitest-plugin": "next",
-		"@twin.org/validate-locales": "next",
+		"@twin.org/entity-storage-connector-memory": "0.9.0-next.1",
+		"@twin.org/nameof-transformer": "0.9.0-next.1",
+		"@twin.org/nameof-vitest-plugin": "0.9.0-next.1",
+		"@twin.org/validate-locales": "0.9.0-next.1",
 		"@vitest/coverage-v8": "4.1.9",
 		"copyfiles": "2.4.1",
 		"dotenv": "17.4.2",
