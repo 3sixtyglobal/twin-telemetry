@@ -52,6 +52,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	/**
 	 * Create a new instance of MetricsCollectorService.
 	 * @param options The options for the service.
+	 * @throws {RangeError} If intervalMs is not a finite positive number.
 	 */
 	constructor(options?: IMetricsCollectorServiceConstructorOptions) {
 		this._loggingComponent = ComponentFactory.getIfExists<ILoggingComponent>(

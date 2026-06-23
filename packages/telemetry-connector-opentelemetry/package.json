@@ -29,7 +29,7 @@
 	},
 	"dependencies": {
 		"@opentelemetry/api": "1.9.1",
-		"@opentelemetry/sdk-metrics": "2.7.1",
+		"@opentelemetry/sdk-metrics": "2.8.0",
 		"@twin.org/core": "next",
 		"@twin.org/entity-storage-models": "next",
 		"@twin.org/logging-models": "next",
@@ -46,21 +46,21 @@
 		}
 	},
 	"devDependencies": {
-		"@opentelemetry/exporter-prometheus": "0.218.0",
+		"@opentelemetry/exporter-prometheus": "0.219.0",
 		"@twin.org/entity-storage-connector-memory": "next",
 		"@twin.org/nameof-transformer": "next",
 		"@twin.org/nameof-vitest-plugin": "next",
 		"@twin.org/validate-locales": "next",
-		"@vitest/coverage-v8": "4.1.6",
+		"@vitest/coverage-v8": "4.1.9",
 		"copyfiles": "2.4.1",
 		"dotenv": "17.4.2",
 		"rimraf": "6.1.3",
 		"ts-patch": "4.0.1",
 		"nodemon": "3.1.14",
 		"typedoc": "0.28.19",
-		"typedoc-plugin-markdown": "4.11.0",
+		"typedoc-plugin-markdown": "4.12.0",
 		"typescript": "6.0.3",
-		"vitest": "4.1.6"
+		"vitest": "4.1.9"
 	},
 	"main": "./dist/es/index.js",
 	"types": "./dist/types/index.d.ts",
