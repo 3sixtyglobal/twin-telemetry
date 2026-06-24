@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.0...telemetry-rest-client-v0.9.0) (2026-06-24)
+
+
+### Features
+
+* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+
 ## [0.9.0-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.0-next.0...telemetry-rest-client-v0.9.0-next.1) (2026-06-23)
 
 
