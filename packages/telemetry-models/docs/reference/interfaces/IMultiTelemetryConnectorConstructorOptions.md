@@ -4,7 +4,7 @@ The options for the multi telemetry connector constructor.
 
 ## Properties
 
-### telemetryConnectorTypes
+### telemetryConnectorTypes {#telemetryconnectortypes}
 
 > **telemetryConnectorTypes**: `string`[]
 

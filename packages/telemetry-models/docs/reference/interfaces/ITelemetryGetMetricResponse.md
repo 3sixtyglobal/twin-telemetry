@@ -4,7 +4,7 @@ Get a telemetry metric response.
 
 ## Properties
 
-### body
+### body {#body}
 
 > **body**: `object`
 

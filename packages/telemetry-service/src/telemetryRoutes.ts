@@ -269,7 +269,7 @@ export function generateRestRoutesTelemetry(
 					id: "telemetryListRequestExample",
 					request: {
 						query: {
-							type: MetricType.Counter
+							type: MetricType.Counter.toString()
 						}
 					}
 				}
@@ -558,7 +558,7 @@ export async function telemetryMetricList(
 	const itemsAndCursor = await component.query(
 		Coerce.number(request?.query?.type) as MetricType,
 		request?.query?.cursor,
-		Coerce.number(request?.query?.pageSize)
+		Coerce.number(request?.query?.limit)
 	);
 
 	return {
@@ -593,7 +593,7 @@ export async function telemetryMetricValueList(
 		Coerce.number(request?.query?.timeStart),
 		Coerce.number(request?.query?.timeEnd),
 		request?.query?.cursor,
-		Coerce.number(request?.query?.pageSize)
+		Coerce.number(request?.query?.limit)
 	);
 
 	return {

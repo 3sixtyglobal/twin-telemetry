@@ -4,7 +4,7 @@ Get the a list of the telemetry values.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 
@@ -18,32 +18,32 @@ The id of the metric.
 
 ***
 
-### query?
+### query? {#query}
 
-> `optional` **query**: `object`
+> `optional` **query?**: `object`
 
 The query parameters.
 
 #### timeStart?
 
-> `optional` **timeStart**: `string` \| `number`
+> `optional` **timeStart?**: `string`
 
 The start time of the metrics to retrieve as a timestamp in ms.
 
 #### timeEnd?
 
-> `optional` **timeEnd**: `string` \| `number`
+> `optional` **timeEnd?**: `string`
 
 The end time of the metrics to retrieve as a timestamp in ms.
 
 #### cursor?
 
-> `optional` **cursor**: `string`
+> `optional` **cursor?**: `string`
 
 The optional cursor to get next chunk.
 
-#### pageSize?
+#### limit?
 
-> `optional` **pageSize**: `string` \| `number`
+> `optional` **limit?**: `string`
 
-The maximum number of entities in a page.
+Limit the number of entities to return.

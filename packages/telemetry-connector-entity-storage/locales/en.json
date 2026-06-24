@@ -3,10 +3,10 @@
 		"entityStorageTelemetryConnector": {
 			"metricNotFound": "The metric could not be found \"{notFoundId}\"",
 			"metricAlreadyExists": "The metric already exists \"{existingId}\"",
-			"metricValueNotFound": "The metric value could not be found \"{notFoundId}\"",
 			"counterIncOnly": "A counter metric can only be incremented, or added to with an integer",
 			"upDownCounterIncOrDecOnly": "An up/down counter metric can only be incremented, decremented or adjusted with an integer",
-			"gaugeNoIncDec": "A gauge can not be incremented or decremented"
+			"gaugeNoIncDec": "A gauge can not be incremented or decremented",
+			"maxHistoryMustBePositiveInteger": "The maxHistory option must be a positive integer"
 		}
 	},
 	"info": {

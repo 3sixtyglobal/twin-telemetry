@@ -1,6 +1,5 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { MetricType } from "../metricType";
 
 /**
  * Get the a list of the telemetry metrics.
@@ -13,7 +12,7 @@ export interface ITelemetryListRequest {
 		/**
 		 * The type of the metric.
 		 */
-		type?: MetricType;
+		type?: string;
 
 		/**
 		 * The optional cursor to get next chunk.
@@ -21,8 +20,8 @@ export interface ITelemetryListRequest {
 		cursor?: string;
 
 		/**
-		 * The maximum number of entities in a page.
+		 * Limit the number of entities to return.
 		 */
-		pageSize?: number | string;
+		limit?: string;
 	};
 }

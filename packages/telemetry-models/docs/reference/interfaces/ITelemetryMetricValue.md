@@ -4,7 +4,7 @@ Interface describing a telemetry metric value.
 
 ## Properties
 
-### id
+### id {#id}
 
 > **id**: `string`
 
@@ -12,7 +12,7 @@ The id of the metric value.
 
 ***
 
-### ts
+### ts {#ts}
 
 > **ts**: `number`
 
@@ -20,7 +20,7 @@ The timestamp of the metric.
 
 ***
 
-### value
+### value {#value}
 
 > **value**: `number`
 
@@ -28,9 +28,9 @@ The value of the metric.
 
 ***
 
-### customData?
+### customData? {#customdata}
 
-> `optional` **customData**: `object`
+> `optional` **customData?**: `object`
 
 The custom data for the metric value.
 

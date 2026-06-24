@@ -18,19 +18,33 @@ Class for performing telemetry operations to nowhere.
 
 ## Properties
 
-### CLASS\_NAME
+### CLASS\_NAME {#class_name}
 
-> `readonly` **CLASS\_NAME**: `string`
+> `readonly` `static` **CLASS\_NAME**: `string`
 
 Runtime name for the class.
 
-#### Implementation of
-
-`ITelemetryConnector.CLASS_NAME`
-
 ## Methods
 
-### createMetric()
+### className() {#classname}
+
+> **className**(): `string`
+
+Returns the class name of the component.
+
+#### Returns
+
+`string`
+
+The class name of the component.
+
+#### Implementation of
+
+`ITelemetryConnector.className`
+
+***
+
+### createMetric() {#createmetric}
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
@@ -48,7 +62,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been created.
 
 #### Implementation of
 
@@ -56,7 +70,7 @@ Nothing.
 
 ***
 
-### getMetric()
+### getMetric() {#getmetric}
 
 > **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md); \}\>
 
@@ -82,7 +96,7 @@ The metric details and it's most recent value.
 
 ***
 
-### updateMetric()
+### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>
 
@@ -100,7 +114,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric has been updated.
 
 #### Implementation of
 
@@ -108,7 +122,7 @@ Nothing.
 
 ***
 
-### addMetricValue()
+### addMetricValue() {#addmetricvalue}
 
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
@@ -124,9 +138,9 @@ The id of the metric.
 
 ##### value
 
-The value for the update operation.
+`number` \| [`MetricCounterOperation`](../type-aliases/MetricCounterOperation.md)
 
-`number` | `"inc"` | `"dec"`
+The value for the update operation.
 
 ##### customData?
 
@@ -136,7 +150,7 @@ The custom data for the update operation.
 
 `Promise`\<`string`\>
 
-The created metric value id..
+The created metric value id.
 
 #### Implementation of
 
@@ -144,7 +158,7 @@ The created metric value id..
 
 ***
 
-### removeMetric()
+### removeMetric() {#removemetric}
 
 > **removeMetric**(`id`): `Promise`\<`void`\>
 
@@ -162,7 +176,7 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-Nothing.
+A promise that resolves when the metric and all its values have been removed.
 
 #### Implementation of
 
@@ -170,9 +184,9 @@ Nothing.
 
 ***
 
-### query()
+### query() {#query}
 
-> **query**(`type?`, `cursor?`, `pageSize?`): `Promise`\<\{ `entities`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)[]; `cursor?`: `string`; \}\>
+> **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)[]; `cursor?`: `string`; \}\>
 
 Query the metrics.
 
@@ -188,13 +202,13 @@ The type of the metric.
 
 `string`
 
-The cursor to request the next page of entities.
+The cursor to request the next chunk of entities.
 
-##### pageSize?
+##### limit?
 
 `number`
 
-The maximum number of entities in a page.
+Limit the number of entities to return.
 
 #### Returns
 
@@ -213,9 +227,9 @@ NotImplementedError if the implementation does not support retrieval.
 
 ***
 
-### queryValues()
+### queryValues() {#queryvalues}
 
-> **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `pageSize?`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `entities`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md)[]; `cursor?`: `string`; \}\>
+> **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `entities`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md)[]; `cursor?`: `string`; \}\>
 
 Query the metric values.
 
@@ -243,13 +257,13 @@ The inclusive time as the end of the metric entries.
 
 `string`
 
-The cursor to request the next page of entities.
+The cursor to request the next chunk of entities.
 
-##### pageSize?
+##### limit?
 
 `number`
 
-The maximum number of entities in a page.
+Limit the number of entities to return.
 
 #### Returns
 

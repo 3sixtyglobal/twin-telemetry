@@ -4,7 +4,7 @@ Remove a telemetry metric and it's values.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 

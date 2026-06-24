@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: twin-telemetry
+    static_configs:
+      # host.docker.internal resolves to the Docker host on macOS and Windows.
+      # On Linux add --add-host=host.docker.internal:host-gateway to the
+      # prometheus container (already done in docker-compose.yml).
+      - targets:
+          - host.docker.internal:9464
+    relabel_configs:
+      - target_label: instance
+        replacement: demo

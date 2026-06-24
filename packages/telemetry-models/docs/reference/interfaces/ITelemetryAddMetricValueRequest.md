@@ -4,7 +4,7 @@ Add a telemetry metric value.
 
 ## Properties
 
-### pathParams
+### pathParams {#pathparams}
 
 > **pathParams**: `object`
 
@@ -18,7 +18,7 @@ The id of the metric.
 
 ***
 
-### body
+### body {#body}
 
 > **body**: `object`
 
@@ -26,13 +26,13 @@ The data to be used in the update.
 
 #### value
 
-> **value**: `number` \| `"inc"` \| `"dec"`
+> **value**: `number` \| [`MetricCounterOperation`](../type-aliases/MetricCounterOperation.md)
 
 The value for the update operation.
 
 #### customData?
 
-> `optional` **customData**: `object`
+> `optional` **customData?**: `object`
 
 The custom data for the update operation.
 

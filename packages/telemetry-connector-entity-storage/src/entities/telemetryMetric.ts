@@ -36,4 +36,10 @@ export class TelemetryMetric {
 	 */
 	@property({ type: "string", optional: true })
 	public description?: string;
+
+	/**
+	 * The maximum number of values to retain.
+	 */
+	@property({ type: "integer", optional: true })
+	public maxHistory?: number;
 }

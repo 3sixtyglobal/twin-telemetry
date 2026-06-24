@@ -1,9 +1,10 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IComponent } from "@twin.org/core";
-import type { ITelemetryMetric } from "./ITelemetryMetric";
-import type { ITelemetryMetricValue } from "./ITelemetryMetricValue";
-import type { MetricType } from "./metricType";
+import type { ITelemetryMetric } from "./ITelemetryMetric.js";
+import type { ITelemetryMetricValue } from "./ITelemetryMetricValue.js";
+import type { MetricCounterOperation } from "./metricCounterOperation.js";
+import type { MetricType } from "./metricType.js";
 
 /**
  * Interface describing a telemetry connector.
@@ -12,7 +13,7 @@ export interface ITelemetryConnector extends IComponent {
 	/**
 	 * Create a new metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been created.
 	 */
 	createMetric(metric: ITelemetryMetric): Promise<void>;
 
@@ -29,7 +30,7 @@ export interface ITelemetryConnector extends IComponent {
 	/**
 	 * Update metric.
 	 * @param metric The metric details.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric has been updated.
 	 */
 	updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void>;
 
@@ -42,22 +43,22 @@ export interface ITelemetryConnector extends IComponent {
 	 */
 	addMetricValue(
 		id: string,
-		value: "inc" | "dec" | number,
+		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string>;
 
 	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
-	 * @returns Nothing.
+	 * @returns A promise that resolves when the metric and all its values have been removed.
 	 */
 	removeMetric(id: string): Promise<void>;
 
 	/**
 	 * Query the metrics.
 	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -65,7 +66,7 @@ export interface ITelemetryConnector extends IComponent {
 	query(
 		type?: MetricType,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metrics.
@@ -83,8 +84,8 @@ export interface ITelemetryConnector extends IComponent {
 	 * @param id The id of the metric.
 	 * @param timeStart The inclusive time as the start of the metric entries.
 	 * @param timeEnd The inclusive time as the end of the metric entries.
-	 * @param cursor The cursor to request the next page of entities.
-	 * @param pageSize The maximum number of entities in a page.
+	 * @param cursor The cursor to request the next chunk of entities.
+	 * @param limit Limit the number of entities to return.
 	 * @returns All the entities for the storage matching the conditions,
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
@@ -94,7 +95,7 @@ export interface ITelemetryConnector extends IComponent {
 		timeStart?: number,
 		timeEnd?: number,
 		cursor?: string,
-		pageSize?: number
+		limit?: number
 	): Promise<{
 		/**
 		 * The metric details.

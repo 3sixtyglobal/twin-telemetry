@@ -1,6 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { MetricType } from "./metricType";
+import type { MetricType } from "./metricType.js";
 
 /**
  * Interface describing a telemetry metric.
@@ -30,4 +30,10 @@ export interface ITelemetryMetric {
 	 * The unit the metric describes.
 	 */
 	unit?: string;
+
+	/**
+	 * The maximum number of values to retain; oldest are trimmed on each addMetricValue call.
+	 * Unlimited when absent.
+	 */
+	maxHistory?: number;
 }

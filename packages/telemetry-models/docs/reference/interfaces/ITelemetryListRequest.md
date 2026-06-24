@@ -4,26 +4,26 @@ Get the a list of the telemetry metrics.
 
 ## Properties
 
-### query?
+### query? {#query}
 
-> `optional` **query**: `object`
+> `optional` **query?**: `object`
 
 The query parameters.
 
 #### type?
 
-> `optional` **type**: [`MetricType`](../type-aliases/MetricType.md)
+> `optional` **type?**: `string`
 
 The type of the metric.
 
 #### cursor?
 
-> `optional` **cursor**: `string`
+> `optional` **cursor?**: `string`
 
 The optional cursor to get next chunk.
 
-#### pageSize?
+#### limit?
 
-> `optional` **pageSize**: `string` \| `number`
+> `optional` **limit?**: `string`
 
-The maximum number of entities in a page.
+Limit the number of entities to return.

@@ -4,9 +4,9 @@ The options for the telemetry service constructor.
 
 ## Properties
 
-### telemetryConnectorType?
+### telemetryConnectorType? {#telemetryconnectortype}
 
-> `optional` **telemetryConnectorType**: `string`
+> `optional` **telemetryConnectorType?**: `string`
 
 The type of the telemetry connector to use.
 
@@ -14,4 +14,18 @@ The type of the telemetry connector to use.
 
 ```ts
 telemetry
+```
+
+***
+
+### platformComponentType? {#platformcomponenttype}
+
+> `optional` **platformComponentType?**: `string`
+
+The type of the platform component to use for partition iteration.
+
+#### Default
+
+```ts
+platform
 ```

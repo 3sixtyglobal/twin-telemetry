@@ -10,4 +10,10 @@ export interface ITelemetryServiceConstructorOptions {
 	 * @default telemetry
 	 */
 	telemetryConnectorType?: string;
+
+	/**
+	 * The type of the platform component to use for partition iteration.
+	 * @default platform
+	 */
+	platformComponentType?: string;
 }

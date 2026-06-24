@@ -2,10 +2,13 @@
 
 ## Classes
 
+- [MetricsCollectorService](classes/MetricsCollectorService.md)
 - [TelemetryService](classes/TelemetryService.md)
 
 ## Interfaces
 
+- [IMetricsCollectorServiceConfig](interfaces/IMetricsCollectorServiceConfig.md)
+- [IMetricsCollectorServiceConstructorOptions](interfaces/IMetricsCollectorServiceConstructorOptions.md)
 - [ITelemetryServiceConstructorOptions](interfaces/ITelemetryServiceConstructorOptions.md)
 
 ## Variables

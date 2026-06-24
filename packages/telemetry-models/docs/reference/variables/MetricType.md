@@ -4,21 +4,21 @@
 
 The types of metrics.
 
-## Type declaration
+## Type Declaration
 
-### Counter
+### Counter {#counter}
 
 > `readonly` **Counter**: `0` = `0`
 
 Counter.
 
-### IncDecCounter
+### IncDecCounter {#incdeccounter}
 
 > `readonly` **IncDecCounter**: `1` = `1`
 
 Increment Decrement Counter.
 
-### Gauge
+### Gauge {#gauge}
 
 > `readonly` **Gauge**: `2` = `2`
 

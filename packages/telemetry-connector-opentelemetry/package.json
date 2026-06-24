@@ -1,0 +1,101 @@
+{
+	"name": "@twin.org/telemetry-connector-opentelemetry",
+	"version": "0.9.0-next.1",
+	"description": "OpenTelemetry connector for pushing telemetry metrics to OTEL-compatible backends.",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/iotaledger/twin-telemetry.git",
+		"directory": "packages/telemetry-connector-opentelemetry"
+	},
+	"author": "adrian.sanchez.sequeira@iota.org",
+	"license": "Apache-2.0",
+	"type": "module",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"scripts": {
+		"clean": "rimraf dist coverage",
+		"build": "tspc",
+		"dev": "nodemon --watch src --ext ts --exec \"npm run build\"",
+		"test": "vitest --run --config ./vitest.config.ts --no-cache",
+		"test:build": "tspc -p ./tests/tsconfig.json --noEmit",
+		"validate-locales": "validate-locales",
+		"test:coverage": "vitest --run --coverage --config ./vitest.config.ts --no-cache",
+		"docs:clean": "rimraf docs/reference",
+		"docs:generate": "typedoc --options typedoc.config.mjs",
+		"docs": "npm run docs:clean && npm run docs:generate",
+		"dist": "npm run clean && npm run build && npm run validate-locales && npm run test:build && npm run test",
+		"dist:no-test": "npm run clean && npm run build && npm run test:build"
+	},
+	"dependencies": {
+		"@opentelemetry/api": "1.9.1",
+		"@opentelemetry/sdk-metrics": "2.8.0",
+		"@twin.org/core": "next",
+		"@twin.org/entity-storage-models": "next",
+		"@twin.org/logging-models": "next",
+		"@twin.org/nameof": "next",
+		"@twin.org/telemetry-connector-entity-storage": "0.9.0-next.1",
+		"@twin.org/telemetry-models": "0.9.0-next.1"
+	},
+	"peerDependencies": {
+		"@opentelemetry/exporter-prometheus": ">=0.200.0"
+	},
+	"peerDependenciesMeta": {
+		"@opentelemetry/exporter-prometheus": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@opentelemetry/exporter-prometheus": "0.219.0",
+		"@twin.org/entity-storage-connector-memory": "next",
+		"@twin.org/nameof-transformer": "next",
+		"@twin.org/nameof-vitest-plugin": "next",
+		"@twin.org/validate-locales": "next",
+		"@vitest/coverage-v8": "4.1.9",
+		"copyfiles": "2.4.1",
+		"dotenv": "17.4.2",
+		"rimraf": "6.1.3",
+		"ts-patch": "4.0.1",
+		"nodemon": "3.1.14",
+		"typedoc": "0.28.19",
+		"typedoc-plugin-markdown": "4.12.0",
+		"typescript": "6.0.3",
+		"vitest": "4.1.9"
+	},
+	"main": "./dist/es/index.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/es/index.js",
+			"default": "./dist/es/index.js"
+		},
+		"./locales/*.json": "./locales/*.json"
+	},
+	"files": [
+		"dist/es",
+		"dist/types",
+		"locales",
+		"docs"
+	],
+	"keywords": [
+		"twin",
+		"trade",
+		"iota",
+		"framework",
+		"blockchain",
+		"telemetry",
+		"opentelemetry",
+		"otel",
+		"metrics",
+		"grafana",
+		"prometheus",
+		"connector",
+		"adapter",
+		"integration"
+	],
+	"bugs": {
+		"url": "git+https://github.com/iotaledger/twin-telemetry/issues"
+	},
+	"homepage": "https://twindev.org"
+}

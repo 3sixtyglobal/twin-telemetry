@@ -1,6 +1,6 @@
 # TWIN Telemetry Service
 
-Telemetry contract implementation and REST endpoint definitions.
+Telemetry service implementation with REST entry points.
 
 ## Installation
 

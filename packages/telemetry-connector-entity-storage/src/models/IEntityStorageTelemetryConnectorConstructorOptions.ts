@@ -18,7 +18,7 @@ export interface IEntityStorageTelemetryConnectorConstructorOptions {
 	telemetryMetricValueStorageConnectorType?: string;
 
 	/**
-	 * The type of the logging connector to use, can be undefined for no logging.
+	 * The type of the logging component to use, can be undefined for no logging.
 	 */
-	loggingConnectorType?: string;
+	loggingComponentType?: string;
 }

@@ -4,9 +4,12 @@
 
 - [MultiTelemetryConnector](classes/MultiTelemetryConnector.md)
 - [SilentTelemetryConnector](classes/SilentTelemetryConnector.md)
+- [MetricHelper](classes/MetricHelper.md)
 
 ## Interfaces
 
+- [IMetricsCollectorComponent](interfaces/IMetricsCollectorComponent.md)
+- [IMetricsProducer](interfaces/IMetricsProducer.md)
 - [IMultiTelemetryConnectorConstructorOptions](interfaces/IMultiTelemetryConnectorConstructorOptions.md)
 - [ITelemetryComponent](interfaces/ITelemetryComponent.md)
 - [ITelemetryConnector](interfaces/ITelemetryConnector.md)
@@ -25,9 +28,12 @@
 
 ## Type Aliases
 
+- [MetricCounterOperation](type-aliases/MetricCounterOperation.md)
 - [MetricType](type-aliases/MetricType.md)
 
 ## Variables
 
+- [MetricsProducerFactory](variables/MetricsProducerFactory.md)
 - [TelemetryConnectorFactory](variables/TelemetryConnectorFactory.md)
+- [MetricCounterOperation](variables/MetricCounterOperation.md)
 - [MetricType](variables/MetricType.md)

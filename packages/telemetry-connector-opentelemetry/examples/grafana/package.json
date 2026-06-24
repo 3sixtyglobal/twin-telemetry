@@ -1,0 +1,26 @@
+{
+	"name": "@twin.org/telemetry-connector-opentelemetry-grafana-demo",
+	"version": "0.0.0",
+	"description": "Grafana integration demo for the TWIN OpenTelemetry telemetry connector.",
+	"private": true,
+	"type": "module",
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"scripts": {
+		"start": "tsx src/index.ts"
+	},
+	"dependencies": {
+		"@opentelemetry/exporter-prometheus": "0.219.0",
+		"@twin.org/entity-storage-connector-memory": "next",
+		"@twin.org/entity-storage-models": "next",
+		"@twin.org/telemetry-connector-entity-storage": "next",
+		"@twin.org/telemetry-connector-opentelemetry": "file:../..",
+		"@twin.org/telemetry-models": "next"
+	},
+	"devDependencies": {
+		"@types/node": "26.0.0",
+		"tsx": "4.22.4",
+		"typescript": "6.0.3"
+	}
+}

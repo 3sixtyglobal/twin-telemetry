@@ -1,6 +1,6 @@
 # TWIN Telemetry Models
 
-Models which define the structure of the telemetry contracts and connectors.
+Shared telemetry models for connectors and services.
 
 ## Installation
 

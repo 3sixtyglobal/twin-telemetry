@@ -2,7 +2,7 @@
 
 > **initSchema**(): `void`
 
-Initialize the schema for the telemetry connector entity storage.
+Registers entity schemas for telemetry connector entity storage.
 
 ## Returns
 
