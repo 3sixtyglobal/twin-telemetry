@@ -29,6 +29,7 @@
 	},
 	"dependencies": {
 		"@opentelemetry/api": "1.9.1",
+		"@opentelemetry/exporter-prometheus": "0.219.0",
 		"@opentelemetry/sdk-metrics": "2.8.0",
 		"@twin.org/core": "next",
 		"@twin.org/entity-storage-models": "next",
@@ -37,16 +38,7 @@
 		"@twin.org/telemetry-connector-entity-storage": "0.9.1-next.0",
 		"@twin.org/telemetry-models": "0.9.1-next.0"
 	},
-	"peerDependencies": {
-		"@opentelemetry/exporter-prometheus": ">=0.200.0"
-	},
-	"peerDependenciesMeta": {
-		"@opentelemetry/exporter-prometheus": {
-			"optional": true
-		}
-	},
 	"devDependencies": {
-		"@opentelemetry/exporter-prometheus": "0.219.0",
 		"@twin.org/entity-storage-connector-memory": "next",
 		"@twin.org/nameof-transformer": "next",
 		"@twin.org/nameof-vitest-plugin": "next",
