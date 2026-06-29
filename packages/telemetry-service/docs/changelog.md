@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.1-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.1...telemetry-service-v0.9.1-next.2) (2026-06-29)
+
+
+### Features
+
+* enhanced rest testing ([#54](https://github.com/iotaledger/twin-telemetry/issues/54)) ([13b4c02](https://github.com/iotaledger/twin-telemetry/commit/13b4c02dc77d82f2fd88e2b79bd3dda077f639f6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.1-next.1 to 0.9.1-next.2
+
 ## [0.9.1-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.0...telemetry-service-v0.9.1-next.1) (2026-06-26)
 
 
