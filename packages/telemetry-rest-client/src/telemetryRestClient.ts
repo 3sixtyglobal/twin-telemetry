@@ -1,10 +1,11 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { BaseRestClient } from "@twin.org/api-core";
-import type {
-	IBaseRestClientConfig,
-	ICreatedResponse,
-	INoContentResponse
+import {
+	HttpHeaderHelper,
+	type IBaseRestClientConfig,
+	type ICreatedResponse,
+	type INoContentResponse
 } from "@twin.org/api-models";
 import { Coerce, Guards } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
@@ -25,7 +26,7 @@ import type {
 	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
-import { HeaderTypes } from "@twin.org/web";
+import { HttpMethod } from "@twin.org/web";
 
 /**
  * Client for performing telemetry through to REST endpoints.
@@ -60,7 +61,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
 		Guards.object<ITelemetryMetric>(TelemetryRestClient.CLASS_NAME, nameof(metric), metric);
 
-		await this.fetch<ITelemetryCreateMetricRequest, ICreatedResponse>("/metric", "POST", {
+		await this.fetch<ITelemetryCreateMetricRequest, ICreatedResponse>("/metric", HttpMethod.POST, {
 			body: metric
 		});
 	}
@@ -76,9 +77,9 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	}> {
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);
 
-		const result = await this.fetch<ITelemetryGetMetricRequest, ITelemetryGetMetricResponse>(
+		const response = await this.fetch<ITelemetryGetMetricRequest, ITelemetryGetMetricResponse>(
 			"/metric/:id",
-			"GET",
+			HttpMethod.GET,
 			{
 				pathParams: {
 					id
@@ -86,7 +87,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 			}
 		);
 
-		return result.body;
+		return response.body;
 	}
 
 	/**
@@ -98,16 +99,20 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 		Guards.object<ITelemetryMetric>(TelemetryRestClient.CLASS_NAME, nameof(metric), metric);
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(metric.id), metric.id);
 
-		await this.fetch<ITelemetryUpdateMetricRequest, INoContentResponse>("/metric/:id", "PUT", {
-			pathParams: {
-				id: metric.id
-			},
-			body: {
-				label: metric.label,
-				description: metric.description,
-				unit: metric.unit
+		await this.fetch<ITelemetryUpdateMetricRequest, INoContentResponse>(
+			"/metric/:id",
+			HttpMethod.PUT,
+			{
+				pathParams: {
+					id: metric.id
+				},
+				body: {
+					label: metric.label,
+					description: metric.description,
+					unit: metric.unit
+				}
 			}
-		});
+		);
 	}
 
 	/**
@@ -125,9 +130,9 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);
 		Guards.defined(TelemetryRestClient.CLASS_NAME, nameof(value), value);
 
-		const result = await this.fetch<ITelemetryAddMetricValueRequest, ICreatedResponse>(
+		const response = await this.fetch<ITelemetryAddMetricValueRequest, ICreatedResponse>(
 			"/metric/:id/value",
-			"POST",
+			HttpMethod.POST,
 			{
 				pathParams: {
 					id
@@ -139,7 +144,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 			}
 		);
 
-		return result.headers[HeaderTypes.Location];
+		return HttpHeaderHelper.extractId(response.headers);
 	}
 
 	/**
@@ -150,11 +155,15 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	public async removeMetric(id: string): Promise<void> {
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);
 
-		await this.fetch<ITelemetryRemoveMetricRequest, INoContentResponse>("/metric/:id", "DELETE", {
-			pathParams: {
-				id
+		await this.fetch<ITelemetryRemoveMetricRequest, INoContentResponse>(
+			"/metric/:id",
+			HttpMethod.DELETE,
+			{
+				pathParams: {
+					id
+				}
 			}
-		});
+		);
 	}
 
 	/**
@@ -183,7 +192,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	}> {
 		const result = await this.fetch<ITelemetryListRequest, ITelemetryListResponse>(
 			"/metric",
-			"GET",
+			HttpMethod.GET,
 			{
 				query: {
 					type: Coerce.string(type),
@@ -231,7 +240,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 
 		const result = await this.fetch<ITelemetryValuesListRequest, ITelemetryValuesListResponse>(
 			"/metric/:id/value",
-			"GET",
+			HttpMethod.GET,
 			{
 				pathParams: {
 					id

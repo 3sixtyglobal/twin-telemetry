@@ -1,11 +1,12 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type {
-	ICreatedResponse,
-	IHttpRequestContext,
-	INoContentResponse,
-	IRestRoute,
-	ITag
+import {
+	HttpHeaderHelper,
+	type ICreatedResponse,
+	type IHttpRequestContext,
+	type INoContentResponse,
+	type IRestRoute,
+	type ITag
 } from "@twin.org/api-models";
 import { Coerce, ComponentFactory, Guards } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
@@ -23,7 +24,7 @@ import {
 	type ITelemetryValuesListRequest,
 	type ITelemetryValuesListResponse
 } from "@twin.org/telemetry-models";
-import { HeaderTypes, HttpStatusCode } from "@twin.org/web";
+import { HeaderTypes, HttpStatusCode, type IHttpHeaders } from "@twin.org/web";
 
 /**
  * The source used when communicating about these routes.
@@ -403,11 +404,13 @@ export async function telemetryCreateMetric(
 		type: request.body.type,
 		unit: request.body.unit
 	});
+
+	const headers: IHttpHeaders = {};
+	HttpHeaderHelper.buildId(headers, request.body.id);
+
 	return {
 		statusCode: HttpStatusCode.created,
-		headers: {
-			[HeaderTypes.Location]: request.body.id
-		}
+		headers
 	};
 }
 
@@ -504,7 +507,10 @@ export async function telemetryAddMetricValue(
 		request.body.customData
 	);
 
-	return { statusCode: HttpStatusCode.created, headers: { [HeaderTypes.Location]: id } };
+	const headers: IHttpHeaders = {};
+	HttpHeaderHelper.buildId(headers, id);
+
+	return { statusCode: HttpStatusCode.created, headers };
 }
 
 /**
