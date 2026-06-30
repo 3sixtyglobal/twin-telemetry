@@ -15,6 +15,8 @@ import type {
 	ITelemetryCreateMetricRequest,
 	ITelemetryGetMetricRequest,
 	ITelemetryGetMetricResponse,
+	ITelemetryGetMetricValueRequest,
+	ITelemetryGetMetricValueResponse,
 	ITelemetryListRequest,
 	ITelemetryListResponse,
 	ITelemetryMetric,
@@ -91,6 +93,26 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(valueId), valueId);
+
+		const response = await this.fetch<
+			ITelemetryGetMetricValueRequest,
+			ITelemetryGetMetricValueResponse
+		>("/metric/:id/value/:valueId", HttpMethod.GET, {
+			pathParams: { id, valueId }
+		});
+
+		return response.body;
+	}
+
+	/**
 	 * Update metric.
 	 * @param metric The metric details.
 	 * @returns A promise that resolves when the metric has been updated.
@@ -144,7 +166,10 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 			}
 		);
 
-		return HttpHeaderHelper.extractId(response.headers);
+		return HttpHeaderHelper.extractId(
+			response.headers,
+			`${this.getPathPrefix()}/metric/:metricId/value/:id`
+		);
 	}
 
 	/**

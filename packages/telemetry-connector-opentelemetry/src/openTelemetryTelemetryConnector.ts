@@ -223,6 +223,16 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		return this._inner.getMetricValue(id, valueId);
+	}
+
+	/**
 	 * Update the metric metadata.
 	 * Note: OpenTelemetry instrument descriptors are immutable once created.
 	 * This method updates the persisted metadata mirror; the description/unit changes

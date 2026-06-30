@@ -344,6 +344,46 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(valueId), valueId);
+
+		const results = await this._metricValueStorage.query(
+			{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
+			[
+				{
+					property: "ts",
+					sortDirection: SortDirection.Descending
+				}
+			],
+			undefined,
+			undefined,
+			1
+		);
+
+		if (results.entities.length === 0) {
+			throw new NotFoundError(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				"metricValueNotFound",
+				valueId
+			);
+		}
+
+		const metricValue = results.entities[0] as TelemetryMetricValue;
+		return {
+			id: metricValue.id,
+			ts: metricValue.ts,
+			value: metricValue.value,
+			customData: metricValue.customData
+		};
+	}
+
+	/**
 	 * Remove metric.
 	 * @param id The id of the metric.
 	 * @returns A promise that resolves when the metric and all its values have been removed.

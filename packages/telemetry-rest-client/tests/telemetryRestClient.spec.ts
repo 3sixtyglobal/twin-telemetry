@@ -124,6 +124,40 @@ describe("TelemetryRestClient", () => {
 		});
 	});
 
+	describe("getMetricValue", () => {
+		test("throws when id is empty", async () => {
+			await expect(client.getMetricValue("", "value-001")).rejects.toMatchObject({
+				name: GuardError.CLASS_NAME,
+				message: "guard.stringEmpty"
+			});
+		});
+
+		test("throws when valueId is empty", async () => {
+			await expect(client.getMetricValue("metric-001", "")).rejects.toMatchObject({
+				name: GuardError.CLASS_NAME,
+				message: "guard.stringEmpty"
+			});
+		});
+
+		test("sends GET to /telemetry/metric/:id/value/:valueId", async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse(TEST_METRIC_VALUE));
+
+			await client.getMetricValue("metric-001", "value-001");
+
+			const [url, options] = fetchMock.mock.calls[0];
+			expect(url).toBe(`${ENDPOINT}/${PREFIX}/metric/metric-001/value/value-001`);
+			expect(options.method).toBe(HttpMethod.GET);
+		});
+
+		test("returns the metric value from the response body", async () => {
+			fetchMock.mockResolvedValueOnce(jsonResponse(TEST_METRIC_VALUE));
+
+			const result = await client.getMetricValue("metric-001", "value-001");
+
+			expect(result).toEqual(TEST_METRIC_VALUE);
+		});
+	});
+
 	describe("updateMetric", () => {
 		test("throws when metric is undefined", async () => {
 			await expect(
@@ -191,7 +225,9 @@ describe("TelemetryRestClient", () => {
 		});
 
 		test("sends POST to /telemetry/metric/:id/value", async () => {
-			fetchMock.mockResolvedValueOnce(createdResponse("value-001"));
+			fetchMock.mockResolvedValueOnce(
+				createdResponse(`${PREFIX}/metric/metric-001/value/value-001`)
+			);
 
 			await client.addMetricValue("metric-001", 42);
 
@@ -201,7 +237,9 @@ describe("TelemetryRestClient", () => {
 		});
 
 		test("sends numeric value in the request body", async () => {
-			fetchMock.mockResolvedValueOnce(createdResponse("value-001"));
+			fetchMock.mockResolvedValueOnce(
+				createdResponse(`${PREFIX}/metric/metric-001/value/value-001`)
+			);
 
 			await client.addMetricValue("metric-001", 42);
 
@@ -211,7 +249,9 @@ describe("TelemetryRestClient", () => {
 		});
 
 		test("sends MetricCounterOperation value in the request body", async () => {
-			fetchMock.mockResolvedValueOnce(createdResponse("value-001"));
+			fetchMock.mockResolvedValueOnce(
+				createdResponse(`${PREFIX}/metric/metric-001/value/value-001`)
+			);
 
 			await client.addMetricValue("metric-001", MetricCounterOperation.Increment);
 
@@ -221,7 +261,9 @@ describe("TelemetryRestClient", () => {
 		});
 
 		test("sends customData in the request body when provided", async () => {
-			fetchMock.mockResolvedValueOnce(createdResponse("value-001"));
+			fetchMock.mockResolvedValueOnce(
+				createdResponse(`${PREFIX}/metric/metric-001/value/value-001`)
+			);
 
 			await client.addMetricValue("metric-001", 42, { source: "test-host" });
 
@@ -231,7 +273,9 @@ describe("TelemetryRestClient", () => {
 		});
 
 		test("returns the location header value", async () => {
-			fetchMock.mockResolvedValueOnce(createdResponse("value-001"));
+			fetchMock.mockResolvedValueOnce(
+				createdResponse(`${PREFIX}/metric/metric-001/value/value-001`)
+			);
 
 			const result = await client.addMetricValue("metric-001", 42);
 

@@ -354,6 +354,51 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStoreAfter?.length).toEqual(0);
 	});
 
+	test("can get a metric value by id", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const value = await telemetry.getMetricValue("test", valueId);
+		expect(value.id).toBe(valueId);
+		expect(value.value).toBe(1);
+	});
+
+	test("can fail to get a metric value with wrong metric id", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		await expect(telemetry.getMetricValue("wrong-id", valueId)).rejects.toMatchObject({
+			name: "NotFoundError",
+			message: "entityStorageTelemetryConnector.metricValueNotFound"
+		});
+	});
+
+	test("can fail to get a metric value that does not exist", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		await expect(telemetry.getMetricValue("test", "nonexistent")).rejects.toMatchObject({
+			name: "NotFoundError",
+			message: "entityStorageTelemetryConnector.metricValueNotFound"
+		});
+	});
+
 	test("can query metrics", async () => {
 		const telemetry = new EntityStorageTelemetryConnector();
 

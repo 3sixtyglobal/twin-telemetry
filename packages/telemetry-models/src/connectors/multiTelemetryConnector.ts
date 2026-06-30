@@ -88,6 +88,20 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(valueId), valueId);
+
+		// Since all the connectors should have the same data, we can just use the first one.
+		return this._telemetryConnectors[0].getMetricValue(id, valueId);
+	}
+
+	/**
 	 * Update metric.
 	 * @param metric The metric details.
 	 * @returns A promise that resolves when the metric has been updated on all connectors.

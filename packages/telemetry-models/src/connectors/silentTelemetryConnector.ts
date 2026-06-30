@@ -47,6 +47,18 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		throw new NotSupportedError(SilentTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "getMetricValue"
+		});
+	}
+
+	/**
 	 * Update metric.
 	 * @param metric The metric details.
 	 * @returns A promise that resolves when the metric has been updated.

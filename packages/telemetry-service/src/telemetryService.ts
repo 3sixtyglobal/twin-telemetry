@@ -95,6 +95,18 @@ export class TelemetryService implements ITelemetryComponent {
 	}
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
+		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(valueId), valueId);
+		return this._telemetryConnector.getMetricValue(id, valueId);
+	}
+
+	/**
 	 * Update metric.
 	 * @param metric The metric details.
 	 * @returns A promise that resolves when the metric has been updated.
