@@ -19,6 +19,8 @@
 - [ITelemetryCreateMetricRequest](interfaces/ITelemetryCreateMetricRequest.md)
 - [ITelemetryGetMetricRequest](interfaces/ITelemetryGetMetricRequest.md)
 - [ITelemetryGetMetricResponse](interfaces/ITelemetryGetMetricResponse.md)
+- [ITelemetryGetMetricValueRequest](interfaces/ITelemetryGetMetricValueRequest.md)
+- [ITelemetryGetMetricValueResponse](interfaces/ITelemetryGetMetricValueResponse.md)
 - [ITelemetryListRequest](interfaces/ITelemetryListRequest.md)
 - [ITelemetryListResponse](interfaces/ITelemetryListResponse.md)
 - [ITelemetryRemoveMetricRequest](interfaces/ITelemetryRemoveMetricRequest.md)

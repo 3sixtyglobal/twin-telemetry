@@ -52,6 +52,34 @@ The metric details and it's most recent value.
 
 ***
 
+### getMetricValue() {#getmetricvalue}
+
+> **getMetricValue**(`id`, `valueId`): `Promise`\<[`ITelemetryMetricValue`](ITelemetryMetricValue.md)\>
+
+Get a specific metric value by its id.
+
+#### Parameters
+
+##### id
+
+`string`
+
+The id of the metric.
+
+##### valueId
+
+`string`
+
+The id of the metric value.
+
+#### Returns
+
+`Promise`\<[`ITelemetryMetricValue`](ITelemetryMetricValue.md)\>
+
+The metric value.
+
+***
+
 ### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>

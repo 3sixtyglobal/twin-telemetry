@@ -176,6 +176,38 @@ The id of the newly created metric value entry.
 
 ***
 
+### getMetricValue() {#getmetricvalue}
+
+> **getMetricValue**(`id`, `valueId`): `Promise`\<`ITelemetryMetricValue`\>
+
+Get a specific metric value by its id.
+
+#### Parameters
+
+##### id
+
+`string`
+
+The id of the metric.
+
+##### valueId
+
+`string`
+
+The id of the metric value.
+
+#### Returns
+
+`Promise`\<`ITelemetryMetricValue`\>
+
+The metric value.
+
+#### Implementation of
+
+`ITelemetryConnector.getMetricValue`
+
+***
+
 ### removeMetric() {#removemetric}
 
 > **removeMetric**(`id`): `Promise`\<`void`\>

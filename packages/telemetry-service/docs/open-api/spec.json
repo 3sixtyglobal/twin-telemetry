@@ -839,6 +839,122 @@
 					}
 				}
 			}
+		},
+		"/telemetry/metric/{id}/value/{valueId}": {
+			"get": {
+				"operationId": "telemetryGetMetricValue",
+				"summary": "Get a specific telemetry metric value",
+				"tags": [
+					"Telemetry"
+				],
+				"parameters": [
+					{
+						"name": "id",
+						"description": "The id of the metric.",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"style": "simple",
+						"example": "my-counter"
+					},
+					{
+						"name": "valueId",
+						"description": "The id of the metric value.",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"style": "simple",
+						"example": "aabbccdd11223445566"
+					}
+				],
+				"security": [
+					{
+						"jwtBearerAuthScheme": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Get a telemetry metric value response.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/TelemetryMetricValue"
+								},
+								"examples": {
+									"telemetryGetMetricValueResponseExample": {
+										"value": {
+											"id": "aabbccdd11223445566",
+											"ts": 1715252922273,
+											"value": 10
+										}
+									}
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "The server cannot process the request, see the content for more details.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								},
+								"examples": {
+									"exampleResponse": {
+										"value": {
+											"name": "GeneralError",
+											"message": "errorMessage",
+											"properties": {
+												"foo": "bar"
+											}
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "You are not authorized to use the API or no credentials were supplied, see the content for more details.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								},
+								"examples": {
+									"exampleResponse": {
+										"value": {
+											"name": "UnauthorizedError",
+											"message": "errorMessage"
+										}
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "The server has encountered a situation it does not know how to handle, see the content for more details.",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/Error"
+								},
+								"examples": {
+									"exampleResponse": {
+										"value": {
+											"name": "InternalServerError",
+											"message": "errorMessage"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	},
 	"components": {

@@ -1,6 +1,6 @@
 # Function: telemetryAddMetricValue()
 
-> **telemetryAddMetricValue**(`httpRequestContext`, `componentName`, `request`): `Promise`\<`ICreatedResponse`\>
+> **telemetryAddMetricValue**(`httpRequestContext`, `componentName`, `request`, `baseRouteName`): `Promise`\<`ICreatedResponse`\>
 
 Add a telemetry metric value.
 
@@ -23,6 +23,12 @@ The name of the component to use in the routes.
 `ITelemetryAddMetricValueRequest`
 
 The request.
+
+### baseRouteName
+
+`string`
+
+The base route name for the API.
 
 ## Returns
 
