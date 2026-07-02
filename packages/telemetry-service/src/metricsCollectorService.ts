@@ -103,10 +103,9 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	 * @returns A promise that resolves when the service has stopped.
 	 */
 	public async stop(): Promise<void> {
-		this._running = false;
-		if (this._timer !== undefined) {
-			globalThis.clearTimeout(this._timer);
-			this._timer = undefined;
+		if (this._running) {
+			this._running = false;
+			this.stopTimer();
 		}
 	}
 
@@ -135,18 +134,31 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 			}
 		}
 
-		this.scheduleNext();
+		this.startTimer();
 	}
 
 	/**
 	 * Schedule the next tick after the configured interval.
 	 * @internal
 	 */
-	private scheduleNext(): void {
+	private startTimer(): void {
 		if (this._running) {
+			this.stopTimer();
+
 			this._timer = globalThis.setTimeout(async () => {
 				await this.tick();
 			}, this._intervalMs);
+		}
+	}
+
+	/**
+	 * Stop the timer.
+	 * @internal
+	 */
+	private stopTimer(): void {
+		if (this._timer !== undefined) {
+			globalThis.clearTimeout(this._timer);
+			this._timer = undefined;
 		}
 	}
 }
