@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.1-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.3...telemetry-service-v0.9.1-next.4) (2026-07-02)
+
+
+### Bug Fixes
+
+* timer state machine ([761731e](https://github.com/iotaledger/twin-telemetry/commit/761731efe5a7f5b1b7b71e200afaa5dc0ded623c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.1-next.3 to 0.9.1-next.4
+
 ## [0.9.1-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.2...telemetry-service-v0.9.1-next.3) (2026-06-30)
 
 

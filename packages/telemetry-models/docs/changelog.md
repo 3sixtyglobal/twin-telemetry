@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.9.1-next.3...telemetry-models-v0.9.1-next.4) (2026-07-02)
+
+
+### Features
+
+* rest enhancements ([52d5fc8](https://github.com/iotaledger/twin-telemetry/commit/52d5fc8e7d9b0c757de331ac3d32db9772815fb1))
+
 ## [0.9.1-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.9.1-next.2...telemetry-models-v0.9.1-next.3) (2026-06-30)
 
 
