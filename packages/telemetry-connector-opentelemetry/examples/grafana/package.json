@@ -11,7 +11,7 @@
 		"start": "tsx src/index.ts"
 	},
 	"dependencies": {
-		"@opentelemetry/exporter-prometheus": "0.219.0",
+		"@opentelemetry/exporter-prometheus": "0.221.0",
 		"@twin.org/entity-storage-connector-memory": "next",
 		"@twin.org/entity-storage-models": "next",
 		"@twin.org/telemetry-connector-entity-storage": "next",
@@ -19,8 +19,8 @@
 		"@twin.org/telemetry-models": "next"
 	},
 	"devDependencies": {
-		"@types/node": "26.0.0",
-		"tsx": "4.22.4",
+		"@types/node": "26.1.1",
+		"tsx": "4.23.1",
 		"typescript": "6.0.3"
 	}
 }
