@@ -80,7 +80,8 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 
 	/**
 	 * Start the service: register all producers and begin the polling cycle.
-	 * @returns A promise that resolves after the first collection tick has completed.
+	 * The first collection tick fires immediately but does not block start() from returning.
+	 * @returns A promise that resolves once producers are registered and the first tick is in flight.
 	 */
 	public async start(): Promise<void> {
 		if (this._running) {
@@ -95,7 +96,11 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 			await this._platformComponent.execute(async () => producer.register());
 		}
 
-		await this.tick();
+		// Defer the first tick to the next event-loop turn so start() returns before any
+		// collection work begins, keeping engine boot unblocked.
+		this._timer = globalThis.setTimeout(async () => {
+			await this.tick();
+		}, 0);
 	}
 
 	/**
