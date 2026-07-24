@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.1-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.1-next.4...telemetry-connector-entity-storage-v0.9.1-next.5) (2026-07-24)
+
+
+### Bug Fixes
+
+* optimise history trimming ([#63](https://github.com/iotaledger/twin-telemetry/issues/63)) ([8c50060](https://github.com/iotaledger/twin-telemetry/commit/8c5006063140977c1c4fbde5eaf24967ef94dd31))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.1-next.4 to 0.9.1-next.5
+
 ## [0.9.1-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.1-next.3...telemetry-connector-entity-storage-v0.9.1-next.4) (2026-07-02)
 
 

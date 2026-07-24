@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.1-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.4...telemetry-service-v0.9.1-next.5) (2026-07-24)
+
+
+### Features
+
+* background initial tick ([#62](https://github.com/iotaledger/twin-telemetry/issues/62)) ([c9bf637](https://github.com/iotaledger/twin-telemetry/commit/c9bf6370faf7ebc254aaa675d94fe327317f0b21))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.1-next.4 to 0.9.1-next.5
+
 ## [0.9.1-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.1-next.3...telemetry-service-v0.9.1-next.4) (2026-07-02)
 
 
