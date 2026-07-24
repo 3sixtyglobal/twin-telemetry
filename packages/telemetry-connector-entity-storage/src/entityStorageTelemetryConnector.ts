@@ -48,6 +48,13 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	public static readonly CLASS_NAME: string = nameof<EntityStorageTelemetryConnector>();
 
 	/**
+	 * Page size used when scanning for values to trim.
+	 * Large enough to cover most histories in one or two pages without overwhelming storage.
+	 * @internal
+	 */
+	private static readonly _TRIM_PAGE_SIZE = 1000;
+
+	/**
 	 * The entity storage for the telemetry metrics.
 	 * @internal
 	 */
@@ -313,24 +320,31 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 		if (Is.integer(existingMetric.maxHistory) && existingMetric.maxHistory > 0) {
 			let trimCursor: string | undefined;
-			const allValueIds: string[] = [];
+			const idsBuffer: string[] = [];
 			do {
+				// Fetch only ids in fixed-size chunks. Using a large fixed page size keeps
+				// query count low for typical histories while avoiding an unbounded single
+				// request when maxHistory is very large.
 				const page = await this._metricValueStorage.query(
 					{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
 					[{ property: "ts", sortDirection: SortDirection.Ascending }],
-					undefined,
-					trimCursor
+					["id"],
+					trimCursor,
+					EntityStorageTelemetryConnector._TRIM_PAGE_SIZE
 				);
 				for (const entity of page.entities) {
-					allValueIds.push((entity as TelemetryMetricValue).id);
+					idsBuffer.push((entity as TelemetryMetricValue).id);
+				}
+				// Oldest entries at the front of the ascending-sorted buffer are
+				// definitively excess once the buffer exceeds maxHistory, regardless
+				// of how many further pages remain. Remove them in place so the
+				// removeBatch calls stay chunk-sized across the whole loop.
+				const excess = idsBuffer.length - existingMetric.maxHistory;
+				if (excess > 0) {
+					await this._metricValueStorage.removeBatch(idsBuffer.splice(0, excess));
 				}
 				trimCursor = page.cursor;
 			} while (Is.stringValue(trimCursor));
-
-			const excessCount = allValueIds.length - existingMetric.maxHistory;
-			if (excessCount > 0) {
-				await this._metricValueStorage.removeBatch(allValueIds.slice(0, excessCount));
-			}
 		}
 
 		await this._logging?.log({
