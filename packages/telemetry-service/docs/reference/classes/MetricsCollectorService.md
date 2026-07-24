@@ -63,12 +63,13 @@ The class name of the component.
 > **start**(): `Promise`\<`void`\>
 
 Start the service: register all producers and begin the polling cycle.
+The first collection tick fires immediately but does not block start() from returning.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves after the first collection tick has completed.
+A promise that resolves once producers are registered and the first tick is in flight.
 
 #### Implementation of
 
