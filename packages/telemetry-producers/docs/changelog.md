@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.9.1...telemetry-producers-v0.9.1) (2026-07-27)
+
+
+### Features
+
+* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([#68](https://github.com/iotaledger/twin-telemetry/issues/68)) ([157c6a9](https://github.com/iotaledger/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
+
 ## [0.9.1-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.9.1-next.4...telemetry-producers-v0.9.1-next.5) (2026-07-24)
 
 
