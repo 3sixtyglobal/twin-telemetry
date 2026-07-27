@@ -1,6 +1,6 @@
 # Function: telemetryCreateMetric()
 
-> **telemetryCreateMetric**(`httpRequestContext`, `componentName`, `request`): `Promise`\<`ICreatedResponse`\>
+> **telemetryCreateMetric**(`httpRequestContext`, `componentName`, `request`, `baseRouteName`): `Promise`\<`ICreatedResponse`\>
 
 Create a new telemetry metric.
 
@@ -23,6 +23,12 @@ The name of the component to use in the routes.
 `ITelemetryCreateMetricRequest`
 
 The request.
+
+### baseRouteName
+
+`string`
+
+The base route name for the API.
 
 ## Returns
 

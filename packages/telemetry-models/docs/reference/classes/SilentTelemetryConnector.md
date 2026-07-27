@@ -96,6 +96,38 @@ The metric details and it's most recent value.
 
 ***
 
+### getMetricValue() {#getmetricvalue}
+
+> **getMetricValue**(`id`, `valueId`): `Promise`\<[`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md)\>
+
+Get a specific metric value by its id.
+
+#### Parameters
+
+##### id
+
+`string`
+
+The id of the metric.
+
+##### valueId
+
+`string`
+
+The id of the metric value.
+
+#### Returns
+
+`Promise`\<[`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md)\>
+
+The metric value.
+
+#### Implementation of
+
+[`ITelemetryConnector`](../interfaces/ITelemetryConnector.md).[`getMetricValue`](../interfaces/ITelemetryConnector.md#getmetricvalue)
+
+***
+
 ### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>

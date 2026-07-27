@@ -354,6 +354,51 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStoreAfter?.length).toEqual(0);
 	});
 
+	test("can get a metric value by id", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const value = await telemetry.getMetricValue("test", valueId);
+		expect(value.id).toBe(valueId);
+		expect(value.value).toBe(1);
+	});
+
+	test("can fail to get a metric value with wrong metric id", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		await expect(telemetry.getMetricValue("wrong-id", valueId)).rejects.toMatchObject({
+			name: "NotFoundError",
+			message: "entityStorageTelemetryConnector.metricValueNotFound"
+		});
+	});
+
+	test("can fail to get a metric value that does not exist", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		await expect(telemetry.getMetricValue("test", "nonexistent")).rejects.toMatchObject({
+			name: "NotFoundError",
+			message: "entityStorageTelemetryConnector.metricValueNotFound"
+		});
+	});
+
 	test("can query metrics", async () => {
 		const telemetry = new EntityStorageTelemetryConnector();
 
@@ -490,6 +535,80 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(5);
+	});
+
+	test("trim makes a single value-storage query in steady state", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 3
+		});
+
+		for (let i = 0; i < 3; i++) {
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await new Promise<void>(resolve => setTimeout(resolve, 2));
+		}
+
+		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		// Exactly two value-storage queries per write: one last-value lookup and one trim sweep.
+		expect(querySpy).toHaveBeenCalledTimes(2);
+		querySpy.mockRestore();
+	});
+
+	test("trim query uses a fixed chunk size rather than maxHistory + 1", async () => {
+		const maxHistory = 3;
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory
+		});
+
+		for (let i = 0; i < maxHistory; i++) {
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await new Promise<void>(resolve => setTimeout(resolve, 2));
+		}
+
+		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		// The second query is the trim sweep; verify it uses a fixed chunk size (1000),
+		// not maxHistory + 1 which would be unbounded for large histories.
+		const trimLimit = querySpy.mock.calls[1][4] as number;
+		expect(trimLimit).toEqual(1000);
+		expect(trimLimit).not.toEqual(maxHistory + 1);
+		querySpy.mockRestore();
+	});
+
+	test("prunes all excess entries when maxHistory is reduced after accumulation", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 5
+		});
+
+		for (let i = 0; i < 5; i++) {
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await new Promise<void>(resolve => setTimeout(resolve, 2));
+		}
+
+		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 3 });
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(3);
+
+		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+		expect(result.entities[0].value).toEqual(6);
+		expect(result.entities[1].value).toEqual(5);
+		expect(result.entities[2].value).toEqual(4);
 	});
 
 	test("can query a metric and its values", async () => {

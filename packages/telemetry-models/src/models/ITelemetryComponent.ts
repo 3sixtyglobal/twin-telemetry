@@ -28,6 +28,14 @@ export interface ITelemetryComponent extends IComponent {
 	}>;
 
 	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue>;
+
+	/**
 	 * Update metric.
 	 * @param metric The metric details.
 	 * @returns A promise that resolves when the metric has been updated.

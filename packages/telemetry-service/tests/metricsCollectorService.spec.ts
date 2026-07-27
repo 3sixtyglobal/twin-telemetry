@@ -82,16 +82,12 @@ describe("MetricsCollectorService", () => {
 	});
 
 	describe("start()", () => {
-		test("registers and collects all discovered producers", async () => {
+		test("registers all discovered producers", async () => {
 			const registered: string[] = [];
-			const collected: string[] = [];
 			MetricsProducerFactory.register("p1", () =>
 				makeProducer({
 					register: async () => {
 						registered.push("p1");
-					},
-					collect: async () => {
-						collected.push("p1");
 					}
 				})
 			);
@@ -99,9 +95,6 @@ describe("MetricsCollectorService", () => {
 				makeProducer({
 					register: async () => {
 						registered.push("p2");
-					},
-					collect: async () => {
-						collected.push("p2");
 					}
 				})
 			);
@@ -111,8 +104,6 @@ describe("MetricsCollectorService", () => {
 			await service.stop();
 
 			expect(registered).toEqual(["p1", "p2"]);
-			expect(collected).toContain("p1");
-			expect(collected).toContain("p2");
 		});
 
 		test("is idempotent — second call is a no-op", async () => {
@@ -133,7 +124,7 @@ describe("MetricsCollectorService", () => {
 			expect(registerCount).toBe(1);
 		});
 
-		test("uses same instance for register and collect", async () => {
+		test("uses same producer instance for register and collect", async () => {
 			const instanceIds: string[] = [];
 			let idCounter = 0;
 			MetricsProducerFactory.register("p1", () => {
@@ -150,6 +141,7 @@ describe("MetricsCollectorService", () => {
 
 			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
 			await service.start();
+			await service.tick();
 			await service.stop();
 
 			const registerInstance = instanceIds.find(e => e.startsWith("register:"))?.split(":")[1];
@@ -242,8 +234,7 @@ describe("MetricsCollectorService", () => {
 				);
 
 				const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
-				await service.start();
-				await service.stop();
+				await service.tick();
 
 				expect(collected).toContain("p1");
 				expect(collected).toContain("p2");
@@ -267,8 +258,7 @@ describe("MetricsCollectorService", () => {
 				);
 
 				const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
-				await service.start();
-				await service.stop();
+				await service.tick();
 
 				expect(collected).toContain("good");
 			});
@@ -297,8 +287,7 @@ describe("MetricsCollectorService", () => {
 					config: { intervalMs: 60_000 },
 					platformComponentType: CUSTOM_PLATFORM_TYPE
 				});
-				await service.start();
-				await service.stop();
+				await service.tick();
 
 				expect(collectCalls.filter(c => c === "p1")).toHaveLength(2);
 			});
@@ -324,8 +313,7 @@ describe("MetricsCollectorService", () => {
 					config: { intervalMs: 60_000 },
 					platformComponentType: CUSTOM_PLATFORM_TYPE
 				});
-				await service.start();
-				await service.stop();
+				await service.tick();
 
 				expect(collectCalls).toHaveLength(0);
 			});
@@ -358,8 +346,7 @@ describe("MetricsCollectorService", () => {
 					config: { intervalMs: 60_000 },
 					platformComponentType: CUSTOM_PLATFORM_TYPE
 				});
-				await service.start();
-				await service.stop();
+				await service.tick();
 
 				expect(collected).toContain("good");
 			});

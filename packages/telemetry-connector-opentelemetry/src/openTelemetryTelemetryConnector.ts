@@ -1,6 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
+import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { MeterProvider, type MetricReader } from "@opentelemetry/sdk-metrics";
 import { AlreadyExistsError, BaseError, ComponentFactory, GeneralError, Is } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
@@ -108,12 +109,8 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		const readers: MetricReader[] = [];
 		for (const [, config] of Object.entries(this._config.readers ?? {})) {
 			if (config.type === "prometheus") {
-				// Dynamic import so @opentelemetry/exporter-prometheus is an optional peer dep;
-				// consumers only need to install it if they actually configure a Prometheus reader.
-				const { PrometheusExporter: prometheusExporterClass } =
-					await import("@opentelemetry/exporter-prometheus");
 				readers.push(
-					new prometheusExporterClass({
+					new PrometheusExporter({
 						port: config.port,
 						endpoint: config.endpoint,
 						// PrometheusExporter uses preventServerStart (inverted); our config
@@ -223,6 +220,16 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		// are not surprised by a null value field — treat id="" as "no measurements yet".
 		const value = result.value ?? { id: "", ts: 0, value: 0 };
 		return { metric: result.metric, value };
+	}
+
+	/**
+	 * Get a specific metric value by its id.
+	 * @param id The id of the metric.
+	 * @param valueId The id of the metric value.
+	 * @returns The metric value.
+	 */
+	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
+		return this._inner.getMetricValue(id, valueId);
 	}
 
 	/**

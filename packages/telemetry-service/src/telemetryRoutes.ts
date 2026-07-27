@@ -1,12 +1,16 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type {
-	ICreatedResponse,
-	IHttpRequestContext,
-	INoContentResponse,
-	IRestRoute,
-	ITag
+import {
+	HttpContextIdKeys,
+	HttpHeaderHelper,
+	HttpUrlHelper,
+	type ICreatedResponse,
+	type IHttpRequestContext,
+	type INoContentResponse,
+	type IRestRoute,
+	type ITag
 } from "@twin.org/api-models";
+import { ContextIdStore } from "@twin.org/context";
 import { Coerce, ComponentFactory, Guards } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import {
@@ -16,6 +20,8 @@ import {
 	type ITelemetryCreateMetricRequest,
 	type ITelemetryGetMetricRequest,
 	type ITelemetryGetMetricResponse,
+	type ITelemetryGetMetricValueRequest,
+	type ITelemetryGetMetricValueResponse,
 	type ITelemetryListRequest,
 	type ITelemetryListResponse,
 	type ITelemetryRemoveMetricRequest,
@@ -23,7 +29,7 @@ import {
 	type ITelemetryValuesListRequest,
 	type ITelemetryValuesListResponse
 } from "@twin.org/telemetry-models";
-import { HeaderTypes, HttpStatusCode } from "@twin.org/web";
+import { HeaderTypes, HttpStatusCode, type IHttpHeaders } from "@twin.org/web";
 
 /**
  * The source used when communicating about these routes.
@@ -57,7 +63,7 @@ export function generateRestRoutesTelemetry(
 		method: "POST",
 		path: `${baseRouteName}/metric`,
 		handler: async (httpRequestContext, request) =>
-			telemetryCreateMetric(httpRequestContext, componentName, request),
+			telemetryCreateMetric(httpRequestContext, componentName, request, baseRouteName),
 		requestType: {
 			type: nameof<ITelemetryCreateMetricRequest>(),
 			examples: [
@@ -180,7 +186,7 @@ export function generateRestRoutesTelemetry(
 		method: "POST",
 		path: `${baseRouteName}/metric/:id/value`,
 		handler: async (httpRequestContext, request) =>
-			telemetryAddMetricValue(httpRequestContext, componentName, request),
+			telemetryAddMetricValue(httpRequestContext, componentName, request, baseRouteName),
 		requestType: {
 			type: nameof<ITelemetryAddMetricValueRequest>(),
 			examples: [
@@ -306,6 +312,50 @@ export function generateRestRoutesTelemetry(
 		]
 	};
 
+	const getMetricValueRoute: IRestRoute<
+		ITelemetryGetMetricValueRequest,
+		ITelemetryGetMetricValueResponse
+	> = {
+		operationId: "telemetryGetMetricValue",
+		summary: "Get a specific telemetry metric value",
+		tag: tagsTelemetry[0].name,
+		method: "GET",
+		path: `${baseRouteName}/metric/:id/value/:valueId`,
+		handler: async (httpRequestContext, request) =>
+			telemetryGetMetricValue(httpRequestContext, componentName, request),
+		requestType: {
+			type: nameof<ITelemetryGetMetricValueRequest>(),
+			examples: [
+				{
+					id: "telemetryGetMetricValueRequestExample",
+					request: {
+						pathParams: {
+							id: "my-counter",
+							valueId: "aabbccdd11223445566"
+						}
+					}
+				}
+			]
+		},
+		responseType: [
+			{
+				type: nameof<ITelemetryGetMetricValueResponse>(),
+				examples: [
+					{
+						id: "telemetryGetMetricValueResponseExample",
+						response: {
+							body: {
+								id: "aabbccdd11223445566",
+								ts: 1715252922273,
+								value: 10
+							}
+						}
+					}
+				]
+			}
+		]
+	};
+
 	const listMetricsValuesRoute: IRestRoute<
 		ITelemetryValuesListRequest,
 		ITelemetryValuesListResponse
@@ -372,6 +422,7 @@ export function generateRestRoutesTelemetry(
 		addMetricValueRoute,
 		removeMetricRoute,
 		listMetricsRoute,
+		getMetricValueRoute,
 		listMetricsValuesRoute
 	];
 }
@@ -381,12 +432,14 @@ export function generateRestRoutesTelemetry(
  * @param httpRequestContext The request context for the API.
  * @param componentName The name of the component to use in the routes.
  * @param request The request.
+ * @param baseRouteName The base route name for the API.
  * @returns The response object with additional http response properties.
  */
 export async function telemetryCreateMetric(
 	httpRequestContext: IHttpRequestContext,
 	componentName: string,
-	request: ITelemetryCreateMetricRequest
+	request: ITelemetryCreateMetricRequest,
+	baseRouteName: string
 ): Promise<ICreatedResponse> {
 	Guards.object<ITelemetryCreateMetricRequest>(ROUTES_SOURCE, nameof(request), request);
 	Guards.object<ITelemetryCreateMetricRequest["body"]>(
@@ -403,11 +456,20 @@ export async function telemetryCreateMetric(
 		type: request.body.type,
 		unit: request.body.unit
 	});
+
+	const contextIds = await ContextIdStore.getContextIds();
+	const publicOrigin = contextIds?.[HttpContextIdKeys.PublicOrigin];
+
+	const headers: IHttpHeaders = {};
+	HttpHeaderHelper.buildId(
+		headers,
+		request.body.id,
+		HttpUrlHelper.combineOriginPath(publicOrigin, `${baseRouteName}/:id`)
+	);
+
 	return {
 		statusCode: HttpStatusCode.created,
-		headers: {
-			[HeaderTypes.Location]: request.body.id
-		}
+		headers
 	};
 }
 
@@ -477,12 +539,14 @@ export async function telemetryUpdateMetric(
  * @param httpRequestContext The request context for the API.
  * @param componentName The name of the component to use in the routes.
  * @param request The request.
+ * @param baseRouteName The base route name for the API.
  * @returns The response object with additional http response properties.
  */
 export async function telemetryAddMetricValue(
 	httpRequestContext: IHttpRequestContext,
 	componentName: string,
-	request: ITelemetryAddMetricValueRequest
+	request: ITelemetryAddMetricValueRequest,
+	baseRouteName: string
 ): Promise<ICreatedResponse> {
 	Guards.object<ITelemetryAddMetricValueRequest>(ROUTES_SOURCE, nameof(request), request);
 	Guards.object<ITelemetryAddMetricValueRequest["pathParams"]>(
@@ -504,7 +568,17 @@ export async function telemetryAddMetricValue(
 		request.body.customData
 	);
 
-	return { statusCode: HttpStatusCode.created, headers: { [HeaderTypes.Location]: id } };
+	const contextIds = await ContextIdStore.getContextIds();
+	const publicOrigin = contextIds?.[HttpContextIdKeys.PublicOrigin];
+
+	const headers: IHttpHeaders = {};
+	HttpHeaderHelper.buildId(
+		headers,
+		id,
+		HttpUrlHelper.combineOriginPath(publicOrigin, `${baseRouteName}/:id`)
+	);
+
+	return { statusCode: HttpStatusCode.created, headers };
 }
 
 /**
@@ -564,6 +638,32 @@ export async function telemetryMetricList(
 	return {
 		body: itemsAndCursor
 	};
+}
+
+/**
+ * Gets a specific telemetry metric value.
+ * @param httpRequestContext The request context for the API.
+ * @param componentName The name of the component to use in the routes.
+ * @param request The request.
+ * @returns The response object with additional http response properties.
+ */
+export async function telemetryGetMetricValue(
+	httpRequestContext: IHttpRequestContext,
+	componentName: string,
+	request: ITelemetryGetMetricValueRequest
+): Promise<ITelemetryGetMetricValueResponse> {
+	Guards.object<ITelemetryGetMetricValueRequest>(ROUTES_SOURCE, nameof(request), request);
+	Guards.object<ITelemetryGetMetricValueRequest["pathParams"]>(
+		ROUTES_SOURCE,
+		nameof(request.pathParams),
+		request.pathParams
+	);
+	Guards.stringValue(ROUTES_SOURCE, nameof(request.pathParams.id), request.pathParams.id);
+	Guards.stringValue(ROUTES_SOURCE, nameof(request.pathParams.valueId), request.pathParams.valueId);
+
+	const component = ComponentFactory.get<ITelemetryComponent>(componentName);
+	const result = await component.getMetricValue(request.pathParams.id, request.pathParams.valueId);
+	return { body: result };
 }
 
 /**

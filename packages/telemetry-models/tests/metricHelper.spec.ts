@@ -26,6 +26,7 @@ describe("MetricHelper", () => {
 			CLASS_NAME: "MockTelemetryComponent",
 			createMetric: createMetricMock,
 			addMetricValue: addMetricValueMock,
+			getMetricValue: vi.fn(),
 			getMetric: vi.fn(),
 			updateMetric: vi.fn(),
 			removeMetric: vi.fn(),

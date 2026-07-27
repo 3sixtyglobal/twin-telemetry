@@ -9,6 +9,8 @@ export * from "./models/api/ITelemetryAddMetricValueRequest.js";
 export * from "./models/api/ITelemetryCreateMetricRequest.js";
 export * from "./models/api/ITelemetryGetMetricRequest.js";
 export * from "./models/api/ITelemetryGetMetricResponse.js";
+export * from "./models/api/ITelemetryGetMetricValueRequest.js";
+export * from "./models/api/ITelemetryGetMetricValueResponse.js";
 export * from "./models/api/ITelemetryListRequest.js";
 export * from "./models/api/ITelemetryListResponse.js";
 export * from "./models/api/ITelemetryRemoveMetricRequest.js";
