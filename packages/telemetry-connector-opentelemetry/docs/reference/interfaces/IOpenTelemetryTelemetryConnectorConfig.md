@@ -4,6 +4,14 @@ The options for the OpenTelemetry telemetry connector constructor.
 
 ## Properties
 
+### mutexTimeoutMs? {#mutextimeoutms}
+
+> `optional` **mutexTimeoutMs?**: `number`
+
+Timeout in milliseconds for acquiring the inner entity-storage metric write mutex lock.
+
+***
+
 ### meterName? {#metername}
 
 > `optional` **meterName?**: `string`

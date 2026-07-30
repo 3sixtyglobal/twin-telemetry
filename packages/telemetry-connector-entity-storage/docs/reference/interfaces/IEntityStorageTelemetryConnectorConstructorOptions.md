@@ -37,3 +37,11 @@ telemetry-metric-value
 > `optional` **loggingComponentType?**: `string`
 
 The type of the logging component to use, can be undefined for no logging.
+
+***
+
+### config? {#config}
+
+> `optional` **config?**: [`IEntityStorageTelemetryConnectorConfig`](IEntityStorageTelemetryConnectorConfig.md)
+
+The configuration for the connector.

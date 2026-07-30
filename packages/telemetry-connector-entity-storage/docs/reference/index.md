@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [IEntityStorageTelemetryConnectorConfig](interfaces/IEntityStorageTelemetryConnectorConfig.md)
 - [IEntityStorageTelemetryConnectorConstructorOptions](interfaces/IEntityStorageTelemetryConnectorConstructorOptions.md)
 
 ## Functions
