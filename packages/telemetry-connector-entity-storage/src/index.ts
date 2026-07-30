@@ -3,5 +3,6 @@
 export * from "./entities/telemetryMetric.js";
 export * from "./entities/telemetryMetricValue.js";
 export * from "./entityStorageTelemetryConnector.js";
+export * from "./models/IEntityStorageTelemetryConnectorConfig.js";
 export * from "./models/IEntityStorageTelemetryConnectorConstructorOptions.js";
 export * from "./schema.js";

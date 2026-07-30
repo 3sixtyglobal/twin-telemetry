@@ -7,6 +7,11 @@ import type { IOpenTelemetryReaderConfig } from "./IOpenTelemetryReaderConfig.js
  */
 export interface IOpenTelemetryTelemetryConnectorConfig {
 	/**
+	 * Timeout in milliseconds for acquiring the inner entity-storage metric write mutex lock.
+	 */
+	mutexTimeoutMs?: number;
+
+	/**
 	 * The name of the OpenTelemetry meter used to create instruments.
 	 * @default twin-telemetry
 	 */

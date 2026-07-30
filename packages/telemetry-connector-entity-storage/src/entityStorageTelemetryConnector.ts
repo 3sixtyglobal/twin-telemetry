@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0.
 import {
 	AlreadyExistsError,
+	Coerce,
 	ComponentFactory,
 	Converter,
 	GeneralError,
 	Guards,
 	Is,
+	Mutex,
 	NotFoundError,
 	RandomHelper
 } from "@twin.org/core";
@@ -73,6 +75,12 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _logging?: ILoggingComponent;
 
 	/**
+	 * The timeout in milliseconds when acquiring a metric write mutex lock.
+	 * @internal
+	 */
+	private readonly _mutexTimeoutMs?: number;
+
+	/**
 	 * Create a new instance of EntityStorageTelemetryConnector.
 	 * @param options The options for the connector.
 	 */
@@ -85,6 +93,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		);
 
 		this._logging = ComponentFactory.getIfExists(options?.loggingComponentType);
+		this._mutexTimeoutMs = Coerce.integer(options?.config?.mutexTimeoutMs);
 	}
 
 	/**
@@ -260,101 +269,115 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	): Promise<string> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
-		const existingMetric = await this._metricStorage.get(id);
-		if (Is.undefined(existingMetric)) {
-			throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
-		}
-
-		const existingMetricValue = await this._metricValueStorage.query(
-			{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
-			[
-				{
-					property: "ts",
-					sortDirection: SortDirection.Descending
-				}
-			],
-			undefined,
-			undefined,
-			1
-		);
-
-		const lastMetric = existingMetricValue.entities[0];
-		let newValue = Is.notEmpty(lastMetric) ? (lastMetric.value as number) : 0;
-
-		if (existingMetric.type === MetricType.Counter) {
-			if (value === MetricCounterOperation.Increment) {
-				newValue++;
-			} else if (Is.integer(value) && value > 0) {
-				newValue += value;
-			} else {
-				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
-			}
-		} else if (existingMetric.type === MetricType.IncDecCounter) {
-			if (value === MetricCounterOperation.Increment) {
-				newValue++;
-			} else if (value === MetricCounterOperation.Decrement) {
-				newValue--;
-			} else if (Is.integer(value)) {
-				newValue += value;
-			} else {
-				throw new GeneralError(
-					EntityStorageTelemetryConnector.CLASS_NAME,
-					"upDownCounterIncOrDecOnly"
-				);
-			}
-		} else if (Is.number(value)) {
-			newValue = value;
-		} else {
-			throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
-		}
-
-		const telemetryMetricValue: TelemetryMetricValue = {
-			id: Converter.bytesToHex(RandomHelper.generate(16)),
-			metricId: id,
-			ts: Date.now(),
-			value: newValue,
-			customData
-		};
-
-		await this._metricValueStorage.set(telemetryMetricValue);
-
-		if (Is.integer(existingMetric.maxHistory) && existingMetric.maxHistory > 0) {
-			let trimCursor: string | undefined;
-			const idsBuffer: string[] = [];
-			do {
-				// Fetch only ids in fixed-size chunks. Using a large fixed page size keeps
-				// query count low for typical histories while avoiding an unbounded single
-				// request when maxHistory is very large.
-				const page = await this._metricValueStorage.query(
-					{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
-					[{ property: "ts", sortDirection: SortDirection.Ascending }],
-					["id"],
-					trimCursor,
-					EntityStorageTelemetryConnector._TRIM_PAGE_SIZE
-				);
-				for (const entity of page.entities) {
-					idsBuffer.push((entity as TelemetryMetricValue).id);
-				}
-				// Oldest entries at the front of the ascending-sorted buffer are
-				// definitively excess once the buffer exceeds maxHistory, regardless
-				// of how many further pages remain. Remove them in place so the
-				// removeBatch calls stay chunk-sized across the whole loop.
-				const excess = idsBuffer.length - existingMetric.maxHistory;
-				if (excess > 0) {
-					await this._metricValueStorage.removeBatch(idsBuffer.splice(0, excess));
-				}
-				trimCursor = page.cursor;
-			} while (Is.stringValue(trimCursor));
-		}
-
-		await this._logging?.log({
-			source: EntityStorageTelemetryConnector.CLASS_NAME,
-			message: "metricValueCreated",
-			level: "info",
-			data: { id, value: newValue }
+		const lockKey = `${EntityStorageTelemetryConnector.CLASS_NAME}:${id}`;
+		await Mutex.lock(lockKey, {
+			throwOnTimeout: true,
+			timeoutMs: this._mutexTimeoutMs
 		});
 
-		return telemetryMetricValue.id;
+		try {
+			const existingMetric = await this._metricStorage.get(id);
+			if (Is.undefined(existingMetric)) {
+				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
+			}
+
+			const existingMetricValue = await this._metricValueStorage.query(
+				{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
+				[
+					{
+						property: "ts",
+						sortDirection: SortDirection.Descending
+					}
+				],
+				undefined,
+				undefined,
+				1
+			);
+
+			const lastMetric = existingMetricValue.entities[0] as TelemetryMetricValue | undefined;
+			let newValue = Is.notEmpty(lastMetric) ? lastMetric.value : 0;
+
+			if (existingMetric.type === MetricType.Counter) {
+				if (value === MetricCounterOperation.Increment) {
+					newValue++;
+				} else if (Is.integer(value) && value > 0) {
+					newValue += value;
+				} else {
+					throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
+				}
+			} else if (existingMetric.type === MetricType.IncDecCounter) {
+				if (value === MetricCounterOperation.Increment) {
+					newValue++;
+				} else if (value === MetricCounterOperation.Decrement) {
+					newValue--;
+				} else if (Is.integer(value)) {
+					newValue += value;
+				} else {
+					throw new GeneralError(
+						EntityStorageTelemetryConnector.CLASS_NAME,
+						"upDownCounterIncOrDecOnly"
+					);
+				}
+			} else if (Is.number(value)) {
+				newValue = value;
+			} else {
+				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
+			}
+
+			// Keep timestamps strictly increasing per metric to preserve deterministic ordering.
+			const now = Date.now();
+			const ts = Is.notEmpty(lastMetric) ? Math.max(now, lastMetric.ts + 1) : now;
+
+			const telemetryMetricValue: TelemetryMetricValue = {
+				id: Converter.bytesToHex(RandomHelper.generate(16)),
+				metricId: id,
+				ts,
+				value: newValue,
+				customData
+			};
+
+			await this._metricValueStorage.set(telemetryMetricValue);
+
+			if (Is.integer(existingMetric.maxHistory) && existingMetric.maxHistory > 0) {
+				let trimCursor: string | undefined;
+				const idsBuffer: string[] = [];
+				do {
+					// Fetch only ids in fixed-size chunks. Using a large fixed page size keeps
+					// query count low for typical histories while avoiding an unbounded single
+					// request when maxHistory is very large.
+					const page = await this._metricValueStorage.query(
+						{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
+						[{ property: "ts", sortDirection: SortDirection.Ascending }],
+						["id"],
+						trimCursor,
+						EntityStorageTelemetryConnector._TRIM_PAGE_SIZE
+					);
+					for (const entity of page.entities) {
+						idsBuffer.push((entity as TelemetryMetricValue).id);
+					}
+					// Oldest entries at the front of the ascending-sorted buffer are
+					// definitively excess once the buffer exceeds maxHistory, regardless
+					// of how many further pages remain. Remove them in place so the
+					// removeBatch calls stay chunk-sized across the whole loop.
+					const excess = idsBuffer.length - existingMetric.maxHistory;
+					if (excess > 0) {
+						await this._metricValueStorage.removeBatch(idsBuffer.splice(0, excess));
+					}
+					trimCursor = page.cursor;
+				} while (Is.stringValue(trimCursor));
+			}
+
+			await this._logging?.log({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueCreated",
+				level: "info",
+				data: { id, value: newValue }
+			});
+
+			return telemetryMetricValue.id;
+		} finally {
+			Mutex.unlock(lockKey);
+		}
 	}
 
 	/**
@@ -368,13 +391,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(valueId), valueId);
 
 		const results = await this._metricValueStorage.query(
-			{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
-			[
-				{
-					property: "ts",
-					sortDirection: SortDirection.Descending
-				}
-			],
+			{
+				conditions: [
+					{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
+					{ property: "id", comparison: ComparisonOperator.Equals, value: valueId }
+				],
+				logicalOperator: LogicalOperator.And
+			},
+			undefined,
 			undefined,
 			undefined,
 			1
@@ -574,9 +598,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			limit
 		);
 
+		const entities = result.entities as ITelemetryMetricValue[];
+		if (existingMetric.type === MetricType.Counter) {
+			entities.sort((a, b) => b.value - a.value || b.ts - a.ts);
+		}
+
 		return {
 			metric: existingMetric as ITelemetryMetric,
-			entities: result.entities as ITelemetryMetricValue[],
+			entities,
 			cursor: result.cursor
 		};
 	}

@@ -83,7 +83,10 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		this._inner = new EntityStorageTelemetryConnector({
 			loggingComponentType: options?.loggingComponentType,
 			telemetryMetricStorageConnectorType: options?.telemetryMetricStorageConnectorType,
-			telemetryMetricValueStorageConnectorType: options?.telemetryMetricValueStorageConnectorType
+			telemetryMetricValueStorageConnectorType: options?.telemetryMetricValueStorageConnectorType,
+			config: {
+				mutexTimeoutMs: this._config.mutexTimeoutMs
+			}
 		});
 		this._instruments = new Map();
 	}

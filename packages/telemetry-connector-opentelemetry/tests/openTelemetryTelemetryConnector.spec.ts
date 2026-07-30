@@ -1,5 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import { Mutex } from "@twin.org/core";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
 import { nameof } from "@twin.org/nameof";
@@ -54,6 +55,32 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
 		await expect(connector.start()).resolves.toBeUndefined();
 		await expect(connector.stop()).resolves.toBeUndefined();
+	});
+
+	test("forwards configured mutex timeout to inner lock acquisition", async () => {
+		const lockSpy = vi.spyOn(Mutex, "lock");
+		const connector = new OpenTelemetryTelemetryConnector({
+			config: {
+				readers: {},
+				mutexTimeoutMs: 4321
+			}
+		});
+
+		await connector.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter
+		});
+
+		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+
+		expect(lockSpy).toHaveBeenCalledWith("EntityStorageTelemetryConnector:test", {
+			throwOnTimeout: true,
+			timeoutMs: 4321
+		});
+
+		lockSpy.mockRestore();
+		await connector.stop();
 	});
 
 	test("start is idempotent", async () => {
