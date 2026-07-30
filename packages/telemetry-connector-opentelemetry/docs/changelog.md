@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.9.2-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.0...telemetry-connector-opentelemetry-v0.9.2-next.1) (2026-07-30)
+
+
+### Features
+
+* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update components ([a8583f3](https://github.com/iotaledger/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
+
+
+### Bug Fixes
+
+* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* metric timestamp ordering ([#73](https://github.com/iotaledger/twin-telemetry/issues/73)) ([67829ac](https://github.com/iotaledger/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
+* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.0 to 0.9.2-next.1
+    * @twin.org/telemetry-models bumped from 0.9.2-next.0 to 0.9.2-next.1
+
 ## [0.9.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1...telemetry-connector-opentelemetry-v0.9.1) (2026-07-27)
 
 
