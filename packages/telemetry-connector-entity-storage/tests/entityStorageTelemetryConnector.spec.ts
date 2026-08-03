@@ -182,7 +182,6 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 
-		console.log(valueStore);
 		expect(valueStore?.length).toEqual(1);
 		expect(valueStore?.[0].id.length).toEqual(32);
 		expect(valueStore?.[0].metricId).toEqual("test");
@@ -509,8 +508,6 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		const store = await telemetryMetricsEntityStorage.getStore();
 		expect(store?.length).toEqual(8);
-
-		console.log(JSON.stringify(store, null, 2));
 
 		const query1 = await telemetry.query(MetricType.IncDecCounter, undefined, 10);
 
