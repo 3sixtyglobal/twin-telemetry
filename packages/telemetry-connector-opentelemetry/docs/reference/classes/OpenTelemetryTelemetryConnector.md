@@ -3,9 +3,6 @@
 Class for performing telemetry operations using OpenTelemetry instruments.
 Metric definitions and value history are persisted via an internal
 EntityStorageTelemetryConnector instance created at construction time.
-Call `start()` to initialise the MeterProvider and exporters; metrics can be
-created and queried before start() — OTEL forwarding is simply skipped until
-the MeterProvider is running.
 
 ## Implements
 
@@ -18,8 +15,6 @@ the MeterProvider is running.
 > **new OpenTelemetryTelemetryConnector**(`options?`): `OpenTelemetryTelemetryConnector`
 
 Create a new instance of OpenTelemetryTelemetryConnector.
-Eagerly constructs the inner EntityStorageTelemetryConnector — if the required
-entity storage types are not registered this constructor will throw (fail fast).
 
 #### Parameters
 
@@ -32,6 +27,10 @@ The options for the connector.
 #### Returns
 
 `OpenTelemetryTelemetryConnector`
+
+#### Throws
+
+GuardError When a reader config specifies an unsupported type.
 
 ## Properties
 
@@ -73,7 +72,8 @@ The class name of the component.
 
 > **start**(`nodeLoggingComponentType?`): `Promise`\<`void`\>
 
-Initialise the MeterProvider and configured exporters.
+Enable OTEL forwarding. Subsequent calls to createMetric and addMetricValue will
+create per-tenant/node MeterProviders on demand.
 
 #### Parameters
 
@@ -87,7 +87,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the MeterProvider is running.
+A promise that resolves when OTEL forwarding is enabled.
 
 #### Implementation of
 
@@ -99,8 +99,7 @@ A promise that resolves when the MeterProvider is running.
 
 > **stop**(`nodeLoggingComponentType?`): `Promise`\<`void`\>
 
-Shut down the MeterProvider and release resources.
-Calling stop() on a connector that has not been started is a no-op.
+Shut down all cached MeterProviders and disable OTEL forwarding.
 
 #### Parameters
 
@@ -114,7 +113,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the MeterProvider has shut down.
+A promise that resolves when all MeterProviders have shut down.
 
 #### Implementation of
 
@@ -127,8 +126,6 @@ A promise that resolves when the MeterProvider has shut down.
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
 Create a new metric.
-The definition is always persisted via the inner entity-storage connector.
-If the MeterProvider is running the corresponding OTEL instrument is also registered.
 
 #### Parameters
 
@@ -142,7 +139,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been persisted and the OTEL instrument registered.
+A promise that resolves when the metric has been persisted.
 
 #### Implementation of
 
@@ -214,9 +211,7 @@ The metric value.
 
 Update the metric metadata.
 Note: OpenTelemetry instrument descriptors are immutable once created.
-This method updates the persisted metadata mirror; the description/unit changes
-are NOT propagated to the registered MeterProvider and will not appear at the
-OTEL backend (Prometheus, OTLP, etc.).
+This method updates the persisted metadata mirror only.
 
 #### Parameters
 
@@ -243,11 +238,8 @@ A promise that resolves when the persisted metadata has been updated.
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
 Record a metric value.
-Entity storage always receives the value first and performs all validation.
-If the MeterProvider is running the measurement is also forwarded to the OTEL instrument.
-Counter accepts positive integers or "inc".
-UpDownCounter accepts integers (positive or negative) or "inc"/"dec".
-Gauge accepts any number.
+The current tenant and node IDs are read from `ContextIdStore` and used to
+select (or create) the matching per-tenant/node `MeterProvider`.
 
 #### Parameters
 
@@ -286,8 +278,8 @@ The id of the new metric value entry.
 Remove a metric and its persisted value history.
 Note: OpenTelemetry exposes no API to deregister an instrument from a Meter,
 so the underlying Counter/UpDownCounter/Gauge remains resident for the lifetime
-of the process. Re-creating a metric with the same id but a different MetricType
-is therefore not safe.
+of the MeterProvider. Re-creating a metric with the same id but a different
+MetricType is therefore not safe.
 
 #### Parameters
 
