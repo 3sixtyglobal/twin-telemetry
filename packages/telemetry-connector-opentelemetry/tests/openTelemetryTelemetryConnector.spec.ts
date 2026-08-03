@@ -1,5 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
 import { Mutex } from "@twin.org/core";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
@@ -86,6 +87,74 @@ describe("OpenTelemetryTelemetryConnector", () => {
 	test("start is idempotent", async () => {
 		const connector = await makeConnector();
 		await expect(connector.start()).resolves.toBeUndefined();
+		await connector.stop();
+	});
+
+	test("creates provider with tenant and node resource attributes from context", async () => {
+		const spy = vi
+			.spyOn(ContextIdStore, "getContextIds")
+			.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-abc", [ContextIdKeys.Node]: "node-1" });
+
+		const connector = await makeConnector();
+		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const { value } = await connector.getMetric("test");
+		expect(value.value).toEqual(1);
+
+		spy.mockRestore();
+		await connector.stop();
+	});
+
+	test("creates separate providers for different tenant/node contexts", async () => {
+		const connector = await makeConnector();
+		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		const spy = vi.spyOn(ContextIdStore, "getContextIds");
+
+		spy.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-a", [ContextIdKeys.Node]: "node-1" });
+		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+
+		spy.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-b", [ContextIdKeys.Node]: "node-1" });
+		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+
+		spy.mockRestore();
+
+		const { entities } = await connector.queryValues("test");
+		expect(entities.length).toEqual(2);
+		await connector.stop();
+	});
+
+	test("reuses cached provider for repeated calls with the same context", async () => {
+		const spy = vi
+			.spyOn(ContextIdStore, "getContextIds")
+			.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-x", [ContextIdKeys.Node]: "node-2" });
+
+		const connector = await makeConnector();
+		await connector.createMetric({ id: "hits", label: "Hits", type: MetricType.Counter });
+
+		for (let i = 0; i < 5; i++) {
+			await connector.addMetricValue("hits", MetricCounterOperation.Increment);
+		}
+
+		const { entities } = await connector.queryValues("hits");
+		expect(entities.length).toEqual(5);
+
+		spy.mockRestore();
+		await connector.stop();
+	});
+
+	test("works without a tenant or node context", async () => {
+		const spy = vi.spyOn(ContextIdStore, "getContextIds").mockResolvedValue(undefined);
+
+		const connector = await makeConnector();
+		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+		await connector.addMetricValue("test", 3);
+
+		const { value } = await connector.getMetric("test");
+		expect(value.value).toEqual(3);
+
+		spy.mockRestore();
 		await connector.stop();
 	});
 
