@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.2-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.1...telemetry-connector-opentelemetry-v0.9.2-next.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* resource partitioning ([#77](https://github.com/iotaledger/twin-telemetry/issues/77)) ([bae3093](https://github.com/iotaledger/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.1 to 0.9.2-next.2
+    * @twin.org/telemetry-models bumped from 0.9.2-next.1 to 0.9.2-next.2
+
 ## [0.9.2-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.0...telemetry-connector-opentelemetry-v0.9.2-next.1) (2026-07-30)
 
 
