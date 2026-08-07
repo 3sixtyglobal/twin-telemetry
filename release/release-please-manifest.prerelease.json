@@ -1,8 +1,8 @@
 {
-	"packages/telemetry-models": "0.9.2-next.2",
-	"packages/telemetry-connector-entity-storage": "0.9.2-next.2",
-	"packages/telemetry-connector-opentelemetry": "0.9.2-next.2",
-	"packages/telemetry-service": "0.9.2-next.2",
-	"packages/telemetry-rest-client": "0.9.2-next.2",
-	"packages/telemetry-producers": "0.9.2-next.2"
+	"packages/telemetry-models": "0.9.2-next.3",
+	"packages/telemetry-connector-entity-storage": "0.9.2-next.3",
+	"packages/telemetry-connector-opentelemetry": "0.9.2-next.3",
+	"packages/telemetry-service": "0.9.2-next.3",
+	"packages/telemetry-rest-client": "0.9.2-next.3",
+	"packages/telemetry-producers": "0.9.2-next.3"
 }
