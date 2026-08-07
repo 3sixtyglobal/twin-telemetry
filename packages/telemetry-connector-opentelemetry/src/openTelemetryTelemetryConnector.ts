@@ -29,7 +29,7 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * The namespace supported by the telemetry connector.
 	 */
-	public static readonly NAMESPACE: string = "opentelemetry";
+	public static readonly NAMESPACE: string = "open-telemetry";
 
 	/**
 	 * Runtime name for the class.

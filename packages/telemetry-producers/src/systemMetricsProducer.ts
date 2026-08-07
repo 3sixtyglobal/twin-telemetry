@@ -33,7 +33,7 @@ export class SystemMetricsProducer implements IMetricsProducer {
 	private readonly _maxHistory: number;
 
 	/**
-	 * Snapshot of CPU times from the previous tick — used to compute deltas.
+	 * Snapshot of CPU times from the previous tick - used to compute deltas.
 	 * @internal
 	 */
 	private _prevCpuTimes: os.CpuInfo["times"][];

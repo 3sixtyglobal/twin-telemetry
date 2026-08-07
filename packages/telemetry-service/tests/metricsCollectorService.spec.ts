@@ -106,7 +106,7 @@ describe("MetricsCollectorService", () => {
 			expect(registered).toEqual(["p1", "p2"]);
 		});
 
-		test("is idempotent — second call is a no-op", async () => {
+		test("is idempotent - second call is a no-op", async () => {
 			let registerCount = 0;
 			MetricsProducerFactory.register("p1", () =>
 				makeProducer({
@@ -182,7 +182,7 @@ describe("MetricsCollectorService", () => {
 
 			ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
 				makePlatformComponent(true, async () => {
-					// no tenants active — fn is never called
+					// no tenants active - fn is never called
 				})
 			);
 
@@ -297,7 +297,7 @@ describe("MetricsCollectorService", () => {
 
 				ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
 					makePlatformComponent(true, async () => {
-						// no active tenants — fn is never invoked
+						// no active tenants - fn is never invoked
 					})
 				);
 

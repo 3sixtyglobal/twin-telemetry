@@ -342,9 +342,6 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				let trimCursor: string | undefined;
 				const idsBuffer: string[] = [];
 				do {
-					// Fetch only ids in fixed-size chunks. Using a large fixed page size keeps
-					// query count low for typical histories while avoiding an unbounded single
-					// request when maxHistory is very large.
 					const page = await this._metricValueStorage.query(
 						{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
 						[{ property: "ts", sortDirection: SortDirection.Ascending }],
@@ -352,19 +349,13 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 						trimCursor,
 						EntityStorageTelemetryConnector._TRIM_PAGE_SIZE
 					);
-					for (const entity of page.entities) {
-						idsBuffer.push((entity as TelemetryMetricValue).id);
-					}
-					// Oldest entries at the front of the ascending-sorted buffer are
-					// definitively excess once the buffer exceeds maxHistory, regardless
-					// of how many further pages remain. Remove them in place so the
-					// removeBatch calls stay chunk-sized across the whole loop.
-					const excess = idsBuffer.length - existingMetric.maxHistory;
-					if (excess > 0) {
-						await this._metricValueStorage.removeBatch(idsBuffer.splice(0, excess));
-					}
+					idsBuffer.push(...page.entities.map(e => e.id as string));
 					trimCursor = page.cursor;
 				} while (Is.stringValue(trimCursor));
+				const excess = idsBuffer.length - existingMetric.maxHistory;
+				if (excess > 0) {
+					await this._metricValueStorage.removeBatch(idsBuffer.slice(0, excess));
+				}
 			}
 
 			await this._logging?.log({
@@ -436,9 +427,10 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 		await this._metricStorage.remove(id);
 
-		let existingMetricValuesResult;
+		let removeValuesCursor: string | undefined;
+		const valueIdsToRemove: string[] = [];
 		do {
-			existingMetricValuesResult = await this._metricValueStorage.query(
+			const existingMetricValuesResult = await this._metricValueStorage.query(
 				{
 					property: "metricId",
 					comparison: ComparisonOperator.Equals,
@@ -446,14 +438,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				},
 				undefined,
 				undefined,
-				existingMetricValuesResult?.cursor
+				removeValuesCursor
 			);
-			await this._metricValueStorage.removeBatch(
-				(existingMetricValuesResult.entities as TelemetryMetricValue[]).map(
-					telemetryMetricValue => telemetryMetricValue.id
-				)
-			);
-		} while (Is.stringValue(existingMetricValuesResult.cursor));
+			valueIdsToRemove.push(...existingMetricValuesResult.entities.map(e => e.id as string));
+			removeValuesCursor = existingMetricValuesResult.cursor;
+		} while (Is.stringValue(removeValuesCursor));
+		if (valueIdsToRemove.length > 0) {
+			await this._metricValueStorage.removeBatch(valueIdsToRemove);
+		}
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
