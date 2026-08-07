@@ -36,7 +36,7 @@ GuardError When a reader config specifies an unsupported type.
 
 ### NAMESPACE {#namespace}
 
-> `readonly` `static` **NAMESPACE**: `string` = `"opentelemetry"`
+> `readonly` `static` **NAMESPACE**: `string` = `"open-telemetry"`
 
 The namespace supported by the telemetry connector.
 
