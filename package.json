@@ -60,7 +60,8 @@
 		"packages/telemetry-connector-opentelemetry",
 		"packages/telemetry-service",
 		"packages/telemetry-rest-client",
-		"packages/telemetry-producers"
+		"packages/telemetry-producers",
+		"packages/telemetry-processors"
 	],
 	"type": "module",
 	"bugs": {

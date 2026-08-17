@@ -12,6 +12,7 @@ Together, these packages reduce integration friction by aligning connector contr
 - [telemetry-service](packages/telemetry-service/README.md) - Telemetry service implementation with REST entry points.
 - [telemetry-rest-client](packages/telemetry-rest-client/README.md) - REST client for interacting with telemetry service endpoints.
 - [telemetry-producers](packages/telemetry-producers/README.md) - Metrics producers for collecting Node.js process and system telemetry.
+- [telemetry-processors](packages/telemetry-processors/README.md) - Route processors for recording telemetry metrics from the web server.
 
 ## Contributing
 
