@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IPlatformComponent } from "@twin.org/api-models";
-import { ComponentFactory } from "@twin.org/core";
+import { ComponentFactory, GuardError, ValidationError } from "@twin.org/core";
 import { MetricsProducerFactory, type IMetricsProducer } from "@twin.org/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
 
@@ -61,22 +61,26 @@ describe("MetricsCollectorService", () => {
 		});
 
 		test("throws for zero interval", () => {
-			expect(() => new MetricsCollectorService({ config: { intervalMs: 0 } })).toThrow(RangeError);
+			expect(() => new MetricsCollectorService({ config: { intervalMs: 0 } })).toThrow(
+				ValidationError
+			);
 		});
 
 		test("throws for negative interval", () => {
-			expect(() => new MetricsCollectorService({ config: { intervalMs: -1 } })).toThrow(RangeError);
+			expect(() => new MetricsCollectorService({ config: { intervalMs: -1 } })).toThrow(
+				ValidationError
+			);
 		});
 
 		test("throws for NaN interval", () => {
 			expect(() => new MetricsCollectorService({ config: { intervalMs: Number.NaN } })).toThrow(
-				RangeError
+				GuardError
 			);
 		});
 
 		test("throws for Infinity interval", () => {
 			expect(() => new MetricsCollectorService({ config: { intervalMs: Infinity } })).toThrow(
-				RangeError
+				GuardError
 			);
 		});
 	});

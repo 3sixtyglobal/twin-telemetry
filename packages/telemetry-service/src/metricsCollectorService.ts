@@ -1,7 +1,13 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IPlatformComponent } from "@twin.org/api-models";
-import { BaseError, ComponentFactory } from "@twin.org/core";
+import {
+	BaseError,
+	ComponentFactory,
+	Guards,
+	type IValidationFailure,
+	Validation
+} from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import {
@@ -52,7 +58,7 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	/**
 	 * Create a new instance of MetricsCollectorService.
 	 * @param options The options for the service.
-	 * @throws {RangeError} If intervalMs is not a finite positive number.
+	 * @throws ValidationError If intervalMs is not a positive integer.
 	 */
 	constructor(options?: IMetricsCollectorServiceConstructorOptions) {
 		this._loggingComponent = ComponentFactory.getIfExists<ILoggingComponent>(
@@ -63,9 +69,14 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 		);
 
 		const intervalMs = options?.config?.intervalMs ?? 60_000;
-		if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
-			throw new RangeError(`intervalMs must be a finite positive number, got ${intervalMs}`);
-		}
+		Guards.integer(MetricsCollectorService.CLASS_NAME, nameof(intervalMs), intervalMs);
+		const failures: IValidationFailure[] = [];
+		Validation.integer(nameof(intervalMs), intervalMs, failures, undefined, { minValue: 1 });
+		Validation.asValidationError(
+			MetricsCollectorService.CLASS_NAME,
+			nameof<MetricsCollectorService>(),
+			failures
+		);
 		this._intervalMs = intervalMs;
 		this._running = false;
 	}
