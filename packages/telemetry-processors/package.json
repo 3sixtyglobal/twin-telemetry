@@ -1,6 +1,6 @@
 {
 	"name": "@twin.org/telemetry-processors",
-	"version": "0.9.2-next.3",
+	"version": "0.9.2-next.4",
 	"description": "Route processors for recording telemetry metrics.",
 	"repository": {
 		"type": "git",
@@ -32,7 +32,7 @@
 		"@twin.org/context": "next",
 		"@twin.org/core": "next",
 		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.9.2-next.3"
+		"@twin.org/telemetry-models": "0.9.2-next.4"
 	},
 	"devDependencies": {
 		"@twin.org/nameof-transformer": "next",
