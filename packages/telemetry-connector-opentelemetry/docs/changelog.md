@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.2-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.6...telemetry-connector-opentelemetry-v0.9.2-next.7) (2026-08-19)
+
+
+### Features
+
+* batch metric entity storage writes ([e592add](https://github.com/iotaledger/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.6 to 0.9.2-next.7
+    * @twin.org/telemetry-models bumped from 0.9.2-next.6 to 0.9.2-next.7
+
 ## [0.9.2-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.5...telemetry-connector-opentelemetry-v0.9.2-next.6) (2026-08-19)
 
 
