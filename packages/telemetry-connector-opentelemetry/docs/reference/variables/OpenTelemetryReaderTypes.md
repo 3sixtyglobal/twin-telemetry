@@ -11,3 +11,9 @@ The types of readers.
 > `readonly` **Prometheus**: `"prometheus"` = `"prometheus"`
 
 Prometheus.
+
+### OtlpHttp {#otlphttp}
+
+> `readonly` **OtlpHttp**: `"otlp-http"` = `"otlp-http"`
+
+OTLP HTTP push exporter.

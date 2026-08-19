@@ -6,6 +6,7 @@
 
 ## Interfaces
 
+- [IOpenTelemetryOtlpHttpReaderConfig](interfaces/IOpenTelemetryOtlpHttpReaderConfig.md)
 - [IOpenTelemetryPrometheusReaderConfig](interfaces/IOpenTelemetryPrometheusReaderConfig.md)
 - [IOpenTelemetryTelemetryConnectorConfig](interfaces/IOpenTelemetryTelemetryConnectorConfig.md)
 - [IOpenTelemetryTelemetryConnectorConstructorOptions](interfaces/IOpenTelemetryTelemetryConnectorConstructorOptions.md)
