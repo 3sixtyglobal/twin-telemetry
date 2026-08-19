@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.2-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.2-next.4...telemetry-service-v0.9.2-next.5) (2026-08-19)
+
+
+### Features
+
+* use standard validation not RangeError ([31e2c79](https://github.com/iotaledger/twin-telemetry/commit/31e2c791fa264827175b23843398a2792654819a))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.4 to 0.9.2-next.5
+
 ## [0.9.2-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.2-next.3...telemetry-service-v0.9.2-next.4) (2026-08-17)
 
 
