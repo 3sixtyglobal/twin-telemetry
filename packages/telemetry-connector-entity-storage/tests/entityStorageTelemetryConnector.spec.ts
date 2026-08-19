@@ -179,6 +179,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 
@@ -189,6 +190,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStore?.[0].value).toEqual(1);
 
 		await telemetry.addMetricValue("test", 5);
+		await telemetry.flush();
 
 		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore2?.length).toEqual(2);
@@ -246,6 +248,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		await telemetry.addMetricValue("test", MetricCounterOperation.Increment, undefined);
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(1);
@@ -255,6 +258,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStore?.[0].value).toEqual(1);
 
 		await telemetry.addMetricValue("test", 5);
+		await telemetry.flush();
 
 		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore2?.[1].id.length).toEqual(32);
@@ -274,6 +278,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		await telemetry.addMetricValue("test", MetricCounterOperation.Decrement);
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(1);
@@ -283,6 +288,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStore?.[0].value).toEqual(-1);
 
 		await telemetry.addMetricValue("test", -5);
+		await telemetry.flush();
 
 		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore2?.[1].id.length).toEqual(32);
@@ -318,6 +324,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 
 		await telemetry.addMetricValue("test", 11);
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(1);
@@ -327,6 +334,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(valueStore?.[0].value).toEqual(11);
 
 		await telemetry.addMetricValue("test", 12);
+		await telemetry.flush();
 
 		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore2?.[1].id.length).toEqual(32);
@@ -571,11 +579,8 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		for (let i = 0; i < 5; i++) {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-			// Small delay so each value gets a unique Date.now() timestamp; without this,
-			// same-millisecond entries sort by insertion order under ts DESC, causing the
-			// accumulation query to read the oldest entry instead of the newest.
-			await new Promise<void>(resolve => setTimeout(resolve, 2));
 		}
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(3);
@@ -593,13 +598,16 @@ describe("EntityStorageTelemetryConnector", () => {
 		for (let i = 0; i < 5; i++) {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 		}
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(5);
 	});
 
 	test("trim makes a single value-storage query in steady state", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 0, batchIntervalMs: 0 }
+		});
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
@@ -622,7 +630,9 @@ describe("EntityStorageTelemetryConnector", () => {
 
 	test("trim query uses a fixed chunk size rather than maxHistory + 1", async () => {
 		const maxHistory = 3;
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 0, batchIntervalMs: 0 }
+		});
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
@@ -657,11 +667,11 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		for (let i = 0; i < 5; i++) {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-			await new Promise<void>(resolve => setTimeout(resolve, 2));
 		}
 
 		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 3 });
 		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.flush();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.length).toEqual(3);
@@ -751,5 +761,130 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 		expect(result.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
+	});
+
+	test("holds values in cache until flush is called", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeBefore?.length).toEqual(0);
+
+		await telemetry.flush();
+
+		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeAfter?.length).toEqual(3);
+		expect(storeAfter?.[2].value).toEqual(3);
+	});
+
+	test("flushes automatically when batch size threshold is reached", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 3, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeBefore?.length).toEqual(0);
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeAfter?.length).toEqual(3);
+		expect(storeAfter?.[2].value).toEqual(3);
+	});
+
+	test("queryValues flushes pending entries before querying", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+		expect(result.entities.length).toEqual(2);
+		expect(result.entities[0].value).toEqual(2);
+		expect(result.entities[1].value).toEqual(1);
+	});
+
+	test("getMetricValue flushes pending entries before querying", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const value = await telemetry.getMetricValue("test", valueId);
+		expect(value.id).toEqual(valueId);
+		expect(value.value).toEqual(1);
+	});
+
+	test("removeMetric flushes pending entries before removing", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		await telemetry.removeMetric("test");
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(0);
+	});
+
+	test("stop flushes remaining cached entries", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeBefore?.length).toEqual(0);
+
+		await telemetry.stop();
+
+		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeAfter?.length).toEqual(2);
+	});
+
+	test("prunes oldest values during batch flush when maxHistory is set", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { batchSize: 100, batchIntervalMs: 0 }
+		});
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 3
+		});
+
+		for (let i = 0; i < 5; i++) {
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		}
+		await telemetry.flush();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(3);
+
+		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+		expect(result.entities[0].value).toEqual(5);
+		expect(result.entities[1].value).toEqual(4);
+		expect(result.entities[2].value).toEqual(3);
 	});
 });
