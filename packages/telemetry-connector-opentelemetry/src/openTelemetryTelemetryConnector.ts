@@ -107,7 +107,10 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 			telemetryMetricStorageConnectorType: options?.telemetryMetricStorageConnectorType,
 			telemetryMetricValueStorageConnectorType: options?.telemetryMetricValueStorageConnectorType,
 			config: {
-				mutexTimeoutMs: this._config.mutexTimeoutMs
+				mutexTimeoutMs: this._config.mutexTimeoutMs,
+				batchSize: this._config.batchSize,
+				batchIntervalMs: this._config.batchIntervalMs,
+				maxCacheSize: this._config.maxCacheSize
 			}
 		});
 		this._started = false;
