@@ -42,6 +42,30 @@ The namespace supported by the telemetry connector.
 
 Runtime name for the class.
 
+***
+
+### DEFAULT\_BATCH\_SIZE {#default_batch_size}
+
+> `readonly` `static` **DEFAULT\_BATCH\_SIZE**: `number` = `10`
+
+Default number of entries to accumulate before flushing.
+
+***
+
+### DEFAULT\_BATCH\_INTERVAL\_MS {#default_batch_interval_ms}
+
+> `readonly` `static` **DEFAULT\_BATCH\_INTERVAL\_MS**: `number` = `5000`
+
+Default interval in milliseconds between automatic flushes.
+
+***
+
+### DEFAULT\_MAX\_CACHE\_SIZE {#default_max_cache_size}
+
+> `readonly` `static` **DEFAULT\_MAX\_CACHE\_SIZE**: `number` = `1000`
+
+Default maximum number of entries to hold in the in-memory cache.
+
 ## Methods
 
 ### className() {#classname}
@@ -59,6 +83,42 @@ The class name of the component.
 #### Implementation of
 
 `ITelemetryConnector.className`
+
+***
+
+### start() {#start}
+
+> **start**(): `Promise`\<`void`\>
+
+Start the connector; sets up the interval timer when batchIntervalMs is configured.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when the connector is ready to accept metric values.
+
+#### Implementation of
+
+`ITelemetryConnector.start`
+
+***
+
+### stop() {#stop}
+
+> **stop**(): `Promise`\<`void`\>
+
+Stop the connector; flushes any remaining cached entries and clears the timer.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when the final flush completes and the timer is cleared.
+
+#### Implementation of
+
+`ITelemetryConnector.stop`
 
 ***
 
@@ -325,3 +385,19 @@ and a cursor which can be used to request more entities.
 #### Implementation of
 
 `ITelemetryConnector.queryValues`
+
+***
+
+### flush() {#flush}
+
+> **flush**(): `Promise`\<`void`\>
+
+Write all cached entries to storage and clear the cache.
+If the mutex cannot be acquired the call returns without writing.
+On a storage write failure the entries are returned to the head of the cache for the next attempt.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when all cached entries have been written to storage.

@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [IBatchMetricValueEntry](interfaces/IBatchMetricValueEntry.md)
 - [IEntityStorageTelemetryConnectorConfig](interfaces/IEntityStorageTelemetryConnectorConfig.md)
 - [IEntityStorageTelemetryConnectorConstructorOptions](interfaces/IEntityStorageTelemetryConnectorConstructorOptions.md)
 
