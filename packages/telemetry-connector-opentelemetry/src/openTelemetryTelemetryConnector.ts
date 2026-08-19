@@ -1,9 +1,14 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { MeterProvider, type MetricReader } from "@opentelemetry/sdk-metrics";
+import {
+	MeterProvider,
+	PeriodicExportingMetricReader,
+	type MetricReader
+} from "@opentelemetry/sdk-metrics";
 import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
 import { AlreadyExistsError, BaseError, ComponentFactory, Guards, Is } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
@@ -418,6 +423,16 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 						endpoint: config.endpoint,
 						preventServerStart: !(config.startServer ?? true),
 						prefix: config.prefix
+					})
+				);
+			} else if (config.type === OpenTelemetryReaderTypes.OtlpHttp) {
+				readers.push(
+					new PeriodicExportingMetricReader({
+						exporter: new OTLPMetricExporter({
+							url: config.url,
+							headers: config.headers
+						}),
+						exportIntervalMillis: config.exportIntervalMs
 					})
 				);
 			}

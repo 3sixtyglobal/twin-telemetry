@@ -9,7 +9,11 @@ export const OpenTelemetryReaderTypes = {
 	/**
 	 * Prometheus.
 	 */
-	Prometheus: "prometheus"
+	Prometheus: "prometheus",
+	/**
+	 * OTLP HTTP push exporter.
+	 */
+	OtlpHttp: "otlp-http"
 } as const;
 
 /**

@@ -11,14 +11,28 @@ import {
 	initSchema
 } from "@twin.org/telemetry-connector-entity-storage";
 import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+import { TEST_OTLP_ENDPOINT_METRICS } from "./setupTestEnv.js";
+import { OpenTelemetryReaderTypes } from "../src/models/openTelemetryReaderTypes.js";
 import { OpenTelemetryTelemetryConnector } from "../src/openTelemetryTelemetryConnector.js";
 
 /**
- * Create and start a connector configured with no exporter (suitable for unit tests).
+ * Create and start a connector configured with real OTLP HTTP and Prometheus exporters.
  * @returns A started connector instance.
  */
 async function makeConnector(): Promise<OpenTelemetryTelemetryConnector> {
-	const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
+	const connector = new OpenTelemetryTelemetryConnector({
+		config: {
+			readers: {
+				metrics: {
+					type: OpenTelemetryReaderTypes.OtlpHttp,
+					url: TEST_OTLP_ENDPOINT_METRICS
+				},
+				prometheus: {
+					type: OpenTelemetryReaderTypes.Prometheus
+				}
+			}
+		}
+	});
 	await connector.start();
 	return connector;
 }

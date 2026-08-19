@@ -1,5 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+export * from "./models/IOpenTelemetryOtlpHttpReaderConfig.js";
 export * from "./models/IOpenTelemetryPrometheusReaderConfig.js";
 export * from "./models/IOpenTelemetryReaderConfig.js";
 export * from "./models/IOpenTelemetryTelemetryConnectorConfig.js";
