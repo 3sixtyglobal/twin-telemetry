@@ -16,8 +16,13 @@ The timeout in milliseconds for acquiring the metric write mutex lock.
 
 > `optional` **batchSize?**: `number`
 
-Flush the cache when it reaches this many entries; values <= 1 disable size-based flushing.
-Defaults to 10.
+Flush the cache when it reaches this many entries; values &lt;= 1 disable size-based flushing.
+
+#### Default
+
+```ts
+10.
+```
 
 ***
 
@@ -25,8 +30,13 @@ Defaults to 10.
 
 > `optional` **batchIntervalMs?**: `number`
 
-Flush the cache every this many milliseconds; values <= 0 disable timer-based flushing.
-Defaults to 5000.
+Flush the cache every this many milliseconds; values &lt;= 0 disable timer-based flushing.
+
+#### Default
+
+```ts
+5000.
+```
 
 ***
 
@@ -35,4 +45,10 @@ Defaults to 5000.
 > `optional` **maxCacheSize?**: `number`
 
 Maximum entries to retain in the cache if a flush fails and entries are re-queued.
-0 means unlimited. Defaults to 1000.
+0 means unlimited.
+
+#### Default
+
+```ts
+1000.
+```

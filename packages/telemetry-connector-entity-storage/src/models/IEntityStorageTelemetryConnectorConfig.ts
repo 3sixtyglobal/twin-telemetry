@@ -11,20 +11,21 @@ export interface IEntityStorageTelemetryConnectorConfig {
 	mutexTimeoutMs?: number;
 
 	/**
-	 * Flush the cache when it reaches this many entries; values <= 1 disable size-based flushing.
-	 * Defaults to 10.
+	 * Flush the cache when it reaches this many entries; values &lt;= 1 disable size-based flushing.
+	 * @default 10.
 	 */
 	batchSize?: number;
 
 	/**
-	 * Flush the cache every this many milliseconds; values <= 0 disable timer-based flushing.
-	 * Defaults to 5000.
+	 * Flush the cache every this many milliseconds; values &lt;= 0 disable timer-based flushing.
+	 * @default 5000.
 	 */
 	batchIntervalMs?: number;
 
 	/**
 	 * Maximum entries to retain in the cache if a flush fails and entries are re-queued.
-	 * 0 means unlimited. Defaults to 1000.
+	 * 0 means unlimited.
+	 * @default 1000.
 	 */
 	maxCacheSize?: number;
 }
