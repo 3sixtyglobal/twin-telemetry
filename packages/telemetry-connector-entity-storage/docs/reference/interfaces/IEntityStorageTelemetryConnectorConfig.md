@@ -52,3 +52,31 @@ Maximum entries to retain in the cache if a flush fails and entries are re-queue
 ```ts
 1000.
 ```
+
+***
+
+### metricDefinitionCacheCapacity? {#metricdefinitioncachecapacity}
+
+> `optional` **metricDefinitionCacheCapacity?**: `number`
+
+Maximum number of metric definitions held in the in-memory definition cache.
+
+#### Default
+
+```ts
+100.
+```
+
+***
+
+### metricDefinitionCacheTtiMs? {#metricdefinitioncachettims}
+
+> `optional` **metricDefinitionCacheTtiMs?**: `number`
+
+Time-to-idle in milliseconds for cached metric definitions.
+
+#### Default
+
+```ts
+3600000.
+```

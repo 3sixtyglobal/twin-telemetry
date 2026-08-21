@@ -16,8 +16,8 @@ The body parameters.
 
 The metric.
 
-#### value
+#### value?
 
-> **value**: [`ITelemetryMetricValue`](ITelemetryMetricValue.md)
+> `optional` **value?**: [`ITelemetryMetricValue`](ITelemetryMetricValue.md)
 
 The latest metric value.

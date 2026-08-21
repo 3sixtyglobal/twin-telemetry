@@ -66,6 +66,24 @@ Default interval in milliseconds between automatic flushes.
 
 Default maximum number of entries to hold in the in-memory cache.
 
+***
+
+### DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY {#default_metric_definition_cache_capacity}
+
+> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY**: `number` = `100`
+
+Maximum number of metric definitions to hold in the in-memory definition cache.
+
+***
+
+### DEFAULT\_METRIC\_DEFINITION\_CACHE\_TTI\_MS {#default_metric_definition_cache_tti_ms}
+
+> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_TTI\_MS**: `number` = `3_600_000`
+
+Time-to-idle in milliseconds for cached metric definitions.
+Metric definitions are immutable once registered; a long TTI keeps active
+metrics cached without permanent references.
+
 ## Methods
 
 ### className() {#classname}
@@ -150,7 +168,7 @@ A promise that resolves when the metric has been created.
 
 ### getMetric() {#getmetric}
 
-> **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
+> **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value?`: `ITelemetryMetricValue`; \}\>
 
 Get the metric details and it's most recent value.
 
@@ -164,7 +182,7 @@ The metric id.
 
 #### Returns
 
-`Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
+`Promise`\<\{ `metric`: `ITelemetryMetric`; `value?`: `ITelemetryMetricValue`; \}\>
 
 The metric details and it's most recent value.
 

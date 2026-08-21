@@ -32,7 +32,7 @@ A promise that resolves when the metric has been created.
 
 ### getMetric() {#getmetric}
 
-> **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
+> **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
 
 Get the metric details and it's most recent value.
 
@@ -46,7 +46,7 @@ The metric id.
 
 #### Returns
 
-`Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
+`Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
 
 The metric details and it's most recent value.
 
