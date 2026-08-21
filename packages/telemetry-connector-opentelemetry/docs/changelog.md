@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.2-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.7...telemetry-connector-opentelemetry-v0.9.2-next.8) (2026-08-21)
+
+
+### Features
+
+* reduce mutex locks ([#94](https://github.com/iotaledger/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/iotaledger/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.7 to 0.9.2-next.8
+    * @twin.org/telemetry-models bumped from 0.9.2-next.7 to 0.9.2-next.8
+
 ## [0.9.2-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.6...telemetry-connector-opentelemetry-v0.9.2-next.7) (2026-08-19)
 
 
