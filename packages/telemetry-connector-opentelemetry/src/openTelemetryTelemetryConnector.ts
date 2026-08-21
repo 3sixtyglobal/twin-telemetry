@@ -442,19 +442,24 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		if (Is.empty(customData)) {
 			return {};
 		}
-		const attrs: Attributes = {};
+		const attributes: Attributes = {};
 		for (const [key, val] of Object.entries(customData)) {
 			if (Is.string(val) || Is.number(val) || Is.boolean(val)) {
-				attrs[key] = val;
+				attributes[key] = val;
 			} else if (Is.arrayValue(val)) {
-				if (
-					(Is.string(val[0]) || Is.number(val[0]) || Is.boolean(val[0])) &&
-					val.every(el => typeof el === typeof val[0])
-				) {
-					attrs[key] = val as string[] | number[] | boolean[];
+				if (Is.string(val[0]) && val.every(el => Is.string(el))) {
+					attributes[key] = val;
+				} else if (Is.number(val[0]) && val.every(el => Is.number(el))) {
+					attributes[key] = val;
+				} else if (Is.boolean(val[0]) && val.every(el => Is.boolean(el))) {
+					attributes[key] = val;
+				} else {
+					attributes[key] = JSON.stringify(val);
 				}
+			} else if (!Is.undefined(val)) {
+				attributes[key] = JSON.stringify(val);
 			}
 		}
-		return attrs;
+		return attributes;
 	}
 }
