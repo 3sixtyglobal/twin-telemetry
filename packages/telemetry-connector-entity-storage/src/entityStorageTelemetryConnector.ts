@@ -8,6 +8,7 @@ import {
 	GeneralError,
 	Guards,
 	Is,
+	LfuCache,
 	Mutex,
 	NotFoundError,
 	RandomHelper
@@ -64,6 +65,18 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * Default maximum number of entries to hold in the in-memory cache.
 	 */
 	public static readonly DEFAULT_MAX_CACHE_SIZE: number = 1000;
+
+	/**
+	 * Maximum number of metric definitions to hold in the in-memory definition cache.
+	 */
+	public static readonly DEFAULT_METRIC_DEFINITION_CACHE_CAPACITY: number = 100;
+
+	/**
+	 * Time-to-idle in milliseconds for cached metric definitions.
+	 * Metric definitions are immutable once registered; a long TTI keeps active
+	 * metrics cached without permanent references.
+	 */
+	public static readonly DEFAULT_METRIC_DEFINITION_CACHE_TTI_MS: number = 3_600_000;
 
 	/**
 	 * Page size used when scanning for values to trim.
@@ -145,6 +158,25 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private _started: boolean;
 
 	/**
+	 * Capacity used when constructing the metric definition cache.
+	 * @internal
+	 */
+	private readonly _metricDefinitionCacheCapacity: number;
+
+	/**
+	 * Time-to-idle in milliseconds used when constructing the metric definition cache.
+	 * @internal
+	 */
+	private readonly _metricDefinitionCacheTtiMs: number;
+
+	/**
+	 * In-memory cache of metric definitions, keyed by metric id.
+	 * Avoids a storage read on every addMetricValue call.
+	 * @internal
+	 */
+	private _metricDefinitionCache: LfuCache<TelemetryMetric>;
+
+	/**
 	 * Create a new instance of EntityStorageTelemetryConnector.
 	 * @param options The options for the connector.
 	 */
@@ -178,6 +210,16 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		this._batchCache = [];
 		this._pendingLastValue = new Map();
 		this._started = false;
+		this._metricDefinitionCacheCapacity =
+			Coerce.integer(options?.config?.metricDefinitionCacheCapacity) ??
+			EntityStorageTelemetryConnector.DEFAULT_METRIC_DEFINITION_CACHE_CAPACITY;
+		this._metricDefinitionCacheTtiMs =
+			Coerce.integer(options?.config?.metricDefinitionCacheTtiMs) ??
+			EntityStorageTelemetryConnector.DEFAULT_METRIC_DEFINITION_CACHE_TTI_MS;
+		this._metricDefinitionCache = new LfuCache({
+			capacity: this._metricDefinitionCacheCapacity,
+			ttiMs: this._metricDefinitionCacheTtiMs
+		});
 	}
 
 	/**
@@ -195,6 +237,10 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	public async start(): Promise<void> {
 		if (!this._started) {
 			this._started = true;
+			this._metricDefinitionCache = new LfuCache({
+				capacity: this._metricDefinitionCacheCapacity,
+				ttiMs: this._metricDefinitionCacheTtiMs
+			});
 			this.startTimer();
 		}
 	}
@@ -209,6 +255,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			this.stopTimer();
 		}
 		await this.flush();
+		this._metricDefinitionCache.destroy();
 	}
 
 	/**
@@ -273,6 +320,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		};
 
 		await this._metricStorage.set(telemetryMetric);
+		this._metricDefinitionCache.set(metric.id, telemetryMetric);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -289,7 +337,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 */
 	public async getMetric(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}> {
 		const metrics = await this.queryValues(id, undefined, undefined, undefined, 1);
 		return {
@@ -353,6 +401,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		};
 
 		await this._metricStorage.set(telemetryMetric);
+		this._metricDefinitionCache.set(metric.id, telemetryMetric);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -376,18 +425,22 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	): Promise<string> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
+		const existingMetric = await this._metricDefinitionCache.getOrSet(id, async () => {
+			const stored = await this._metricStorage.get(id);
+			if (Is.undefined(stored)) {
+				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
+			}
+			return stored;
+		});
+
 		const lockKey = `${EntityStorageTelemetryConnector.CLASS_NAME}:${id}`;
 		await Mutex.lock(lockKey, {
 			throwOnTimeout: true,
 			timeoutMs: this._mutexTimeoutMs
 		});
 
+		let lockReleased = false;
 		try {
-			const existingMetric = await this._metricStorage.get(id);
-			if (Is.undefined(existingMetric)) {
-				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
-			}
-
 			// Use the last in-memory computed value when available; avoids a storage round-trip
 			// for chained increments within the same batch window.
 			const pending = this._pendingLastValue.get(id);
@@ -459,6 +512,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				customData
 			};
 
+			let shouldFlush = false;
 			if (Is.empty(this._batchSize) && Is.empty(this._batchIntervalMs)) {
 				await this._metricValueStorage.set(telemetryMetricValue);
 
@@ -466,27 +520,20 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 					await this.trimMetricHistory(id, existingMetric.maxHistory);
 				}
 			} else {
-				let shouldFlush = false;
-				const flushLocked = await Mutex.lock(this._mutexKey, {
-					throwOnTimeout: true,
-					timeoutMs: this._mutexTimeoutMs
+				// push and set are synchronous — no yield points, no race with flush's splice.
+				this._batchCache.push({
+					entity: telemetryMetricValue,
+					maxHistory: existingMetric.maxHistory
 				});
-				if (flushLocked) {
-					try {
-						this._batchCache.push({
-							entity: telemetryMetricValue,
-							maxHistory: existingMetric.maxHistory
-						});
-						this._pendingLastValue.set(id, { ts, value: newValue });
-						shouldFlush = !Is.empty(this._batchSize) && this._batchCache.length >= this._batchSize;
-					} finally {
-						Mutex.unlock(this._mutexKey);
-					}
-				}
+				this._pendingLastValue.set(id, { ts, value: newValue });
+				shouldFlush = !Is.empty(this._batchSize) && this._batchCache.length >= this._batchSize;
+			}
 
-				if (shouldFlush) {
-					await this.flush();
-				}
+			Mutex.unlock(lockKey);
+			lockReleased = true;
+
+			if (shouldFlush) {
+				await this.flush();
 			}
 
 			await this._logging?.log({
@@ -498,7 +545,9 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 			return telemetryMetricValue.id;
 		} finally {
-			Mutex.unlock(lockKey);
+			if (!lockReleased) {
+				Mutex.unlock(lockKey);
+			}
 		}
 	}
 
@@ -561,6 +610,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		await this.flush();
 
 		await this._metricStorage.remove(id);
+		this._metricDefinitionCache.delete(id);
 
 		let removeValuesCursor: string | undefined;
 		const valueIdsToRemove: string[] = [];
@@ -716,23 +766,23 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			});
 		}
 
+		const sortBy: { property: keyof TelemetryMetricValue; sortDirection: SortDirection }[] =
+			existingMetric.type === MetricType.Counter
+				? [
+						{ property: "value", sortDirection: SortDirection.Descending },
+						{ property: "ts", sortDirection: SortDirection.Descending }
+					]
+				: [{ property: "ts", sortDirection: SortDirection.Descending }];
+
 		const result = await this._metricValueStorage.query(
 			condition,
-			[
-				{
-					property: "ts",
-					sortDirection: SortDirection.Descending
-				}
-			],
+			sortBy,
 			undefined,
 			cursor,
 			limit
 		);
 
 		const entities = result.entities as ITelemetryMetricValue[];
-		if (existingMetric.type === MetricType.Counter) {
-			entities.sort((a, b) => b.value - a.value || b.ts - a.ts);
-		}
 
 		return {
 			metric: existingMetric as ITelemetryMetric,
@@ -781,7 +831,13 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			for (const [metricId, maxHistory] of toTrim) {
 				await this.trimMetricHistory(metricId, maxHistory);
 			}
-		} catch {
+		} catch (err) {
+			await this._logging?.log({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "flushFailed",
+				level: "error",
+				data: { error: err }
+			});
 			this._batchCache.unshift(...entries);
 			if (this._maxCacheSize > 0 && this._batchCache.length > this._maxCacheSize) {
 				this._batchCache.splice(0, this._batchCache.length - this._maxCacheSize);

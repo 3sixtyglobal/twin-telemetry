@@ -28,7 +28,7 @@ export class TelemetryMetricValue {
 	/**
 	 * The value of the metric.
 	 */
-	@property({ type: "number" })
+	@property({ type: "number", sortDirection: SortDirection.Descending })
 	public value!: number;
 
 	/**

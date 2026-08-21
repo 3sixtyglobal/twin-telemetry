@@ -1,6 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { BaseError, Guards, NotImplementedError } from "@twin.org/core";
+import { Guards, Is, NotImplementedError, NotSupportedError } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import { TelemetryConnectorFactory } from "../factories/telemetryConnectorFactory.js";
 import type { IMultiTelemetryConnectorConstructorOptions } from "../models/IMultiTelemetryConnectorConstructorOptions.js";
@@ -14,6 +14,11 @@ import { MetricType } from "../models/metricType.js";
  * Class for performing telemetry operations on multiple connectors.
  */
 export class MultiTelemetryConnector implements ITelemetryConnector {
+	/**
+	 * The namespace for the class.
+	 */
+	public static readonly NAMESPACE: string = "multi";
+
 	/**
 	 * Runtime name for the class.
 	 */
@@ -79,12 +84,19 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	 */
 	public async getMetric(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}> {
 		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
 
-		// Since all the connectors should have the same data, we can just use the first one.
-		return this._telemetryConnectors[0].getMetric(id);
+		for (const telemetryConnector of this._telemetryConnectors) {
+			const getMetricResult = telemetryConnector.getMetric?.(id);
+			if (!Is.empty(getMetricResult)) {
+				return getMetricResult;
+			}
+		}
+		throw new NotSupportedError(MultiTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "getMetric"
+		});
 	}
 
 	/**
@@ -97,8 +109,15 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(id), id);
 		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(valueId), valueId);
 
-		// Since all the connectors should have the same data, we can just use the first one.
-		return this._telemetryConnectors[0].getMetricValue(id, valueId);
+		for (const telemetryConnector of this._telemetryConnectors) {
+			const getMetricValueResult = telemetryConnector.getMetricValue?.(id, valueId);
+			if (!Is.empty(getMetricValueResult)) {
+				return getMetricValueResult;
+			}
+		}
+		throw new NotSupportedError(MultiTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "getMetricValue"
+		});
 	}
 
 	/**
@@ -138,7 +157,12 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 			)
 		);
 
-		return results[0].status === "fulfilled" ? results[0].value : "";
+		if (results[0].status === "fulfilled") {
+			return results[0].value;
+		}
+		throw new NotSupportedError(MultiTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "addMetricValue"
+		});
 	}
 
 	/**
@@ -179,15 +203,10 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		cursor?: string;
 	}> {
 		// See if we can find a connector that supports querying.
-		// If it throws anything other than not implemented, we should throw it.
 		for (const telemetryConnector of this._telemetryConnectors) {
-			try {
-				const result = await telemetryConnector.query(type, cursor, limit);
-				return result;
-			} catch (error) {
-				if (!BaseError.isErrorName(error, NotImplementedError.CLASS_NAME)) {
-					throw error;
-				}
+			const queryBound = telemetryConnector.query?.bind(telemetryConnector);
+			if (Is.function(queryBound)) {
+				return queryBound(type, cursor, limit);
 			}
 		}
 
@@ -230,13 +249,9 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		// See if we can find a connector that supports querying.
 		// If it throws anything other than not implemented, we should throw it.
 		for (const telemetryConnector of this._telemetryConnectors) {
-			try {
-				const result = await telemetryConnector.queryValues(id, timeStart, timeEnd, cursor, limit);
-				return result;
-			} catch (error) {
-				if (!BaseError.isErrorName(error, NotImplementedError.CLASS_NAME)) {
-					throw error;
-				}
+			const queryValuesBound = telemetryConnector.queryValues?.bind(telemetryConnector);
+			if (Is.function(queryValuesBound)) {
+				return queryValuesBound(id, timeStart, timeEnd, cursor, limit);
 			}
 		}
 

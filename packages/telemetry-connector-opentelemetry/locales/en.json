@@ -4,5 +4,12 @@
 			"connectorStarted": "The connector was started with \"{readerCount}\" metric reader(s)",
 			"connectorStopped": "The connector was stopped"
 		}
+	},
+	"error": {
+		"openTelemetryTelemetryConnector": {
+			"metricNotFound": "The metric could not be found \"{notFoundId}\"",
+			"counterIncOnly": "A counter metric can only be incremented, or added to with an integer",
+			"gaugeNoIncDec": "A gauge can not be incremented or decremented"
+		}
 	}
 }

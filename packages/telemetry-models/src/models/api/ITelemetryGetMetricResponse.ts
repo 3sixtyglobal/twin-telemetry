@@ -19,6 +19,6 @@ export interface ITelemetryGetMetricResponse {
 		/**
 		 * The latest metric value.
 		 */
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	};
 }

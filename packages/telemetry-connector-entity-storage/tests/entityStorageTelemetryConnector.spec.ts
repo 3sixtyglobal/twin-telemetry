@@ -863,6 +863,74 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(storeAfter?.length).toEqual(2);
 	});
 
+	test("does not read metric definition from storage after createMetric pre-warms the cache", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+		expect(getSpy).not.toHaveBeenCalled();
+		getSpy.mockRestore();
+	});
+
+	test("invalidates cached metric definition when metric is removed", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.removeMetric("test");
+
+		await expect(
+			telemetry.addMetricValue("test", MetricCounterOperation.Increment)
+		).rejects.toMatchObject({
+			name: "NotFoundError",
+			message: "entityStorageTelemetryConnector.metricNotFound"
+		});
+	});
+
+	test("refreshes cached metric definition when metric is updated", async () => {
+		const telemetry = new EntityStorageTelemetryConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Test",
+			type: MetricType.Counter,
+			maxHistory: 5
+		});
+
+		for (let i = 0; i < 5; i++) {
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		}
+
+		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 2 });
+
+		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.flush();
+
+		expect(getSpy).not.toHaveBeenCalled();
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.length).toEqual(2);
+		getSpy.mockRestore();
+	});
+
+	test("reads metric definition from storage on cache miss when capacity is exceeded", async () => {
+		const telemetry = new EntityStorageTelemetryConnector({
+			config: { metricDefinitionCacheCapacity: 1 }
+		});
+
+		await telemetry.createMetric({ id: "metric1", label: "Metric 1", type: MetricType.Counter });
+		await telemetry.createMetric({ id: "metric2", label: "Metric 2", type: MetricType.Counter });
+		// With capacity 1, only metric2 remains in cache after both creates.
+
+		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+		await telemetry.addMetricValue("metric1", MetricCounterOperation.Increment);
+		expect(getSpy).toHaveBeenCalledTimes(1);
+		getSpy.mockRestore();
+	});
+
 	test("prunes oldest values during batch flush when maxHistory is set", async () => {
 		const telemetry = new EntityStorageTelemetryConnector({
 			config: { batchSize: 100, batchIntervalMs: 0 }

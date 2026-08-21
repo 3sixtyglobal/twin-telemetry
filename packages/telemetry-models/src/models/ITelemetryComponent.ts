@@ -24,7 +24,7 @@ export interface ITelemetryComponent extends IComponent {
 	 */
 	getMetric(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}>;
 
 	/**

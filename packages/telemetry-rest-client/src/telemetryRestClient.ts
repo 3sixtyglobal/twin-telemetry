@@ -75,7 +75,7 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	 */
 	public async getMetric(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}> {
 		Guards.stringValue(TelemetryRestClient.CLASS_NAME, nameof(id), id);
 

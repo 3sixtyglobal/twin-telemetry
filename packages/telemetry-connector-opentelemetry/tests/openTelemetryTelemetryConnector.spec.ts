@@ -1,15 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { Mutex } from "@twin.org/core";
-import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
-import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
-import { nameof } from "@twin.org/nameof";
-import {
-	type TelemetryMetric,
-	type TelemetryMetricValue,
-	initSchema
-} from "@twin.org/telemetry-connector-entity-storage";
 import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
 import { TEST_OTLP_ENDPOINT_METRICS } from "./setupTestEnv.js";
 import { OpenTelemetryReaderTypes } from "../src/models/openTelemetryReaderTypes.js";
@@ -38,28 +29,6 @@ async function makeConnector(): Promise<OpenTelemetryTelemetryConnector> {
 }
 
 describe("OpenTelemetryTelemetryConnector", () => {
-	let metricStorage: MemoryEntityStorageConnector<TelemetryMetric>;
-	let metricValueStorage: MemoryEntityStorageConnector<TelemetryMetricValue>;
-
-	beforeEach(() => {
-		initSchema();
-		metricStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
-			entitySchema: nameof<TelemetryMetric>(),
-			config: { storageKey: "telemetry-metric" }
-		});
-		metricValueStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
-			entitySchema: nameof<TelemetryMetricValue>(),
-			config: { storageKey: "telemetry-metric-value" }
-		});
-		EntityStorageConnectorFactory.register("telemetry-metric", () => metricStorage);
-		EntityStorageConnectorFactory.register("telemetry-metric-value", () => metricValueStorage);
-	});
-
-	afterEach(async () => {
-		await metricStorage.teardown();
-		await metricValueStorage.teardown();
-	});
-
 	test("can construct", async () => {
 		const connector = new OpenTelemetryTelemetryConnector();
 		expect(connector).toBeDefined();
@@ -70,32 +39,6 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
 		await expect(connector.start()).resolves.toBeUndefined();
 		await expect(connector.stop()).resolves.toBeUndefined();
-	});
-
-	test("forwards configured mutex timeout to inner lock acquisition", async () => {
-		const lockSpy = vi.spyOn(Mutex, "lock");
-		const connector = new OpenTelemetryTelemetryConnector({
-			config: {
-				readers: {},
-				mutexTimeoutMs: 4321
-			}
-		});
-
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await connector.addMetricValue("test", MetricCounterOperation.Increment);
-
-		expect(lockSpy).toHaveBeenCalledWith("EntityStorageTelemetryConnector:test", {
-			throwOnTimeout: true,
-			timeoutMs: 4321
-		});
-
-		lockSpy.mockRestore();
-		await connector.stop();
 	});
 
 	test("start is idempotent", async () => {
@@ -111,10 +54,9 @@ describe("OpenTelemetryTelemetryConnector", () => {
 
 		const connector = await makeConnector();
 		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
-		await connector.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(1);
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Increment)
+		).resolves.toHaveLength(32);
 
 		spy.mockRestore();
 		await connector.stop();
@@ -127,15 +69,16 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		const spy = vi.spyOn(ContextIdStore, "getContextIds");
 
 		spy.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-a", [ContextIdKeys.Node]: "node-1" });
-		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Increment)
+		).resolves.toBeDefined();
 
 		spy.mockResolvedValue({ [ContextIdKeys.Tenant]: "tenant-b", [ContextIdKeys.Node]: "node-1" });
-		await connector.addMetricValue("test", MetricCounterOperation.Increment);
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Increment)
+		).resolves.toBeDefined();
 
 		spy.mockRestore();
-
-		const { entities } = await connector.queryValues("test");
-		expect(entities.length).toEqual(2);
 		await connector.stop();
 	});
 
@@ -148,11 +91,10 @@ describe("OpenTelemetryTelemetryConnector", () => {
 		await connector.createMetric({ id: "hits", label: "Hits", type: MetricType.Counter });
 
 		for (let i = 0; i < 5; i++) {
-			await connector.addMetricValue("hits", MetricCounterOperation.Increment);
+			await expect(
+				connector.addMetricValue("hits", MetricCounterOperation.Increment)
+			).resolves.toBeDefined();
 		}
-
-		const { entities } = await connector.queryValues("hits");
-		expect(entities.length).toEqual(5);
 
 		spy.mockRestore();
 		await connector.stop();
@@ -163,128 +105,9 @@ describe("OpenTelemetryTelemetryConnector", () => {
 
 		const connector = await makeConnector();
 		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
-		await connector.addMetricValue("test", 3);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(3);
+		await expect(connector.addMetricValue("test", 3)).resolves.toBeDefined();
 
 		spy.mockRestore();
-		await connector.stop();
-	});
-
-	test("can create and query metrics before start", async () => {
-		// _inner is constructed eagerly so entity-storage operations work without calling start().
-		// OTEL instruments are simply not registered until start() is called.
-		const connector = new OpenTelemetryTelemetryConnector({ config: { readers: {} } });
-		await connector.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
-		const result = await connector.query();
-		expect(result.entities.length).toEqual(1);
-		expect(result.entities[0].id).toEqual("test");
-	});
-
-	test("can create a counter metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
-
-		const result = await connector.query();
-		expect(result.entities.length).toEqual(1);
-		expect(result.entities[0].id).toEqual("test");
-		expect(result.entities[0].label).toEqual("Test");
-		expect(result.entities[0].type).toEqual(MetricType.Counter);
-		await connector.stop();
-	});
-
-	test("can create an inc/dec counter metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.IncDecCounter
-		});
-
-		const result = await connector.query();
-		expect(result.entities.length).toEqual(1);
-		expect(result.entities[0].type).toEqual(MetricType.IncDecCounter);
-		await connector.stop();
-	});
-
-	test("can create a gauge metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "celsius",
-			type: MetricType.Gauge
-		});
-
-		const result = await connector.query();
-		expect(result.entities.length).toEqual(1);
-		expect(result.entities[0].type).toEqual(MetricType.Gauge);
-		await connector.stop();
-	});
-
-	test("can update metric details", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
-
-		await connector.updateMetric({
-			id: "test",
-			label: "Test Updated",
-			description: "Updated description",
-			unit: "lbs"
-		});
-
-		const { metric } = await connector.getMetric("test");
-		expect(metric.label).toEqual("Test Updated");
-		expect(metric.description).toEqual("Updated description");
-		expect(metric.unit).toEqual("lbs");
-		expect(metric.type).toEqual(MetricType.Counter);
-		await connector.stop();
-	});
-
-	test("can increment a counter metric with inc shorthand", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "api-requests",
-			label: "API Requests",
-			unit: "requests",
-			type: MetricType.Counter
-		});
-
-		await connector.addMetricValue("api-requests", MetricCounterOperation.Increment);
-
-		const { value } = await connector.getMetric("api-requests");
-		expect(value.value).toEqual(1);
-		await connector.stop();
-	});
-
-	test("can add a positive integer to a counter metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await connector.addMetricValue("test", 5);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(5);
 		await connector.stop();
 	});
 
@@ -300,7 +123,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			connector.addMetricValue("test", MetricCounterOperation.Decrement)
 		).rejects.toMatchObject({
 			name: "GeneralError",
-			message: "entityStorageTelemetryConnector.counterIncOnly"
+			message: "openTelemetryTelemetryConnector.counterIncOnly"
 		});
 		await connector.stop();
 	});
@@ -315,84 +138,8 @@ describe("OpenTelemetryTelemetryConnector", () => {
 
 		await expect(connector.addMetricValue("test", -3)).rejects.toMatchObject({
 			name: "GeneralError",
-			message: "entityStorageTelemetryConnector.counterIncOnly"
+			message: "openTelemetryTelemetryConnector.counterIncOnly"
 		});
-		await connector.stop();
-	});
-
-	test("can increment an inc/dec counter metric with inc shorthand", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.IncDecCounter
-		});
-
-		await connector.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(1);
-		await connector.stop();
-	});
-
-	test("can add a positive integer to an inc/dec counter metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.IncDecCounter
-		});
-
-		await connector.addMetricValue("test", 5);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(5);
-		await connector.stop();
-	});
-
-	test("can decrement an inc/dec counter metric with dec shorthand", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.IncDecCounter
-		});
-
-		await connector.addMetricValue("test", MetricCounterOperation.Decrement);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(-1);
-		await connector.stop();
-	});
-
-	test("can add a negative integer to an inc/dec counter metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.IncDecCounter
-		});
-
-		await connector.addMetricValue("test", -5);
-
-		const { value } = await connector.getMetric("test");
-		expect(value.value).toEqual(-5);
-		await connector.stop();
-	});
-
-	test("can set a gauge metric", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "temperature",
-			label: "Temperature",
-			unit: "celsius",
-			type: MetricType.Gauge
-		});
-
-		await connector.addMetricValue("temperature", 65.2);
-
-		const { value } = await connector.getMetric("temperature");
-		expect(value.value).toEqual(65.2);
 		await connector.stop();
 	});
 
@@ -408,7 +155,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			connector.addMetricValue("test", MetricCounterOperation.Increment)
 		).rejects.toMatchObject({
 			name: "GeneralError",
-			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
+			message: "openTelemetryTelemetryConnector.gaugeNoIncDec"
 		});
 		await connector.stop();
 	});
@@ -425,7 +172,7 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			connector.addMetricValue("test", MetricCounterOperation.Decrement)
 		).rejects.toMatchObject({
 			name: "GeneralError",
-			message: "entityStorageTelemetryConnector.gaugeNoIncDec"
+			message: "openTelemetryTelemetryConnector.gaugeNoIncDec"
 		});
 		await connector.stop();
 	});
@@ -442,13 +189,11 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			await connector.addMetricValue("test", MetricCounterOperation.Increment);
 		}
 
-		let result = await connector.query();
-		expect(result.entities.length).toEqual(1);
-
 		await connector.removeMetric("test");
 
-		result = await connector.query();
-		expect(result.entities.length).toEqual(0);
+		await expect(
+			connector.addMetricValue("test", MetricCounterOperation.Increment)
+		).rejects.toMatchObject({ name: "NotFoundError" });
 		await connector.stop();
 	});
 
@@ -457,55 +202,12 @@ describe("OpenTelemetryTelemetryConnector", () => {
 
 		await expect(connector.removeMetric("missing")).rejects.toMatchObject({
 			name: "NotFoundError",
-			message: "entityStorageTelemetryConnector.metricNotFound"
+			message: "openTelemetryTelemetryConnector.metricNotFound"
 		});
 		await connector.stop();
 	});
 
-	test("can query metrics", async () => {
-		const connector = await makeConnector();
-
-		for (let i = 0; i < 11; i++) {
-			await connector.createMetric({
-				id: `metric-${i}`,
-				label: `Metric ${i}`,
-				type: MetricType.Counter
-			});
-		}
-
-		const result = await connector.query(undefined, undefined, 10);
-		expect(result.entities.length).toEqual(10);
-		expect(result.cursor).toBeDefined();
-		await connector.stop();
-	});
-
-	test("can query metrics for a specific type", async () => {
-		const connector = await makeConnector();
-
-		for (let i = 0; i < 5; i++) {
-			await connector.createMetric({
-				id: `counter-${i}`,
-				label: `Counter ${i}`,
-				type: MetricType.Counter
-			});
-		}
-		for (let i = 0; i < 3; i++) {
-			await connector.createMetric({
-				id: `gauge-${i}`,
-				label: `Gauge ${i}`,
-				type: MetricType.Gauge
-			});
-		}
-
-		const counters = await connector.query(MetricType.Counter);
-		expect(counters.entities.length).toEqual(5);
-
-		const gauges = await connector.query(MetricType.Gauge);
-		expect(gauges.entities.length).toEqual(3);
-		await connector.stop();
-	});
-
-	test("can query values for a metric with pagination", async () => {
+	test("can get metric value id length", async () => {
 		const connector = await makeConnector();
 		await connector.createMetric({
 			id: "test",
@@ -513,21 +215,8 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		for (let i = 0; i < 50; i++) {
-			await connector.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-
-		const page1 = await connector.queryValues("test", undefined, undefined, undefined, 20);
-		expect(page1.metric.id).toEqual("test");
-		expect(page1.entities.length).toEqual(20);
-		expect(page1.cursor).toBeDefined();
-
-		const page2 = await connector.queryValues("test", undefined, undefined, page1.cursor, 20);
-		expect(page2.entities.length).toEqual(20);
-
-		const page3 = await connector.queryValues("test", undefined, undefined, page2.cursor, 20);
-		expect(page3.entities.length).toEqual(10);
-		expect(page3.cursor).toBeUndefined();
+		const valueId = await connector.addMetricValue("test", MetricCounterOperation.Increment);
+		expect(valueId.length).toEqual(32);
 		await connector.stop();
 	});
 
@@ -547,26 +236,6 @@ describe("OpenTelemetryTelemetryConnector", () => {
 
 		expect(valueId).toBeDefined();
 		expect(valueId.length).toEqual(32);
-
-		const page = await connector.queryValues("test");
-		expect(page.entities[0].customData).toEqual({
-			route: "/api/health",
-			statusCode: 200,
-			success: true
-		});
-		await connector.stop();
-	});
-
-	test("can get metric value id length", async () => {
-		const connector = await makeConnector();
-		await connector.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		const valueId = await connector.addMetricValue("test", MetricCounterOperation.Increment);
-		expect(valueId.length).toEqual(32);
 		await connector.stop();
 	});
 
@@ -578,18 +247,13 @@ describe("OpenTelemetryTelemetryConnector", () => {
 			type: MetricType.Counter
 		});
 
-		await connector.addMetricValue("test", MetricCounterOperation.Increment, {
+		const valueId = await connector.addMetricValue("test", MetricCounterOperation.Increment, {
 			tags: ["a", "b", "c"],
 			codes: [200, 404],
 			flags: [true, false]
 		});
 
-		const { entities } = await connector.queryValues("test");
-		expect(entities[0].customData).toEqual({
-			tags: ["a", "b", "c"],
-			codes: [200, 404],
-			flags: [true, false]
-		});
+		expect(valueId).toBeDefined();
 		await connector.stop();
 	});
 });

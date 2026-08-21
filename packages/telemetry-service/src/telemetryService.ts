@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0.
 import type { IPlatformComponent } from "@twin.org/api-models";
 import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { ComponentFactory, Guards, Is } from "@twin.org/core";
+import { ComponentFactory, Guards, Is, NotImplementedError } from "@twin.org/core";
 import { nameof } from "@twin.org/nameof";
 import {
 	TelemetryConnectorFactory,
@@ -88,10 +88,15 @@ export class TelemetryService implements ITelemetryComponent {
 	 */
 	public async getMetric(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
-		return this._telemetryConnector.getMetric(id);
+
+		const boundGetMetric = this._telemetryConnector.getMetric?.bind(this._telemetryConnector);
+		if (Is.undefined(boundGetMetric)) {
+			throw new NotImplementedError(TelemetryService.CLASS_NAME, "getMetric");
+		}
+		return boundGetMetric(id);
 	}
 
 	/**
@@ -103,7 +108,14 @@ export class TelemetryService implements ITelemetryComponent {
 	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(valueId), valueId);
-		return this._telemetryConnector.getMetricValue(id, valueId);
+
+		const boundGetMetricValue = this._telemetryConnector.getMetricValue?.bind(
+			this._telemetryConnector
+		);
+		if (Is.undefined(boundGetMetricValue)) {
+			throw new NotImplementedError(TelemetryService.CLASS_NAME, "getMetricValue");
+		}
+		return boundGetMetricValue(id, valueId);
 	}
 
 	/**
@@ -168,7 +180,11 @@ export class TelemetryService implements ITelemetryComponent {
 		 */
 		cursor?: string;
 	}> {
-		return this._telemetryConnector.query(type, cursor, limit);
+		const boundQuery = this._telemetryConnector.query?.bind(this._telemetryConnector);
+		if (Is.undefined(boundQuery)) {
+			throw new NotImplementedError(TelemetryService.CLASS_NAME, "query");
+		}
+		return boundQuery(type, cursor, limit);
 	}
 
 	/**
@@ -203,6 +219,11 @@ export class TelemetryService implements ITelemetryComponent {
 		cursor?: string;
 	}> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
-		return this._telemetryConnector.queryValues(id, timeStart, timeEnd, cursor, limit);
+
+		const boundQueryValues = this._telemetryConnector.queryValues?.bind(this._telemetryConnector);
+		if (Is.undefined(boundQueryValues)) {
+			throw new NotImplementedError(TelemetryService.CLASS_NAME, "queryValues");
+		}
+		return boundQueryValues(id, timeStart, timeEnd, cursor, limit);
 	}
 }
