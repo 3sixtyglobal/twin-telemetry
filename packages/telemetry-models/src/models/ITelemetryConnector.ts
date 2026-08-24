@@ -22,9 +22,9 @@ export interface ITelemetryConnector extends IComponent {
 	 * @param id The metric id.
 	 * @returns The metric details and it's most recent value.
 	 */
-	getMetric(id: string): Promise<{
+	getMetric?(id: string): Promise<{
 		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
+		value?: ITelemetryMetricValue;
 	}>;
 
 	/**
@@ -33,7 +33,7 @@ export interface ITelemetryConnector extends IComponent {
 	 * @param valueId The id of the metric value.
 	 * @returns The metric value.
 	 */
-	getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue>;
+	getMetricValue?(id: string, valueId: string): Promise<ITelemetryMetricValue>;
 
 	/**
 	 * Update metric.
@@ -71,7 +71,7 @@ export interface ITelemetryConnector extends IComponent {
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
 	 */
-	query(
+	query?(
 		type?: MetricType,
 		cursor?: string,
 		limit?: number
@@ -98,7 +98,7 @@ export interface ITelemetryConnector extends IComponent {
 	 * and a cursor which can be used to request more entities.
 	 * @throws NotImplementedError if the implementation does not support retrieval.
 	 */
-	queryValues(
+	queryValues?(
 		id: string,
 		timeStart?: number,
 		timeEnd?: number,

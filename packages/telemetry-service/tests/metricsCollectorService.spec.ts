@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IPlatformComponent } from "@twin.org/api-models";
-import { ComponentFactory } from "@twin.org/core";
+import { ComponentFactory, GuardError, ValidationError } from "@twin.org/core";
 import { MetricsProducerFactory, type IMetricsProducer } from "@twin.org/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
 
@@ -61,22 +61,26 @@ describe("MetricsCollectorService", () => {
 		});
 
 		test("throws for zero interval", () => {
-			expect(() => new MetricsCollectorService({ config: { intervalMs: 0 } })).toThrow(RangeError);
+			expect(() => new MetricsCollectorService({ config: { intervalMs: 0 } })).toThrow(
+				ValidationError
+			);
 		});
 
 		test("throws for negative interval", () => {
-			expect(() => new MetricsCollectorService({ config: { intervalMs: -1 } })).toThrow(RangeError);
+			expect(() => new MetricsCollectorService({ config: { intervalMs: -1 } })).toThrow(
+				ValidationError
+			);
 		});
 
 		test("throws for NaN interval", () => {
 			expect(() => new MetricsCollectorService({ config: { intervalMs: Number.NaN } })).toThrow(
-				RangeError
+				GuardError
 			);
 		});
 
 		test("throws for Infinity interval", () => {
 			expect(() => new MetricsCollectorService({ config: { intervalMs: Infinity } })).toThrow(
-				RangeError
+				GuardError
 			);
 		});
 	});
@@ -106,7 +110,7 @@ describe("MetricsCollectorService", () => {
 			expect(registered).toEqual(["p1", "p2"]);
 		});
 
-		test("is idempotent — second call is a no-op", async () => {
+		test("is idempotent - second call is a no-op", async () => {
 			let registerCount = 0;
 			MetricsProducerFactory.register("p1", () =>
 				makeProducer({
@@ -182,7 +186,7 @@ describe("MetricsCollectorService", () => {
 
 			ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
 				makePlatformComponent(true, async () => {
-					// no tenants active — fn is never called
+					// no tenants active - fn is never called
 				})
 			);
 
@@ -297,7 +301,7 @@ describe("MetricsCollectorService", () => {
 
 				ComponentFactory.register(CUSTOM_PLATFORM_TYPE, () =>
 					makePlatformComponent(true, async () => {
-						// no active tenants — fn is never invoked
+						// no active tenants - fn is never invoked
 					})
 				);
 

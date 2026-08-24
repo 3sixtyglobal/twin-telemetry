@@ -14,13 +14,13 @@
 		"@opentelemetry/exporter-prometheus": "0.221.0",
 		"@twin.org/entity-storage-connector-memory": "next",
 		"@twin.org/entity-storage-models": "next",
-		"@twin.org/telemetry-connector-entity-storage": "next",
-		"@twin.org/telemetry-connector-opentelemetry": "file:../..",
-		"@twin.org/telemetry-models": "next"
+		"@twin.org/telemetry-connector-entity-storage": "0.9.2-next.2",
+		"@twin.org/telemetry-connector-opentelemetry": "0.9.2-next.2",
+		"@twin.org/telemetry-models": "0.9.2-next.2"
 	},
 	"devDependencies": {
-		"@types/node": "26.1.1",
-		"tsx": "4.23.1",
+		"@types/node": "26.1.2",
+		"tsx": "4.23.9",
 		"typescript": "6.0.3"
 	}
 }

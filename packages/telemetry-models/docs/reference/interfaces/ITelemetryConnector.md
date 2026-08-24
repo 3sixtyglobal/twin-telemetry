@@ -30,9 +30,9 @@ A promise that resolves when the metric has been created.
 
 ***
 
-### getMetric() {#getmetric}
+### getMetric()? {#getmetric}
 
-> **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
+> `optional` **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
 
 Get the metric details and it's most recent value.
 
@@ -46,15 +46,15 @@ The metric id.
 
 #### Returns
 
-`Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
+`Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md); \}\>
 
 The metric details and it's most recent value.
 
 ***
 
-### getMetricValue() {#getmetricvalue}
+### getMetricValue()? {#getmetricvalue}
 
-> **getMetricValue**(`id`, `valueId`): `Promise`\<[`ITelemetryMetricValue`](ITelemetryMetricValue.md)\>
+> `optional` **getMetricValue**(`id`, `valueId`): `Promise`\<[`ITelemetryMetricValue`](ITelemetryMetricValue.md)\>
 
 Get a specific metric value by its id.
 
@@ -156,9 +156,9 @@ A promise that resolves when the metric and all its values have been removed.
 
 ***
 
-### query() {#query}
+### query()? {#query}
 
-> **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: [`ITelemetryMetric`](ITelemetryMetric.md)[]; `cursor?`: `string`; \}\>
+> `optional` **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: [`ITelemetryMetric`](ITelemetryMetric.md)[]; `cursor?`: `string`; \}\>
 
 Query the metrics.
 
@@ -195,9 +195,9 @@ NotImplementedError if the implementation does not support retrieval.
 
 ***
 
-### queryValues() {#queryvalues}
+### queryValues()? {#queryvalues}
 
-> **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `entities`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md)[]; `cursor?`: `string`; \}\>
+> `optional` **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](ITelemetryMetric.md); `entities`: [`ITelemetryMetricValue`](ITelemetryMetricValue.md)[]; `cursor?`: `string`; \}\>
 
 Query the metric values.
 

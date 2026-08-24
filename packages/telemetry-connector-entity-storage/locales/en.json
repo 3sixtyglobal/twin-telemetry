@@ -7,7 +7,8 @@
 			"counterIncOnly": "A counter metric can only be incremented, or added to with an integer",
 			"upDownCounterIncOrDecOnly": "An up/down counter metric can only be incremented, decremented or adjusted with an integer",
 			"gaugeNoIncDec": "A gauge can not be incremented or decremented",
-			"maxHistoryMustBePositiveInteger": "The maxHistory option must be a positive integer"
+			"maxHistoryMustBePositiveInteger": "The maxHistory option must be a positive integer",
+			"flushFailed": "Failed to flush metric values to storage"
 		}
 	},
 	"info": {

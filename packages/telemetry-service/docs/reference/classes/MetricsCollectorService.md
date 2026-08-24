@@ -28,7 +28,7 @@ The options for the service.
 
 #### Throws
 
-If intervalMs is not a finite positive number.
+ValidationError If intervalMs is not a positive integer.
 
 ## Properties
 

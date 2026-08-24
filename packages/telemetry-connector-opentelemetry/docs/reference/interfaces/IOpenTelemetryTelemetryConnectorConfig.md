@@ -42,4 +42,4 @@ in start(). Omit or pass an empty object for a no-op provider (useful for tests)
 
 #### Index Signature
 
-\[`id`: `string`\]: [`IOpenTelemetryPrometheusReaderConfig`](IOpenTelemetryPrometheusReaderConfig.md)
+\[`id`: `string`\]: [`IOpenTelemetryReaderConfig`](../type-aliases/IOpenTelemetryReaderConfig.md)

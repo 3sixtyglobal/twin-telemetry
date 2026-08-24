@@ -9,7 +9,7 @@ import type { IComponent } from "@twin.org/core";
  * values with `collect()` on every poll cycle. Producers are discovered via
  * `MetricsProducerFactory` and orchestrated by a `MetricsCollectorService`.
  *
- * Producers are factory-only entries — they are not lifecycle components of
+ * Producers are factory-only entries - they are not lifecycle components of
  * the engine. The orchestrating service owns the polling timer.
  */
 export interface IMetricsProducer extends IComponent {

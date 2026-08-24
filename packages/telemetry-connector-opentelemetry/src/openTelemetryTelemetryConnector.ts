@@ -1,35 +1,46 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
-import { MeterProvider, type MetricReader } from "@opentelemetry/sdk-metrics";
-import { AlreadyExistsError, BaseError, ComponentFactory, GeneralError, Is } from "@twin.org/core";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import {
+	MeterProvider,
+	PeriodicExportingMetricReader,
+	type MetricReader
+} from "@opentelemetry/sdk-metrics";
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
+import {
+	ComponentFactory,
+	Converter,
+	GeneralError,
+	Guards,
+	Is,
+	NotFoundError,
+	RandomHelper
+} from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
-import { EntityStorageTelemetryConnector } from "@twin.org/telemetry-connector-entity-storage";
 import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
-	type ITelemetryMetricValue,
 	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
 import type { IOpenTelemetryTelemetryConnectorConfig } from "./models/IOpenTelemetryTelemetryConnectorConfig.js";
 import type { IOpenTelemetryTelemetryConnectorConstructorOptions } from "./models/IOpenTelemetryTelemetryConnectorConstructorOptions.js";
+import { OpenTelemetryReaderTypes } from "./models/openTelemetryReaderTypes.js";
 
 /**
  * Class for performing telemetry operations using OpenTelemetry instruments.
- * Metric definitions and value history are persisted via an internal
- * EntityStorageTelemetryConnector instance created at construction time.
- * Call `start()` to initialise the MeterProvider and exporters; metrics can be
- * created and queried before start() — OTEL forwarding is simply skipped until
- * the MeterProvider is running.
+ * Metric definitions are held in memory. Persistence and querying are not supported;
+ * use a multi-connector with an EntityStorageTelemetryConnector for those capabilities.
  */
 export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * The namespace supported by the telemetry connector.
 	 */
-	public static readonly NAMESPACE: string = "opentelemetry";
+	public static readonly NAMESPACE: string = "open-telemetry";
 
 	/**
 	 * Runtime name for the class.
@@ -37,55 +48,61 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	public static readonly CLASS_NAME: string = nameof<OpenTelemetryTelemetryConnector>();
 
 	/**
-	 * Config options, stored so start() can initialise the MeterProvider.
+	 * Config options stored so provider creation can initialise readers and meter identity.
 	 * @internal
 	 */
 	private readonly _config: IOpenTelemetryTelemetryConnectorConfig;
 
 	/**
-	 * Internal entity-storage connector that owns all metric metadata and value history.
-	 * Created at construction time — fails fast if entity storage is not set up.
+	 * Whether start() has been called. Drives OTEL forwarding on/off.
 	 * @internal
 	 */
-	private readonly _inner: EntityStorageTelemetryConnector;
+	private _started: boolean;
 
 	/**
-	 * Live OTEL instrument handles keyed by metric id, paired with the metric type
-	 * so addMetricValue can dispatch without querying storage.
-	 * These are runtime objects and cannot be persisted.
+	 * Cache of MeterProvider+Meter+instruments keyed by "nodeId/tenantId".
+	 * Providers are created on demand when the first metric measurement arrives
+	 * for a given tenant/node pair.
 	 * @internal
 	 */
-	private readonly _instruments: Map<
-		string,
-		{ metricType: MetricType; instrument: Counter | UpDownCounter | Gauge }
-	>;
+	private readonly _providers: {
+		[key: string]: {
+			meterProvider: MeterProvider;
+			meter: Meter;
+			instruments: {
+				[id: string]: { metricType: MetricType; instrument: Counter | UpDownCounter | Gauge };
+			};
+		};
+	};
 
 	/**
-	 * The MeterProvider that owns all instruments. Set by start(), cleared by stop().
+	 * In-memory metric definition registry keyed by metric id.
 	 * @internal
 	 */
-	private _meterProvider?: MeterProvider;
-
-	/**
-	 * The Meter used to create instruments. Set by start(), cleared by stop().
-	 * @internal
-	 */
-	private _meter?: Meter;
+	private readonly _metricDefs: {
+		[id: string]: { type: MetricType; label: string; description?: string; unit?: string };
+	};
 
 	/**
 	 * Create a new instance of OpenTelemetryTelemetryConnector.
-	 * Eagerly constructs the inner EntityStorageTelemetryConnector — if the required
-	 * entity storage types are not registered this constructor will throw (fail fast).
 	 * @param options The options for the connector.
+	 * @throws GuardError When a reader config specifies an unsupported type.
 	 */
 	constructor(options?: IOpenTelemetryTelemetryConnectorConstructorOptions) {
 		this._config = options?.config ?? {};
-		this._inner = new EntityStorageTelemetryConnector({
-			loggingComponentType: options?.loggingComponentType,
-			telemetryMetricStorageConnectorType: options?.telemetryMetricStorageConnectorType,
-			telemetryMetricValueStorageConnectorType: options?.telemetryMetricValueStorageConnectorType
-		});
-		this._instruments = new Map();
+
+		for (const [, readerConfig] of Object.entries(this._config.readers ?? {})) {
+			Guards.arrayOneOf(
+				OpenTelemetryTelemetryConnector.CLASS_NAME,
+				nameof(readerConfig.type),
+				readerConfig.type,
+				Object.values(OpenTelemetryReaderTypes)
+			);
+		}
+
+		this._started = false;
+		this._providers = {};
+		this._metricDefs = {};
 	}
 
 	/**
@@ -97,40 +114,16 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Initialise the MeterProvider and configured exporters.
+	 * Enable OTEL forwarding. Subsequent calls to addMetricValue will create
+	 * per-tenant/node MeterProviders on demand.
 	 * @param nodeLoggingComponentType The node logging component type.
-	 * @returns A promise that resolves when the MeterProvider is running.
+	 * @returns A promise that resolves when OTEL forwarding is enabled.
 	 */
 	public async start(nodeLoggingComponentType?: string): Promise<void> {
-		if (!Is.undefined(this._meterProvider)) {
+		if (this._started) {
 			return;
 		}
-
-		const readers: MetricReader[] = [];
-		for (const [, config] of Object.entries(this._config.readers ?? {})) {
-			if (config.type === "prometheus") {
-				readers.push(
-					new PrometheusExporter({
-						port: config.port,
-						endpoint: config.endpoint,
-						// PrometheusExporter uses preventServerStart (inverted); our config
-						// exposes the more intuitive startServer (defaults to true).
-						preventServerStart: !(config.startServer ?? true),
-						prefix: config.prefix
-					})
-				);
-			} else {
-				throw new GeneralError(OpenTelemetryTelemetryConnector.CLASS_NAME, "unknownReaderType", {
-					type: config.type
-				});
-			}
-		}
-
-		this._meterProvider = new MeterProvider({ readers });
-		this._meter = this._meterProvider.getMeter(
-			this._config.meterName ?? "twin-telemetry",
-			this._config.meterVersion ?? "1.0.0"
-		);
+		this._started = true;
 
 		const nodeLogging = ComponentFactory.getIfExists<ILoggingComponent>(nodeLoggingComponentType);
 		await nodeLogging?.log({
@@ -142,17 +135,19 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Shut down the MeterProvider and release resources.
-	 * Calling stop() on a connector that has not been started is a no-op.
+	 * Shut down all cached MeterProviders and disable OTEL forwarding.
 	 * @param nodeLoggingComponentType The node logging component type.
-	 * @returns A promise that resolves when the MeterProvider has shut down.
+	 * @returns A promise that resolves when all MeterProviders have shut down.
 	 */
 	public async stop(nodeLoggingComponentType?: string): Promise<void> {
-		if (!Is.undefined(this._meterProvider)) {
-			await this._meterProvider.shutdown();
-			this._meterProvider = undefined;
-			this._meter = undefined;
-			this._instruments.clear();
+		if (this._started) {
+			for (const { meterProvider } of Object.values(this._providers)) {
+				await meterProvider.shutdown();
+			}
+			for (const key of Object.keys(this._providers)) {
+				delete this._providers[key];
+			}
+			this._started = false;
 
 			const nodeLogging = ComponentFactory.getIfExists<ILoggingComponent>(nodeLoggingComponentType);
 			await nodeLogging?.log({
@@ -165,114 +160,124 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Create a new metric.
-	 * The definition is always persisted via the inner entity-storage connector.
-	 * If the MeterProvider is running the corresponding OTEL instrument is also registered.
+	 * Register a new metric definition. If the connector is already started,
+	 * the OTEL instrument is registered immediately for the current context.
 	 * @param metric The metric details.
-	 * @returns A promise that resolves when the metric has been persisted and the OTEL instrument registered.
+	 * @returns A promise that resolves when the metric has been registered.
 	 */
 	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		try {
-			await this._inner.createMetric(metric);
-		} catch (err) {
-			// Entity storage performs all validation and throws AlreadyExistsError on duplicates.
-			// OTP doesn't care about duplicates and will create a new instrument instance on each call
-			// so we catch this error and ignore it to allow the OTEL instruments to be registered.
-			if (!BaseError.isErrorName(err, AlreadyExistsError.CLASS_NAME)) {
-				throw err;
-			}
+		Guards.object<ITelemetryMetric>(
+			OpenTelemetryTelemetryConnector.CLASS_NAME,
+			nameof(metric),
+			metric
+		);
+		Guards.stringValue(OpenTelemetryTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(
+			OpenTelemetryTelemetryConnector.CLASS_NAME,
+			nameof(metric.label),
+			metric.label
+		);
+
+		this._metricDefs[metric.id] = {
+			type: metric.type,
+			label: metric.label,
+			description: metric.description,
+			unit: metric.unit
+		};
+
+		if (this._started) {
+			const contextIds = (await ContextIdStore.getContextIds()) ?? {};
+			const { meter, instruments } = this.getOrCreateProvider(contextIds);
+			this.registerInstrument(
+				metric.id,
+				metric.type,
+				metric.description,
+				metric.unit,
+				meter,
+				instruments
+			);
 		}
-
-		// Register an OTEL instrument when the MeterProvider is running.
-		// This runs even when the metric already exists in storage so instruments
-		// survive process restarts (AlreadyExistsError path).
-		const meter = this._meter;
-		if (meter !== undefined && !this._instruments.has(metric.id)) {
-			const instrumentOptions = {
-				description: metric.description,
-				unit: metric.unit
-			};
-			let instrument: Counter | UpDownCounter | Gauge;
-			if (metric.type === MetricType.Counter) {
-				instrument = meter.createCounter(metric.id, instrumentOptions);
-			} else if (metric.type === MetricType.IncDecCounter) {
-				instrument = meter.createUpDownCounter(metric.id, instrumentOptions);
-			} else {
-				instrument = meter.createGauge(metric.id, instrumentOptions);
-			}
-			this._instruments.set(metric.id, { metricType: metric.type, instrument });
-		}
 	}
 
 	/**
-	 * Get the metric details and its most recent value.
-	 * @param id The metric id.
-	 * @returns The metric details and its most recent value.
-	 */
-	public async getMetric(id: string): Promise<{
-		metric: ITelemetryMetric;
-		value: ITelemetryMetricValue;
-	}> {
-		const result = await this._inner.getMetric(id);
-
-		// When the metric has no recorded values yet the inner connector returns
-		// entities[0] = undefined via queryValues. Return a placeholder so callers
-		// are not surprised by a null value field — treat id="" as "no measurements yet".
-		const value = result.value ?? { id: "", ts: 0, value: 0 };
-		return { metric: result.metric, value };
-	}
-
-	/**
-	 * Get a specific metric value by its id.
-	 * @param id The id of the metric.
-	 * @param valueId The id of the metric value.
-	 * @returns The metric value.
-	 */
-	public async getMetricValue(id: string, valueId: string): Promise<ITelemetryMetricValue> {
-		return this._inner.getMetricValue(id, valueId);
-	}
-
-	/**
-	 * Update the metric metadata.
-	 * Note: OpenTelemetry instrument descriptors are immutable once created.
-	 * This method updates the persisted metadata mirror; the description/unit changes
-	 * are NOT propagated to the registered MeterProvider and will not appear at the
-	 * OTEL backend (Prometheus, OTLP, etc.).
+	 * Update the in-memory metadata for a registered metric.
+	 * OpenTelemetry instrument descriptors are immutable once created; only the
+	 * cached label, description and unit are updated.
 	 * @param metric The metric details (type cannot be changed).
-	 * @returns A promise that resolves when the persisted metadata has been updated.
+	 * @returns A promise that resolves when the metadata has been updated.
 	 */
 	public async updateMetric(metric: Omit<ITelemetryMetric, "type">): Promise<void> {
-		return this._inner.updateMetric(metric);
+		Guards.object<ITelemetryMetric>(
+			OpenTelemetryTelemetryConnector.CLASS_NAME,
+			nameof(metric),
+			metric
+		);
+		Guards.stringValue(OpenTelemetryTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+
+		const def = this._metricDefs[metric.id];
+		if (Is.undefined(def)) {
+			throw new NotFoundError(
+				OpenTelemetryTelemetryConnector.CLASS_NAME,
+				"metricNotFound",
+				metric.id
+			);
+		}
+
+		this._metricDefs[metric.id] = {
+			type: def.type,
+			label: metric.label,
+			description: metric.description,
+			unit: metric.unit
+		};
 	}
 
 	/**
-	 * Record a metric value.
-	 * Entity storage always receives the value first and performs all validation.
-	 * If the MeterProvider is running the measurement is also forwarded to the OTEL instrument.
-	 * Counter accepts positive integers or "inc".
-	 * UpDownCounter accepts integers (positive or negative) or "inc"/"dec".
-	 * Gauge accepts any number.
+	 * Record a metric value and forward it to the appropriate OTEL instrument.
+	 * The current tenant and node IDs are read from `ContextIdStore` and used to
+	 * select (or create) the matching per-tenant/node `MeterProvider`.
 	 * @param id The id of the metric.
 	 * @param value The value for the operation.
 	 * @param customData Optional custom data forwarded as OTEL attributes.
-	 * @returns The id of the new metric value entry.
+	 * @returns A generated 32-character hex id for the recorded value.
 	 */
 	public async addMetricValue(
 		id: string,
 		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
-		// Entity storage validates and persists first; throws NotFoundError if metric not found.
-		const valueId = await this._inner.addMetricValue(id, value, customData);
+		Guards.stringValue(OpenTelemetryTelemetryConnector.CLASS_NAME, nameof(id), id);
+		Guards.defined(OpenTelemetryTelemetryConnector.CLASS_NAME, nameof(value), value);
 
-		// Forward to the OTEL instrument only when the MeterProvider is running.
-		if (this._meter !== undefined) {
-			const entry = this._instruments.get(id);
+		const def = this._metricDefs[id];
+		if (Is.undefined(def)) {
+			throw new NotFoundError(OpenTelemetryTelemetryConnector.CLASS_NAME, "metricNotFound", id);
+		}
+
+		if (def.type === MetricType.Counter) {
+			if (value !== MetricCounterOperation.Increment && (!Is.integer(value) || value <= 0)) {
+				throw new GeneralError(OpenTelemetryTelemetryConnector.CLASS_NAME, "counterIncOnly");
+			}
+		} else if (def.type === MetricType.Gauge) {
+			if (!Is.number(value)) {
+				throw new GeneralError(OpenTelemetryTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
+			}
+		}
+
+		const valueId = Converter.bytesToHex(RandomHelper.generate(16));
+
+		if (this._started) {
+			const contextIds = (await ContextIdStore.getContextIds()) ?? {};
+			const { meter, instruments } = this.getOrCreateProvider(contextIds);
+
+			if (!(id in instruments)) {
+				this.registerInstrument(id, def.type, def.description, def.unit, meter, instruments);
+			}
+
+			const entry = instruments[id];
 			if (entry !== undefined) {
 				const attributes = this.toAttributes(customData);
 				const { metricType, instrument } = entry;
 
-				// Value already validated by inner connector — dispatch unconditionally.
 				if (metricType === MetricType.Counter) {
 					(instrument as Counter).add(
 						value === MetricCounterOperation.Increment ? 1 : (value as number),
@@ -298,65 +303,137 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Remove a metric and its persisted value history.
-	 * Note: OpenTelemetry exposes no API to deregister an instrument from a Meter,
-	 * so the underlying Counter/UpDownCounter/Gauge remains resident for the lifetime
-	 * of the process. Re-creating a metric with the same id but a different MetricType
-	 * is therefore not safe.
+	 * Remove a metric from the in-memory registry and from all cached provider instrument maps.
 	 * @param id The id of the metric.
-	 * @returns A promise that resolves when the metric and its value history have been removed.
+	 * @returns A promise that resolves when the metric has been removed.
 	 */
 	public async removeMetric(id: string): Promise<void> {
-		this._instruments.delete(id);
-		// The inner connector cascades and removes all associated metric values.
-		return this._inner.removeMetric(id);
+		Guards.stringValue(OpenTelemetryTelemetryConnector.CLASS_NAME, nameof(id), id);
+
+		if (Is.undefined(this._metricDefs[id])) {
+			throw new NotFoundError(OpenTelemetryTelemetryConnector.CLASS_NAME, "metricNotFound", id);
+		}
+
+		for (const { instruments } of Object.values(this._providers)) {
+			delete instruments[id];
+		}
+		delete this._metricDefs[id];
 	}
 
 	/**
-	 * Query the registered metrics, optionally filtered by type.
-	 * @param type The type of the metric.
-	 * @param cursor The cursor to request the next page.
-	 * @param limit Limit the number of entities to return.
-	 * @returns The matching metrics and an optional cursor for the next page.
+	 * Return or create the MeterProvider for the given tenant/node pair.
+	 * @param contextIds The current execution context IDs.
+	 * @returns The cached or newly created provider entry.
+	 * @internal
 	 */
-	public async query(
-		type?: MetricType,
-		cursor?: string,
-		limit?: number
-	): Promise<{
-		entities: ITelemetryMetric[];
-		cursor?: string;
-	}> {
-		return this._inner.query(type, cursor, limit);
+	private getOrCreateProvider(contextIds: IContextIds): {
+		meterProvider: MeterProvider;
+		meter: Meter;
+		instruments: {
+			[id: string]: { metricType: MetricType; instrument: Counter | UpDownCounter | Gauge };
+		};
+	} {
+		const node = contextIds[ContextIdKeys.Node];
+		const tenantId = contextIds[ContextIdKeys.Tenant];
+
+		const key = `${node ?? ""}/${tenantId ?? ""}`;
+
+		let cached = this._providers[key];
+		if (!Is.undefined(cached)) {
+			return cached;
+		}
+
+		const readers = this.createReaders();
+		const resourcePrefix = "service";
+		const resourceAttrs: { [id: string]: string } = {};
+		if (Is.stringValue(node)) {
+			resourceAttrs[`${resourcePrefix}.instance.id`] = node;
+		}
+		if (Is.stringValue(tenantId)) {
+			resourceAttrs[`${resourcePrefix}.namespace`] = tenantId;
+		}
+		const resource =
+			Object.keys(resourceAttrs).length > 0 ? resourceFromAttributes(resourceAttrs) : undefined;
+		const meterProvider = new MeterProvider({ readers, resource });
+		const meter = meterProvider.getMeter(
+			this._config.meterName ?? "twin-telemetry",
+			this._config.meterVersion ?? "1.0.0"
+		);
+		cached = { meterProvider, meter, instruments: {} };
+		this._providers[key] = cached;
+
+		return cached;
 	}
 
 	/**
-	 * Query the recorded values for a metric, ordered by most recent first.
-	 * @param id The id of the metric.
-	 * @param timeStart The inclusive start time (epoch ms).
-	 * @param timeEnd The inclusive end time (epoch ms).
-	 * @param cursor The cursor returned by the previous call.
-	 * @param limit Limit the number of values to return.
-	 * @returns The metric details, matching values, and an optional cursor for the next page.
+	 * Instantiate fresh MetricReader instances from the connector config.
+	 * @returns The list of reader instances.
+	 * @internal
 	 */
-	public async queryValues(
+	private createReaders(): MetricReader[] {
+		const readers: MetricReader[] = [];
+		for (const [, config] of Object.entries(this._config.readers ?? {})) {
+			if (config.type === OpenTelemetryReaderTypes.Prometheus) {
+				readers.push(
+					new PrometheusExporter({
+						port: config.port,
+						endpoint: config.endpoint,
+						preventServerStart: !(config.startServer ?? true),
+						prefix: config.prefix
+					})
+				);
+			} else if (config.type === OpenTelemetryReaderTypes.OtlpHttp) {
+				readers.push(
+					new PeriodicExportingMetricReader({
+						exporter: new OTLPMetricExporter({
+							url: config.url,
+							headers: config.headers
+						}),
+						exportIntervalMillis: config.exportIntervalMs
+					})
+				);
+			}
+		}
+		return readers;
+	}
+
+	/**
+	 * Register an OTEL instrument on a provider's instruments map if not already present.
+	 * @param id The metric id.
+	 * @param type The metric type.
+	 * @param description The metric description.
+	 * @param unit The metric unit.
+	 * @param meter The meter to create instruments on.
+	 * @param instruments The per-provider instruments map to update.
+	 * @internal
+	 */
+	private registerInstrument(
 		id: string,
-		timeStart?: number,
-		timeEnd?: number,
-		cursor?: string,
-		limit?: number
-	): Promise<{
-		metric: ITelemetryMetric;
-		entities: ITelemetryMetricValue[];
-		cursor?: string;
-	}> {
-		return this._inner.queryValues(id, timeStart, timeEnd, cursor, limit);
+		type: MetricType,
+		description: string | undefined,
+		unit: string | undefined,
+		meter: Meter,
+		instruments: {
+			[id: string]: { metricType: MetricType; instrument: Counter | UpDownCounter | Gauge };
+		}
+	): void {
+		if (id in instruments) {
+			return;
+		}
+		const instrumentOptions = { description, unit };
+		let instrument: Counter | UpDownCounter | Gauge;
+		if (type === MetricType.Counter) {
+			instrument = meter.createCounter(id, instrumentOptions);
+		} else if (type === MetricType.IncDecCounter) {
+			instrument = meter.createUpDownCounter(id, instrumentOptions);
+		} else {
+			instrument = meter.createGauge(id, instrumentOptions);
+		}
+		instruments[id] = { metricType: type, instrument };
 	}
 
 	/**
 	 * Convert customData to OTEL-compatible Attributes.
-	 * Scalar values (string, number, boolean) and uniform primitive arrays
-	 * (string[], number[], boolean[]) are forwarded; other values are silently dropped.
 	 * @param customData The raw custom data map.
 	 * @returns An OTEL Attributes object.
 	 * @internal
@@ -365,19 +442,24 @@ export class OpenTelemetryTelemetryConnector implements ITelemetryConnector {
 		if (Is.empty(customData)) {
 			return {};
 		}
-		const attrs: Attributes = {};
+		const attributes: Attributes = {};
 		for (const [key, val] of Object.entries(customData)) {
 			if (Is.string(val) || Is.number(val) || Is.boolean(val)) {
-				attrs[key] = val;
+				attributes[key] = val;
 			} else if (Is.arrayValue(val)) {
-				if (
-					(Is.string(val[0]) || Is.number(val[0]) || Is.boolean(val[0])) &&
-					val.every(el => typeof el === typeof val[0])
-				) {
-					attrs[key] = val as string[] | number[] | boolean[];
+				if (Is.string(val[0]) && val.every(el => Is.string(el))) {
+					attributes[key] = val;
+				} else if (Is.number(val[0]) && val.every(el => Is.number(el))) {
+					attributes[key] = val;
+				} else if (Is.boolean(val[0]) && val.every(el => Is.boolean(el))) {
+					attributes[key] = val;
+				} else {
+					attributes[key] = JSON.stringify(val);
 				}
+			} else if (!Is.undefined(val)) {
+				attributes[key] = JSON.stringify(val);
 			}
 		}
-		return attrs;
+		return attributes;
 	}
 }

@@ -90,7 +90,7 @@ A promise that resolves when the metric has been created.
 
 ### getMetric() {#getmetric}
 
-> **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
+> **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value?`: `ITelemetryMetricValue`; \}\>
 
 Get the metric details and it's most recent value.
 
@@ -104,7 +104,7 @@ The metric id.
 
 #### Returns
 
-`Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
+`Promise`\<\{ `metric`: `ITelemetryMetric`; `value?`: `ITelemetryMetricValue`; \}\>
 
 The metric details and it's most recent value.
 

@@ -21,6 +21,8 @@
 	"words": [
 		"abbrev",
 		"autorelease",
+		"hotfixes",
+		"millis",
 		"nameof",
 		"openapi",
 		"reqps",

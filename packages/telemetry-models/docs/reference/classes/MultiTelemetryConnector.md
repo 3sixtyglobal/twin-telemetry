@@ -28,6 +28,14 @@ The options for the connector.
 
 ## Properties
 
+### NAMESPACE {#namespace}
+
+> `readonly` `static` **NAMESPACE**: `string` = `"multi"`
+
+The namespace for the class.
+
+***
+
 ### CLASS\_NAME {#class_name}
 
 > `readonly` `static` **CLASS\_NAME**: `string`
@@ -82,7 +90,7 @@ A promise that resolves when the metric has been created on all connectors.
 
 ### getMetric() {#getmetric}
 
-> **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md); \}\>
+> **getMetric**(`id`): `Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md); \}\>
 
 Get the metric details and it's most recent value.
 
@@ -96,7 +104,7 @@ The metric id.
 
 #### Returns
 
-`Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `value`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md); \}\>
+`Promise`\<\{ `metric`: [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md); `value?`: [`ITelemetryMetricValue`](../interfaces/ITelemetryMetricValue.md); \}\>
 
 The metric details and it's most recent value.
 

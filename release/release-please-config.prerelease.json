@@ -33,6 +33,10 @@
 		"packages/telemetry-producers": {
 			"package-name": "telemetry-producers",
 			"changelog-path": "docs/changelog.md"
+		},
+		"packages/telemetry-processors": {
+			"package-name": "telemetry-processors",
+			"changelog-path": "docs/changelog.md"
 		}
 	},
 	"plugins": [
@@ -46,7 +50,8 @@
 				"telemetry-connector-opentelemetry",
 				"telemetry-service",
 				"telemetry-rest-client",
-				"telemetry-producers"
+				"telemetry-producers",
+				"telemetry-processors"
 			]
 		}
 	]

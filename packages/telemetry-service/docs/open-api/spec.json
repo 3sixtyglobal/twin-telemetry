@@ -1059,8 +1059,7 @@
 					}
 				},
 				"required": [
-					"metric",
-					"value"
+					"metric"
 				],
 				"description": "The body parameters."
 			},

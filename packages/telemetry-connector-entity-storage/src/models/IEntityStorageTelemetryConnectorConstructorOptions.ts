@@ -1,5 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import type { IEntityStorageTelemetryConnectorConfig } from "./IEntityStorageTelemetryConnectorConfig.js";
 
 /**
  * The options for the entity storage telemetry connector constructor.
@@ -21,4 +22,9 @@ export interface IEntityStorageTelemetryConnectorConstructorOptions {
 	 * The type of the logging component to use, can be undefined for no logging.
 	 */
 	loggingComponentType?: string;
+
+	/**
+	 * The configuration for the connector.
+	 */
+	config?: IEntityStorageTelemetryConnectorConfig;
 }

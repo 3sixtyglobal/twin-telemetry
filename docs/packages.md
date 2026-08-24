@@ -6,6 +6,7 @@ The package serves as a foundational component within the repository. Its primar
 
 - [README](../packages/telemetry-models/README.md)
 - [Examples](../packages/telemetry-models/docs/examples.md)
+- [Reference](../packages/telemetry-models/docs/reference/index.md)
 - [Changelog](../packages/telemetry-models/docs/changelog.md)
 
 ## telemetry-connector-entity-storage
@@ -14,6 +15,7 @@ This package is designed to persist telemetry metrics through an entity storage 
 
 - [README](../packages/telemetry-connector-entity-storage/README.md)
 - [Examples](../packages/telemetry-connector-entity-storage/docs/examples.md)
+- [Reference](../packages/telemetry-connector-entity-storage/docs/reference/index.md)
 - [Changelog](../packages/telemetry-connector-entity-storage/docs/changelog.md)
 
 ## telemetry-connector-opentelemetry
@@ -31,6 +33,7 @@ The package addresses telemetry service operations and REST entry points. It is 
 
 - [README](../packages/telemetry-service/README.md)
 - [Examples](../packages/telemetry-service/docs/examples.md)
+- [Reference](../packages/telemetry-service/docs/reference/index.md)
 - [Changelog](../packages/telemetry-service/docs/changelog.md)
 
 ## telemetry-rest-client
@@ -39,6 +42,7 @@ This package focuses on integration with telemetry service endpoints over REST. 
 
 - [README](../packages/telemetry-rest-client/README.md)
 - [Examples](../packages/telemetry-rest-client/docs/examples.md)
+- [Reference](../packages/telemetry-rest-client/docs/reference/index.md)
 - [Changelog](../packages/telemetry-rest-client/docs/changelog.md)
 
 ## telemetry-producers
@@ -47,4 +51,14 @@ This package provides metrics producers that collect Node.js process and host-le
 
 - [README](../packages/telemetry-producers/README.md)
 - [Examples](../packages/telemetry-producers/docs/examples.md)
+- [Reference](../packages/telemetry-producers/docs/reference/index.md)
 - [Changelog](../packages/telemetry-producers/docs/changelog.md)
+
+## telemetry-processors
+
+Route processors for recording telemetry metrics from the web server.
+
+- [README](../packages/telemetry-processors/README.md)
+- [Examples](../packages/telemetry-processors/docs/examples.md)
+- [Reference](../packages/telemetry-processors/docs/reference/index.md)
+- [Changelog](../packages/telemetry-processors/docs/changelog.md)

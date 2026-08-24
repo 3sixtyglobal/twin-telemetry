@@ -1,11 +1,8 @@
 # Class: OpenTelemetryTelemetryConnector
 
 Class for performing telemetry operations using OpenTelemetry instruments.
-Metric definitions and value history are persisted via an internal
-EntityStorageTelemetryConnector instance created at construction time.
-Call `start()` to initialise the MeterProvider and exporters; metrics can be
-created and queried before start() — OTEL forwarding is simply skipped until
-the MeterProvider is running.
+Metric definitions are held in memory. Persistence and querying are not supported;
+use a multi-connector with an EntityStorageTelemetryConnector for those capabilities.
 
 ## Implements
 
@@ -18,8 +15,6 @@ the MeterProvider is running.
 > **new OpenTelemetryTelemetryConnector**(`options?`): `OpenTelemetryTelemetryConnector`
 
 Create a new instance of OpenTelemetryTelemetryConnector.
-Eagerly constructs the inner EntityStorageTelemetryConnector — if the required
-entity storage types are not registered this constructor will throw (fail fast).
 
 #### Parameters
 
@@ -33,11 +28,15 @@ The options for the connector.
 
 `OpenTelemetryTelemetryConnector`
 
+#### Throws
+
+GuardError When a reader config specifies an unsupported type.
+
 ## Properties
 
 ### NAMESPACE {#namespace}
 
-> `readonly` `static` **NAMESPACE**: `string` = `"opentelemetry"`
+> `readonly` `static` **NAMESPACE**: `string` = `"open-telemetry"`
 
 The namespace supported by the telemetry connector.
 
@@ -73,7 +72,8 @@ The class name of the component.
 
 > **start**(`nodeLoggingComponentType?`): `Promise`\<`void`\>
 
-Initialise the MeterProvider and configured exporters.
+Enable OTEL forwarding. Subsequent calls to addMetricValue will create
+per-tenant/node MeterProviders on demand.
 
 #### Parameters
 
@@ -87,7 +87,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the MeterProvider is running.
+A promise that resolves when OTEL forwarding is enabled.
 
 #### Implementation of
 
@@ -99,8 +99,7 @@ A promise that resolves when the MeterProvider is running.
 
 > **stop**(`nodeLoggingComponentType?`): `Promise`\<`void`\>
 
-Shut down the MeterProvider and release resources.
-Calling stop() on a connector that has not been started is a no-op.
+Shut down all cached MeterProviders and disable OTEL forwarding.
 
 #### Parameters
 
@@ -114,7 +113,7 @@ The node logging component type.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the MeterProvider has shut down.
+A promise that resolves when all MeterProviders have shut down.
 
 #### Implementation of
 
@@ -126,9 +125,8 @@ A promise that resolves when the MeterProvider has shut down.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Create a new metric.
-The definition is always persisted via the inner entity-storage connector.
-If the MeterProvider is running the corresponding OTEL instrument is also registered.
+Register a new metric definition. If the connector is already started,
+the OTEL instrument is registered immediately for the current context.
 
 #### Parameters
 
@@ -142,7 +140,7 @@ The metric details.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been persisted and the OTEL instrument registered.
+A promise that resolves when the metric has been registered.
 
 #### Implementation of
 
@@ -150,73 +148,13 @@ A promise that resolves when the metric has been persisted and the OTEL instrume
 
 ***
 
-### getMetric() {#getmetric}
-
-> **getMetric**(`id`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
-
-Get the metric details and its most recent value.
-
-#### Parameters
-
-##### id
-
-`string`
-
-The metric id.
-
-#### Returns
-
-`Promise`\<\{ `metric`: `ITelemetryMetric`; `value`: `ITelemetryMetricValue`; \}\>
-
-The metric details and its most recent value.
-
-#### Implementation of
-
-`ITelemetryConnector.getMetric`
-
-***
-
-### getMetricValue() {#getmetricvalue}
-
-> **getMetricValue**(`id`, `valueId`): `Promise`\<`ITelemetryMetricValue`\>
-
-Get a specific metric value by its id.
-
-#### Parameters
-
-##### id
-
-`string`
-
-The id of the metric.
-
-##### valueId
-
-`string`
-
-The id of the metric value.
-
-#### Returns
-
-`Promise`\<`ITelemetryMetricValue`\>
-
-The metric value.
-
-#### Implementation of
-
-`ITelemetryConnector.getMetricValue`
-
-***
-
 ### updateMetric() {#updatemetric}
 
 > **updateMetric**(`metric`): `Promise`\<`void`\>
 
-Update the metric metadata.
-Note: OpenTelemetry instrument descriptors are immutable once created.
-This method updates the persisted metadata mirror; the description/unit changes
-are NOT propagated to the registered MeterProvider and will not appear at the
-OTEL backend (Prometheus, OTLP, etc.).
+Update the in-memory metadata for a registered metric.
+OpenTelemetry instrument descriptors are immutable once created; only the
+cached label, description and unit are updated.
 
 #### Parameters
 
@@ -230,7 +168,7 @@ The metric details (type cannot be changed).
 
 `Promise`\<`void`\>
 
-A promise that resolves when the persisted metadata has been updated.
+A promise that resolves when the metadata has been updated.
 
 #### Implementation of
 
@@ -242,12 +180,9 @@ A promise that resolves when the persisted metadata has been updated.
 
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
-Record a metric value.
-Entity storage always receives the value first and performs all validation.
-If the MeterProvider is running the measurement is also forwarded to the OTEL instrument.
-Counter accepts positive integers or "inc".
-UpDownCounter accepts integers (positive or negative) or "inc"/"dec".
-Gauge accepts any number.
+Record a metric value and forward it to the appropriate OTEL instrument.
+The current tenant and node IDs are read from `ContextIdStore` and used to
+select (or create) the matching per-tenant/node `MeterProvider`.
 
 #### Parameters
 
@@ -271,7 +206,7 @@ Optional custom data forwarded as OTEL attributes.
 
 `Promise`\<`string`\>
 
-The id of the new metric value entry.
+A generated 32-character hex id for the recorded value.
 
 #### Implementation of
 
@@ -283,11 +218,7 @@ The id of the new metric value entry.
 
 > **removeMetric**(`id`): `Promise`\<`void`\>
 
-Remove a metric and its persisted value history.
-Note: OpenTelemetry exposes no API to deregister an instrument from a Meter,
-so the underlying Counter/UpDownCounter/Gauge remains resident for the lifetime
-of the process. Re-creating a metric with the same id but a different MetricType
-is therefore not safe.
+Remove a metric from the in-memory registry and from all cached provider instrument maps.
 
 #### Parameters
 
@@ -301,96 +232,8 @@ The id of the metric.
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric and its value history have been removed.
+A promise that resolves when the metric has been removed.
 
 #### Implementation of
 
 `ITelemetryConnector.removeMetric`
-
-***
-
-### query() {#query}
-
-> **query**(`type?`, `cursor?`, `limit?`): `Promise`\<\{ `entities`: `ITelemetryMetric`[]; `cursor?`: `string`; \}\>
-
-Query the registered metrics, optionally filtered by type.
-
-#### Parameters
-
-##### type?
-
-`MetricType`
-
-The type of the metric.
-
-##### cursor?
-
-`string`
-
-The cursor to request the next page.
-
-##### limit?
-
-`number`
-
-Limit the number of entities to return.
-
-#### Returns
-
-`Promise`\<\{ `entities`: `ITelemetryMetric`[]; `cursor?`: `string`; \}\>
-
-The matching metrics and an optional cursor for the next page.
-
-#### Implementation of
-
-`ITelemetryConnector.query`
-
-***
-
-### queryValues() {#queryvalues}
-
-> **queryValues**(`id`, `timeStart?`, `timeEnd?`, `cursor?`, `limit?`): `Promise`\<\{ `metric`: `ITelemetryMetric`; `entities`: `ITelemetryMetricValue`[]; `cursor?`: `string`; \}\>
-
-Query the recorded values for a metric, ordered by most recent first.
-
-#### Parameters
-
-##### id
-
-`string`
-
-The id of the metric.
-
-##### timeStart?
-
-`number`
-
-The inclusive start time (epoch ms).
-
-##### timeEnd?
-
-`number`
-
-The inclusive end time (epoch ms).
-
-##### cursor?
-
-`string`
-
-The cursor returned by the previous call.
-
-##### limit?
-
-`number`
-
-Limit the number of values to return.
-
-#### Returns
-
-`Promise`\<\{ `metric`: `ITelemetryMetric`; `entities`: `ITelemetryMetricValue`[]; `cursor?`: `string`; \}\>
-
-The metric details, matching values, and an optional cursor for the next page.
-
-#### Implementation of
-
-`ITelemetryConnector.queryValues`

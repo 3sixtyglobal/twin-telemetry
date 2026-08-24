@@ -88,7 +88,7 @@ await connector.createMetric({
 process.stdout.write(
 	`\nTWIN Telemetry → Prometheus exporter listening on http://localhost:${PROMETHEUS_PORT}/metrics\n` +
 		"Open Grafana at http://localhost:3000  (admin / admin)\n" +
-		"The 'TWIN Telemetry' dashboard is pre-provisioned — data appears within ~10 s.\n\n"
+		"The 'TWIN Telemetry' dashboard is pre-provisioned - data appears within ~10 s.\n\n"
 );
 
 // ---------------------------------------------------------------------------
@@ -112,7 +112,7 @@ async function emit(): Promise<void> {
 		statusCode: tick % 10 === 0 ? 500 : 200
 	});
 
-	// IncDecCounter: connections fluctuate — random connect/disconnect each tick.
+	// IncDecCounter: connections fluctuate - random connect/disconnect each tick.
 	// Clamp so the total never goes below 0.
 	const { value: currentConnectionsValue } = await connector.getMetric("active_connections");
 	const rawDelta = Math.floor(Math.random() * 5) - 2; // -2 … +2

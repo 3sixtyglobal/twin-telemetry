@@ -1,5 +1,132 @@
 # Changelog
 
+## [0.9.2-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.7...telemetry-rest-client-v0.9.2-next.8) (2026-08-21)
+
+
+### Features
+
+* reduce mutex locks ([#94](https://github.com/iotaledger/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/iotaledger/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.7 to 0.9.2-next.8
+
+## [0.9.2-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.6...telemetry-rest-client-v0.9.2-next.7) (2026-08-19)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.6 to 0.9.2-next.7
+
+## [0.9.2-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.5...telemetry-rest-client-v0.9.2-next.6) (2026-08-19)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.5 to 0.9.2-next.6
+
+## [0.9.2-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.4...telemetry-rest-client-v0.9.2-next.5) (2026-08-19)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.4 to 0.9.2-next.5
+
+## [0.9.2-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.3...telemetry-rest-client-v0.9.2-next.4) (2026-08-17)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.3 to 0.9.2-next.4
+
+## [0.9.2-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.2...telemetry-rest-client-v0.9.2-next.3) (2026-08-07)
+
+
+### Features
+
+* linting and dependency update ([894df58](https://github.com/iotaledger/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.2 to 0.9.2-next.3
+
+## [0.9.2-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.1...telemetry-rest-client-v0.9.2-next.2) (2026-08-03)
+
+
+### Miscellaneous Chores
+
+* **telemetry-rest-client:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.1 to 0.9.2-next.2
+
+## [0.9.2-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.2-next.0...telemetry-rest-client-v0.9.2-next.1) (2026-07-30)
+
+
+### Features
+
+* add context id features ([#19](https://github.com/iotaledger/twin-telemetry/issues/19)) ([5942442](https://github.com/iotaledger/twin-telemetry/commit/5942442991fa7ad7afa9d8b7c4583326a8c4c9ae))
+* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add validate-locales ([24ed804](https://github.com/iotaledger/twin-telemetry/commit/24ed804f7ebc47036f323722bc18452729860c92))
+* enhanced rest testing ([#54](https://github.com/iotaledger/twin-telemetry/issues/54)) ([13b4c02](https://github.com/iotaledger/twin-telemetry/commit/13b4c02dc77d82f2fd88e2b79bd3dda077f639f6))
+* eslint migration to flat config ([69ac91a](https://github.com/iotaledger/twin-telemetry/commit/69ac91a89d0b5bc63374a0bd314f770b557dabb4))
+* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update dependencies ([0e55c48](https://github.com/iotaledger/twin-telemetry/commit/0e55c48de4139c6fe66b823101ca17973e60847c))
+* update framework core ([4b10bcd](https://github.com/iotaledger/twin-telemetry/commit/4b10bcd4d3101151671bdcf9aef7c54f5937fc2a))
+* use shared store mechanism ([#7](https://github.com/iotaledger/twin-telemetry/issues/7)) ([806fe2c](https://github.com/iotaledger/twin-telemetry/commit/806fe2c2b7653d6b949c27ebf57bd13c3e040242))
+
+
+### Bug Fixes
+
+* api data types ([2edc5ac](https://github.com/iotaledger/twin-telemetry/commit/2edc5ac665b996a1b29173cac3b389fa3ceafa34))
+* Update metric endpoint paths by removing trailing slashes and query type as string ([#3](https://github.com/iotaledger/twin-telemetry/issues/3)) ([b386ca5](https://github.com/iotaledger/twin-telemetry/commit/b386ca55404aa933ad8917f82a7f0e588593fcc8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.2-next.0 to 0.9.2-next.1
+
 ## [0.9.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-rest-client-v0.9.1...telemetry-rest-client-v0.9.1) (2026-07-27)
 
 
