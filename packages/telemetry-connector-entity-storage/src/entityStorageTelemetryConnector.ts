@@ -1,5 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
 import {
 	AlreadyExistsError,
 	Coerce,
@@ -8,9 +9,11 @@ import {
 	GeneralError,
 	Guards,
 	Is,
+	JsonHelper,
 	LfuCache,
 	Mutex,
 	NotFoundError,
+	ObjectHelper,
 	RandomHelper
 } from "@twin.org/core";
 import {
@@ -140,7 +143,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _batchCache: IBatchMetricValueEntry[];
 
 	/**
-	 * Last computed value per metric id, used to chain increments without a storage read.
+	 * Last computed value per partition context + metric id, used to chain increments without a storage read.
 	 * @internal
 	 */
 	private readonly _pendingLastValue: Map<string, { ts: number; value: number }>;
@@ -170,7 +173,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _metricDefinitionCacheTtiMs: number;
 
 	/**
-	 * In-memory cache of metric definitions, keyed by metric id.
+	 * In-memory cache of metric definitions, keyed by partition context + metric id.
 	 * Avoids a storage read on every addMetricValue call.
 	 * @internal
 	 */
@@ -320,7 +323,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		};
 
 		await this._metricStorage.set(telemetryMetric);
-		this._metricDefinitionCache.set(metric.id, telemetryMetric);
+		const contextKey = JsonHelper.canonicalize(await this.captureContextIds());
+		this._metricDefinitionCache.set(`${contextKey}::${metric.id}`, telemetryMetric);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -401,7 +405,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		};
 
 		await this._metricStorage.set(telemetryMetric);
-		this._metricDefinitionCache.set(metric.id, telemetryMetric);
+		const contextKey = JsonHelper.canonicalize(await this.captureContextIds());
+		this._metricDefinitionCache.set(`${contextKey}::${metric.id}`, telemetryMetric);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -425,7 +430,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	): Promise<string> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
-		const existingMetric = await this._metricDefinitionCache.getOrSet(id, async () => {
+		const contextIds = await this.captureContextIds();
+		const contextKey = JsonHelper.canonicalize(contextIds);
+		const cacheKey = `${contextKey}::${id}`;
+
+		const existingMetric = await this._metricDefinitionCache.getOrSet(cacheKey, async () => {
 			const stored = await this._metricStorage.get(id);
 			if (Is.undefined(stored)) {
 				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
@@ -433,7 +442,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			return stored;
 		});
 
-		const lockKey = `${EntityStorageTelemetryConnector.CLASS_NAME}:${id}`;
+		const lockKey = `${EntityStorageTelemetryConnector.CLASS_NAME}:${cacheKey}`;
 		await Mutex.lock(lockKey, {
 			throwOnTimeout: true,
 			timeoutMs: this._mutexTimeoutMs
@@ -443,7 +452,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		try {
 			// Use the last in-memory computed value when available; avoids a storage round-trip
 			// for chained increments within the same batch window.
-			const pending = this._pendingLastValue.get(id);
+			const pending = this._pendingLastValue.get(cacheKey);
 			let lastTs: number | undefined;
 			let lastValue: number | undefined;
 
@@ -523,9 +532,10 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				// push and set are synchronous — no yield points, no race with flush's splice.
 				this._batchCache.push({
 					entity: telemetryMetricValue,
-					maxHistory: existingMetric.maxHistory
+					maxHistory: existingMetric.maxHistory,
+					contextIds
 				});
-				this._pendingLastValue.set(id, { ts, value: newValue });
+				this._pendingLastValue.set(cacheKey, { ts, value: newValue });
 				shouldFlush = !Is.empty(this._batchSize) && this._batchCache.length >= this._batchSize;
 			}
 
@@ -610,7 +620,9 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		await this.flush();
 
 		await this._metricStorage.remove(id);
-		this._metricDefinitionCache.delete(id);
+		const contextKey = JsonHelper.canonicalize(await this.captureContextIds());
+		const cacheKey = `${contextKey}::${id}`;
+		this._metricDefinitionCache.delete(cacheKey);
 
 		let removeValuesCursor: string | undefined;
 		const valueIdsToRemove: string[] = [];
@@ -632,7 +644,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			await this._metricValueStorage.removeBatch(valueIdsToRemove);
 		}
 
-		this._pendingLastValue.delete(id);
+		this._pendingLastValue.delete(cacheKey);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -814,39 +826,77 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			return;
 		}
 
-		let entries: IBatchMetricValueEntry[] = [];
 		try {
-			entries = this._batchCache.splice(0);
+			const entries = this._batchCache.splice(0);
 
-			const entities = entries.map(e => e.entity);
-			await this._metricValueStorage.setBatch(entities);
-
-			const toTrim = new Map<string, number>();
+			const groups = new Map<string, IBatchMetricValueEntry[]>();
 			for (const entry of entries) {
-				if (Is.integer(entry.maxHistory) && entry.maxHistory > 0) {
-					toTrim.set(entry.entity.metricId, entry.maxHistory);
+				const contextKey = JsonHelper.canonicalize(entry.contextIds ?? {});
+				let group = groups.get(contextKey);
+				if (Is.undefined(group)) {
+					group = [];
+					groups.set(contextKey, group);
+				}
+				group.push(entry);
+			}
+
+			const failedEntries: IBatchMetricValueEntry[] = [];
+			const errors: unknown[] = [];
+			for (const group of groups.values()) {
+				try {
+					await ContextIdStore.run(group[0].contextIds ?? {}, async () => {
+						const entities = group.map(e => e.entity);
+						await this._metricValueStorage.setBatch(entities);
+
+						const toTrim = new Map<string, number>();
+						for (const entry of group) {
+							if (Is.integer(entry.maxHistory) && entry.maxHistory > 0) {
+								toTrim.set(entry.entity.metricId, entry.maxHistory);
+							}
+						}
+
+						for (const [metricId, maxHistory] of toTrim) {
+							await this.trimMetricHistory(metricId, maxHistory);
+						}
+					});
+				} catch (err) {
+					failedEntries.push(...group);
+					errors.push(err);
 				}
 			}
 
-			for (const [metricId, maxHistory] of toTrim) {
-				await this.trimMetricHistory(metricId, maxHistory);
-			}
-		} catch (err) {
-			await this._logging?.log({
-				source: EntityStorageTelemetryConnector.CLASS_NAME,
-				message: "flushFailed",
-				level: "error",
-				data: { error: err }
-			});
-			this._batchCache.unshift(...entries);
-			if (this._maxCacheSize > 0 && this._batchCache.length > this._maxCacheSize) {
-				this._batchCache.splice(0, this._batchCache.length - this._maxCacheSize);
+			if (Is.arrayValue(errors)) {
+				await this._logging?.log({
+					source: EntityStorageTelemetryConnector.CLASS_NAME,
+					message: "flushFailed",
+					level: "error",
+					data: { error: errors.length === 1 ? errors[0] : errors }
+				});
+				this._batchCache.unshift(...failedEntries);
+				if (this._maxCacheSize > 0 && this._batchCache.length > this._maxCacheSize) {
+					this._batchCache.splice(0, this._batchCache.length - this._maxCacheSize);
+				}
 			}
 		} finally {
 			Mutex.unlock(this._mutexKey);
 		}
 
 		this.startTimer();
+	}
+
+	/**
+	 * Capture the partition keys of the ambient context ids. Other keys (organization, user,
+	 * per-request ids) vary within a partition and would split counter chaining and the caches.
+	 * @returns The partition context ids from the ambient context.
+	 * @internal
+	 */
+	private async captureContextIds(): Promise<IContextIds> {
+		return (
+			ObjectHelper.pick(await ContextIdStore.getContextIds(), [
+				ContextIdKeys.Node,
+				ContextIdKeys.Tenant
+			]) ?? {}
+		);
 	}
 
 	/**

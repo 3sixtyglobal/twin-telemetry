@@ -1,5 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
 import { Mutex } from "@twin.org/core";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
@@ -58,7 +59,7 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-		expect(lockSpy).toHaveBeenCalledWith(`${EntityStorageTelemetryConnector.CLASS_NAME}:test`, {
+		expect(lockSpy).toHaveBeenCalledWith(`${EntityStorageTelemetryConnector.CLASS_NAME}:{}::test`, {
 			throwOnTimeout: true,
 			timeoutMs: 1234
 		});
@@ -954,5 +955,258 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(result.entities[0].value).toEqual(5);
 		expect(result.entities[1].value).toEqual(4);
 		expect(result.entities[2].value).toEqual(3);
+	});
+
+	describe("tenant-partitioned storage", () => {
+		beforeEach(() => {
+			initSchema();
+			telemetryMetricsEntityStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
+				entitySchema: nameof<TelemetryMetric>(),
+				partitionContextIds: [ContextIdKeys.Tenant],
+				config: { storageKey: "telemetry-metric" }
+			});
+			telemetryMetricsValueEntityStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
+				entitySchema: nameof<TelemetryMetricValue>(),
+				partitionContextIds: [ContextIdKeys.Tenant],
+				config: { storageKey: "telemetry-metric-value" }
+			});
+			EntityStorageConnectorFactory.register(
+				"telemetry-metric",
+				() => telemetryMetricsEntityStorage
+			);
+			EntityStorageConnectorFactory.register(
+				"telemetry-metric-value",
+				() => telemetryMetricsValueEntityStorage
+			);
+		});
+
+		test("batch flush writes under the producer's context regardless of who flushes", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+				await telemetry.flush();
+			});
+
+			// The entry was captured under tenant-a's context at enqueue, so it lands in
+			// tenant-a's partition regardless of who triggered the flush.
+			const resultForProducer = await ContextIdStore.run(
+				{ [ContextIdKeys.Tenant]: "tenant-a" },
+				async () => telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(resultForProducer.entities.length).toEqual(1);
+
+			const rawStore = await telemetryMetricsValueEntityStorage.getStore();
+			expect(rawStore?.length).toEqual(1);
+		});
+
+		test("counter chaining is scoped per tenant", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				await telemetry.flush();
+			});
+
+			// Each tenant starts its own independent sequence at 1.
+			const rawStore = await telemetryMetricsValueEntityStorage.getStore();
+			expect(rawStore?.length).toEqual(2);
+			expect(rawStore?.map(entity => entity.value)).toEqual([1, 1]);
+		});
+
+		test("metric definitions are only visible within the tenant that created them", async () => {
+			const telemetry = new EntityStorageTelemetryConnector();
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+			});
+
+			// tenant-b has no definition row for "m", so the write is rejected even though
+			// tenant-a has a cached definition for the same metric id.
+			await expect(
+				ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
+					telemetry.addMetricValue("m", MetricCounterOperation.Increment)
+				)
+			).rejects.toMatchObject({
+				name: "NotFoundError",
+				message: "entityStorageTelemetryConnector.metricNotFound"
+			});
+		});
+
+		test("mixed-context batch distributes correctly regardless of flush context", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-c" }, async () => {
+				await telemetry.flush();
+			});
+
+			const resultA = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(resultA.entities.length).toEqual(1);
+			expect(resultB.entities.length).toEqual(1);
+		});
+
+		test("trimming runs per partition, not across the whole flushed batch", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({
+					id: "m",
+					label: "M",
+					type: MetricType.Counter,
+					maxHistory: 1
+				});
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+				await telemetry.createMetric({
+					id: "m",
+					label: "M",
+					type: MetricType.Counter,
+					maxHistory: 1
+				});
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+
+			await telemetry.flush();
+
+			const resultA = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(resultA.entities.length).toEqual(1);
+			expect(resultA.entities[0].value).toEqual(2);
+			expect(resultB.entities.length).toEqual(1);
+			expect(resultB.entities[0].value).toEqual(1);
+		});
+
+		test("per-request context keys do not fragment caches or batch groups", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run(
+				{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-1" },
+				async () => {
+					await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				}
+			);
+
+			// A second request from the same tenant differs only in per-request context keys:
+			// the definition cache must hit and the counter must chain across the two requests.
+			const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+			await ContextIdStore.run(
+				{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-2" },
+				async () => {
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				}
+			);
+			expect(getSpy).not.toHaveBeenCalled();
+			getSpy.mockRestore();
+
+			const setBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "setBatch");
+			await telemetry.flush();
+			expect(setBatchSpy).toHaveBeenCalledTimes(1);
+			setBatchSpy.mockRestore();
+
+			const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		});
+
+		test("counter chaining spans contexts that share a partition", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+
+			// Same tenant but with an organization in context (the API-key request shape):
+			// storage partitions on tenant only, so the chain must continue, not restart.
+			await ContextIdStore.run(
+				{ [ContextIdKeys.Tenant]: "tenant-a", [ContextIdKeys.Organization]: "org-a" },
+				async () => {
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				}
+			);
+
+			const setBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "setBatch");
+			await telemetry.flush();
+			expect(setBatchSpy).toHaveBeenCalledTimes(1);
+			setBatchSpy.mockRestore();
+
+			const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+				telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		});
+
+		test("a failed group re-queues with its own context and lands correctly on retry", async () => {
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { batchSize: 100, batchIntervalMs: 0 }
+			});
+
+			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+			});
+
+			const setBatchSpy = vi
+				.spyOn(telemetryMetricsValueEntityStorage, "setBatch")
+				.mockRejectedValueOnce(new Error("storage unavailable"));
+
+			await telemetry.flush();
+
+			const rawStoreAfterFailure = await telemetryMetricsValueEntityStorage.getStore();
+			expect(rawStoreAfterFailure?.length).toEqual(0);
+
+			setBatchSpy.mockRestore();
+			await telemetry.flush();
+
+			const resultForProducer = await ContextIdStore.run(
+				{ [ContextIdKeys.Tenant]: "tenant-a" },
+				async () => telemetry.queryValues("m", undefined, undefined, undefined, 10)
+			);
+			expect(resultForProducer.entities.length).toEqual(1);
+		});
 	});
 });
