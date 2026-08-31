@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.9.3-next.0...telemetry-processors-v0.9.3-next.1) (2026-08-31)
+
+
+### Features
+
+* add web route processor ([#83](https://github.com/iotaledger/twin-telemetry/issues/83)) ([35c3979](https://github.com/iotaledger/twin-telemetry/commit/35c3979b43d3c0018508605ebfd3dfa6d207d7b0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.0 to 0.9.3-next.1
+
 ## [0.9.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.9.2...telemetry-processors-v0.9.2) (2026-08-24)
 
 
