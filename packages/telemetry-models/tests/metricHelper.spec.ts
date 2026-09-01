@@ -90,6 +90,28 @@ describe("MetricHelper", () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricIncrement(mockComponent, "test-id")).resolves.toBeUndefined();
 		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
+		});
+
+		test("does not invoke onError when addMetricValue succeeds", async () => {
+			const onError = vi.fn();
+			await MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).not.toHaveBeenCalled();
+		});
+
+		test("swallows errors thrown by onError itself", async () => {
+			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
+			const onError = vi.fn().mockRejectedValueOnce(new Error("onError blew up"));
+			await expect(
+				MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError)
+			).resolves.toBeUndefined();
+		});
 	});
 
 	describe("metricDecrement", () => {
@@ -120,6 +142,14 @@ describe("MetricHelper", () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricDecrement(mockComponent, "test-id")).resolves.toBeUndefined();
 		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricDecrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
+		});
 	});
 
 	describe("metricValue", () => {
@@ -141,6 +171,14 @@ describe("MetricHelper", () => {
 		test("swallows errors from addMetricValue", async () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricValue(mockComponent, "test-id", 42)).resolves.toBeUndefined();
+		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricValue(mockComponent, "test-id", 42, undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
 		});
 	});
 });

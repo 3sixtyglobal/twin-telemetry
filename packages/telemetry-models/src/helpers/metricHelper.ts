@@ -53,19 +53,22 @@ export class MetricHelper {
 	 * @param telemetryComponent The telemetry component to use for incrementing the metric.
 	 * @param id The metric ID.
 	 * @param customData Optional custom data for the increment.
+	 * @param onError Optional callback invoked with the swallowed error, for callers that want visibility.
 	 * @returns A promise that resolves when the increment has been recorded or the error swallowed.
 	 */
 	public static async metricIncrement(
 		telemetryComponent: ITelemetryComponent | undefined,
 		id: string,
-		customData?: { [key: string]: unknown }
+		customData?: { [key: string]: unknown },
+		onError?: (err: unknown) => Promise<void> | void
 	): Promise<void> {
 		if (!Is.undefined(telemetryComponent)) {
 			try {
 				await telemetryComponent.addMetricValue(id, MetricCounterOperation.Increment, customData);
-			} catch {
+			} catch (err) {
 				// This method is designed to swallow any errors from the telemetry component
 				// So it can safely be called without interrupting any external flows.
+				await MetricHelper.notifyError(onError, err);
 			}
 		}
 	}
@@ -75,19 +78,22 @@ export class MetricHelper {
 	 * @param telemetryComponent The telemetry component to use for decrementing the metric.
 	 * @param id The metric ID.
 	 * @param customData Optional custom data for the decrement.
+	 * @param onError Optional callback invoked with the swallowed error, for callers that want visibility.
 	 * @returns A promise that resolves when the decrement has been recorded or the error swallowed.
 	 */
 	public static async metricDecrement(
 		telemetryComponent: ITelemetryComponent | undefined,
 		id: string,
-		customData?: { [key: string]: unknown }
+		customData?: { [key: string]: unknown },
+		onError?: (err: unknown) => Promise<void> | void
 	): Promise<void> {
 		if (!Is.undefined(telemetryComponent)) {
 			try {
 				await telemetryComponent.addMetricValue(id, MetricCounterOperation.Decrement, customData);
-			} catch {
+			} catch (err) {
 				// This method is designed to swallow any errors from the telemetry component
 				// So it can safely be called without interrupting any external flows.
+				await MetricHelper.notifyError(onError, err);
 			}
 		}
 	}
@@ -98,21 +104,43 @@ export class MetricHelper {
 	 * @param id The metric ID.
 	 * @param value The metric value to set.
 	 * @param customData Optional custom data for setting the value.
+	 * @param onError Optional callback invoked with the swallowed error, for callers that want visibility.
 	 * @returns A promise that resolves when the value has been recorded or the error swallowed.
 	 */
 	public static async metricValue(
 		telemetryComponent: ITelemetryComponent | undefined,
 		id: string,
 		value: number,
-		customData?: { [key: string]: unknown }
+		customData?: { [key: string]: unknown },
+		onError?: (err: unknown) => Promise<void> | void
 	): Promise<void> {
 		if (!Is.undefined(telemetryComponent)) {
 			try {
 				await telemetryComponent.addMetricValue(id, value, customData);
-			} catch {
+			} catch (err) {
 				// This method is designed to swallow any errors from the telemetry component
 				// So it can safely be called without interrupting any external flows.
+				await MetricHelper.notifyError(onError, err);
 			}
+		}
+	}
+
+	/**
+	 * Invoke the caller's error callback, swallowing anything it throws so a broken callback can
+	 * never break the never-interrupt contract of the calling method.
+	 * @param onError The optional callback to invoke.
+	 * @param err The error to pass to the callback.
+	 * @returns A promise that resolves once the callback has run or failed.
+	 * @internal
+	 */
+	private static async notifyError(
+		onError: ((err: unknown) => Promise<void> | void) | undefined,
+		err: unknown
+	): Promise<void> {
+		try {
+			await onError?.(err);
+		} catch {
+			// The onError callback must never be able to break the swallow contract above.
 		}
 	}
 }
