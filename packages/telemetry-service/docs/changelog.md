@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.3-next.1...telemetry-service-v0.9.3-next.2) (2026-09-01)
+
+
+### Bug Fixes
+
+* fan out tenant-less metric values per tenant and surface swallowed recording failures ([#110](https://github.com/iotaledger/twin-telemetry/issues/110)) ([cc87cd9](https://github.com/iotaledger/twin-telemetry/commit/cc87cd9b5d17269419c40abfed7070efb8cf8454))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.1 to 0.9.3-next.2
+
 ## [0.9.3-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.3-next.0...telemetry-service-v0.9.3-next.1) (2026-08-31)
 
 
