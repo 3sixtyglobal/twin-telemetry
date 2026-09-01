@@ -192,7 +192,7 @@ The custom data for the add operation.
 
 `Promise`\<`string`\>
 
-The created metric value id.
+The created metric value id. When fanned out per-tenant, this is the id from the last tenant written.
 
 #### Implementation of
 

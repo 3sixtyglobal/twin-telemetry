@@ -72,7 +72,7 @@ A promise that resolves when the metric has been created or confirmed to exist.
 
 ### metricIncrement() {#metricincrement}
 
-> `static` **metricIncrement**(`telemetryComponent`, `id`, `customData?`): `Promise`\<`void`\>
+> `static` **metricIncrement**(`telemetryComponent`, `id`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Increment a metric counter, swallowing any telemetry errors.
 
@@ -94,6 +94,12 @@ The metric ID.
 
 Optional custom data for the increment.
 
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
 #### Returns
 
 `Promise`\<`void`\>
@@ -104,7 +110,7 @@ A promise that resolves when the increment has been recorded or the error swallo
 
 ### metricDecrement() {#metricdecrement}
 
-> `static` **metricDecrement**(`telemetryComponent`, `id`, `customData?`): `Promise`\<`void`\>
+> `static` **metricDecrement**(`telemetryComponent`, `id`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Decrement a metric counter, swallowing any telemetry errors.
 
@@ -126,6 +132,12 @@ The metric ID.
 
 Optional custom data for the decrement.
 
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
 #### Returns
 
 `Promise`\<`void`\>
@@ -136,7 +148,7 @@ A promise that resolves when the decrement has been recorded or the error swallo
 
 ### metricValue() {#metricvalue}
 
-> `static` **metricValue**(`telemetryComponent`, `id`, `value`, `customData?`): `Promise`\<`void`\>
+> `static` **metricValue**(`telemetryComponent`, `id`, `value`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Set a metric value, swallowing any telemetry errors.
 
@@ -163,6 +175,12 @@ The metric value to set.
 ##### customData?
 
 Optional custom data for setting the value.
+
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
 
 #### Returns
 
