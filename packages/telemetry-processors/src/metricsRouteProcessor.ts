@@ -7,7 +7,8 @@ import type {
 	IHttpServerRequest
 } from "@twin.org/api-models";
 import type { IContextIds } from "@twin.org/context";
-import { ComponentFactory, Is } from "@twin.org/core";
+import { BaseError, ComponentFactory, Is } from "@twin.org/core";
+import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import { MetricHelper, type ITelemetryComponent } from "@twin.org/telemetry-models";
 import type { IMetricsRouteProcessorConstructorOptions } from "./models/IMetricsRouteProcessorConstructorOptions.js";
@@ -32,6 +33,12 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 	private readonly _telemetry?: ITelemetryComponent;
 
 	/**
+	 * The component for logging metric recording failures.
+	 * @internal
+	 */
+	private readonly _logging?: ILoggingComponent;
+
+	/**
 	 * Paths excluded from metrics recording.
 	 * @internal
 	 */
@@ -45,6 +52,7 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 		this._telemetry = ComponentFactory.getIfExists<ITelemetryComponent>(
 			options?.telemetryComponentType
 		);
+		this._logging = ComponentFactory.getIfExists<ILoggingComponent>(options?.loggingComponentType);
 		this._excludePaths = options?.config?.excludePaths ?? [];
 	}
 
@@ -93,12 +101,25 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 			return;
 		}
 
-		await MetricHelper.metricIncrement(this._telemetry, TelemetryMetricIds.RestRequests, {
-			method: request.method ?? "unknown",
-			route: routePath,
-			statusCode: response.statusCode ?? 0,
-			statusClass: this.toStatusClass(response.statusCode ?? 0)
-		});
+		await MetricHelper.metricIncrement(
+			this._telemetry,
+			TelemetryMetricIds.RestRequests,
+			{
+				method: request.method ?? "unknown",
+				route: routePath,
+				statusCode: response.statusCode ?? 0,
+				statusClass: this.toStatusClass(response.statusCode ?? 0)
+			},
+			async err =>
+				this._logging?.log({
+					level: "debug",
+					source: MetricsRouteProcessor.CLASS_NAME,
+					ts: Date.now(),
+					message: "metricRecordFailed",
+					error: BaseError.fromError(err),
+					data: { route: routePath }
+				})
+		);
 	}
 
 	/**

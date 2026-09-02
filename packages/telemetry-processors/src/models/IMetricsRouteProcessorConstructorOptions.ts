@@ -12,6 +12,11 @@ export interface IMetricsRouteProcessorConstructorOptions {
 	telemetryComponentType?: string;
 
 	/**
+	 * The component type to use for logging metric recording failures.
+	 */
+	loggingComponentType?: string;
+
+	/**
 	 * Optional processor configuration.
 	 */
 	config?: IMetricsRouteProcessorConfig;

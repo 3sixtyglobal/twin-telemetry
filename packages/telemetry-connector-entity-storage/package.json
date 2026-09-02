@@ -1,6 +1,6 @@
 {
 	"name": "@twin.org/telemetry-connector-entity-storage",
-	"version": "0.9.3-next.0",
+	"version": "0.9.3-next.2",
 	"description": "Entity storage connector for persisting telemetry metrics.",
 	"repository": {
 		"type": "git",
@@ -28,12 +28,13 @@
 		"dist:no-test": "npm run clean && npm run build && npm run test:build"
 	},
 	"dependencies": {
+		"@twin.org/context": "next",
 		"@twin.org/core": "next",
 		"@twin.org/entity": "next",
 		"@twin.org/entity-storage-models": "next",
 		"@twin.org/logging-models": "next",
 		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.9.3-next.0"
+		"@twin.org/telemetry-models": "0.9.3-next.2"
 	},
 	"devDependencies": {
 		"@twin.org/entity-storage-connector-memory": "next",

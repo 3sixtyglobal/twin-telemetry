@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0.
 import type { IBaseRoute, IHttpServerRequest } from "@twin.org/api-models";
 import { ComponentFactory } from "@twin.org/core";
+import type { ILogEntry, ILoggingComponent } from "@twin.org/logging-models";
 import { MetricCounterOperation, type ITelemetryComponent } from "@twin.org/telemetry-models";
 import { HttpMethod, HttpStatusCode } from "@twin.org/web";
 import { MetricsRouteProcessor } from "../src/metricsRouteProcessor.js";
@@ -9,6 +10,7 @@ import { TelemetryMetricIds } from "../src/models/telemetryMetricIds.js";
 
 describe("MetricsRouteProcessor", () => {
 	let capturedCalls: { id: string; value: unknown; customData?: { [key: string]: unknown } }[];
+	let capturedLogs: ILogEntry[];
 	let processor: MetricsRouteProcessor;
 
 	function makeTelemetry(): ITelemetryComponent {
@@ -30,13 +32,24 @@ describe("MetricsRouteProcessor", () => {
 		return { url, method };
 	}
 
-	function makeRoute(path: string): IBaseRoute {
-		return { operationId: "testOp", path };
+	function makeRoute(path: string, flags?: Partial<IBaseRoute>): IBaseRoute {
+		return { operationId: "testOp", path, ...flags };
+	}
+
+	function makeLogging(): ILoggingComponent {
+		return {
+			className: () => "mockLogging",
+			log: async (entry: ILogEntry) => {
+				capturedLogs.push(entry);
+			}
+		} as unknown as ILoggingComponent;
 	}
 
 	beforeEach(async () => {
 		capturedCalls = [];
+		capturedLogs = [];
 		ComponentFactory.register("telemetry", () => makeTelemetry());
+		ComponentFactory.register("logging", () => makeLogging());
 		processor = new MetricsRouteProcessor({ telemetryComponentType: "telemetry" });
 		await processor.start();
 	});
@@ -179,6 +192,138 @@ describe("MetricsRouteProcessor", () => {
 				{}
 			);
 			expect(capturedCalls).toHaveLength(0);
+		});
+
+		test("does not throw when the telemetry component rejects the increment", async () => {
+			ComponentFactory.register(
+				"telemetry",
+				() =>
+					({
+						className: () => "mockTelemetry",
+						createMetric: async () => {},
+						addMetricValue: async () => {
+							throw new Error("contextIdMissing");
+						}
+					}) as unknown as ITelemetryComponent
+			);
+			const proc = new MetricsRouteProcessor({ telemetryComponentType: "telemetry" });
+			await proc.start();
+
+			await expect(
+				proc.post(
+					makeRequest("/api/v1/items"),
+					{ statusCode: HttpStatusCode.ok },
+					makeRoute("/api/v1/items"),
+					{},
+					{}
+				)
+			).resolves.toBeUndefined();
+		});
+	});
+
+	describe("recording failure visibility", () => {
+		test("logs a debug entry when the increment fails and a logging component is registered", async () => {
+			ComponentFactory.register(
+				"telemetry",
+				() =>
+					({
+						className: () => "mockTelemetry",
+						createMetric: async () => {},
+						addMetricValue: async () => {
+							throw new Error("contextIdMissing");
+						}
+					}) as unknown as ITelemetryComponent
+			);
+			const proc = new MetricsRouteProcessor({
+				telemetryComponentType: "telemetry",
+				loggingComponentType: "logging"
+			});
+			await proc.start();
+
+			await proc.post(
+				makeRequest("/api/v1/items"),
+				{ statusCode: HttpStatusCode.ok },
+				makeRoute("/api/v1/items"),
+				{},
+				{}
+			);
+
+			expect(capturedLogs).toHaveLength(1);
+			expect(capturedLogs[0].level).toBe("debug");
+			expect(capturedLogs[0].message).toBe("metricRecordFailed");
+			expect(capturedLogs[0].data).toEqual({ route: "/api/v1/items" });
+		});
+
+		test("does not log when the increment succeeds", async () => {
+			const proc = new MetricsRouteProcessor({
+				telemetryComponentType: "telemetry",
+				loggingComponentType: "logging"
+			});
+			await proc.start();
+
+			await proc.post(
+				makeRequest("/api/v1/items"),
+				{ statusCode: HttpStatusCode.ok },
+				makeRoute("/api/v1/items"),
+				{},
+				{}
+			);
+
+			expect(capturedLogs).toHaveLength(0);
+		});
+
+		test("does not throw when the increment fails and no logging component is registered", async () => {
+			ComponentFactory.register(
+				"telemetry",
+				() =>
+					({
+						className: () => "mockTelemetry",
+						createMetric: async () => {},
+						addMetricValue: async () => {
+							throw new Error("contextIdMissing");
+						}
+					}) as unknown as ITelemetryComponent
+			);
+			const proc = new MetricsRouteProcessor({ telemetryComponentType: "telemetry" });
+			await proc.start();
+
+			await expect(
+				proc.post(
+					makeRequest("/api/v1/items"),
+					{ statusCode: HttpStatusCode.ok },
+					makeRoute("/api/v1/items"),
+					{},
+					{}
+				)
+			).resolves.toBeUndefined();
+		});
+	});
+
+	describe("tenant-less routes (issue #109)", () => {
+		test("still attempts to record for a route marked skipTenant", async () => {
+			// skipTenant routes include real business traffic whose tenant is resolved inside the
+			// service layer (e.g. federated-catalogue's dataset routes), not just probes - so the
+			// processor must not special-case the flag. Fan-out for the tenant-less case is
+			// TelemetryService's responsibility (see telemetryService.spec.ts), not this processor's.
+			await processor.post(
+				makeRequest("/readyz"),
+				{ statusCode: HttpStatusCode.ok },
+				makeRoute("/readyz", { skipTenant: true, skipAuth: true }),
+				{},
+				{}
+			);
+			expect(capturedCalls).toHaveLength(1);
+		});
+
+		test("still records for a skipAuth route that is not skipTenant (DSP-style route)", async () => {
+			await processor.post(
+				makeRequest("/dataspace/transfers/request"),
+				{ statusCode: HttpStatusCode.ok },
+				makeRoute("/dataspace/transfers/request", { skipAuth: true }),
+				{},
+				{}
+			);
+			expect(capturedCalls).toHaveLength(1);
 		});
 	});
 });

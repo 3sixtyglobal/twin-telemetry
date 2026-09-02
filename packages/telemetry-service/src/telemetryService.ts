@@ -134,7 +134,7 @@ export class TelemetryService implements ITelemetryComponent {
 	 * @param id The id of the metric.
 	 * @param value The value for the add operation.
 	 * @param customData The custom data for the add operation.
-	 * @returns The created metric value id.
+	 * @returns The created metric value id. When fanned out per-tenant, this is the id from the last tenant written.
 	 */
 	public async addMetricValue(
 		id: string,
@@ -143,6 +143,22 @@ export class TelemetryService implements ITelemetryComponent {
 	): Promise<string> {
 		Guards.stringValue(TelemetryService.CLASS_NAME, nameof(id), id);
 		Guards.defined(TelemetryService.CLASS_NAME, nameof(value), value);
+
+		// If we don't have a tenant context ID and the tenant component is multi-tenant,
+		// we consider the entry as per-tenant and run it in all the tenant context to ensure
+		// the value is recorded for each tenant.
+		const contextIds = (await ContextIdStore.getContextIds()) ?? {};
+		const perTenant =
+			!Is.stringValue(contextIds[ContextIdKeys.Tenant]) && this._platformComponent.isMultiTenant();
+
+		if (perTenant) {
+			let valueId = "";
+			await this._platformComponent.execute(async () => {
+				valueId = await this._telemetryConnector.addMetricValue(id, value, customData);
+			});
+			return valueId;
+		}
+
 		return this._telemetryConnector.addMetricValue(id, value, customData);
 	}
 

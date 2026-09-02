@@ -1,5 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import type { IContextIds } from "@twin.org/context";
 import type { TelemetryMetricValue } from "../entities/telemetryMetricValue.js";
 
 /**
@@ -15,4 +16,10 @@ export interface IBatchMetricValueEntry {
 	 * Maximum history retained for the metric; undefined when the metric has no cap.
 	 */
 	maxHistory?: number;
+
+	/**
+	 * The identity context ids captured when the entry was enqueued; the flush writes
+	 * the entry under this context.
+	 */
+	contextIds?: IContextIds;
 }

@@ -17,3 +17,12 @@ The metric value entity to write.
 > `optional` **maxHistory?**: `number`
 
 Maximum history retained for the metric; undefined when the metric has no cap.
+
+***
+
+### contextIds? {#contextids}
+
+> `optional` **contextIds?**: `IContextIds`
+
+The identity context ids captured when the entry was enqueued; the flush writes
+the entry under this context.
