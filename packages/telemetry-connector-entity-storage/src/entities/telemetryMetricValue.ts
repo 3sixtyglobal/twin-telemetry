@@ -16,7 +16,7 @@ export class TelemetryMetricValue {
 	/**
 	 * The metric id.
 	 */
-	@property({ type: "string" })
+	@property({ type: "string", isSecondary: true })
 	public metricId!: string;
 
 	/**

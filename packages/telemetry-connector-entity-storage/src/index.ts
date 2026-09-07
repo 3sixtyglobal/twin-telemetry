@@ -6,4 +6,6 @@ export * from "./entityStorageTelemetryConnector.js";
 export * from "./models/IBatchMetricValueEntry.js";
 export * from "./models/IEntityStorageTelemetryConnectorConfig.js";
 export * from "./models/IEntityStorageTelemetryConnectorConstructorOptions.js";
+export * from "./models/ILastMetricValue.js";
+export * from "./models/IPendingTrim.js";
 export * from "./schema.js";

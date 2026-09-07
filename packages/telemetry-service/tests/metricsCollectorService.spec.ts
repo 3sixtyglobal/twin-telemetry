@@ -26,7 +26,7 @@ function makePlatformComponent(
 		isMultiTenant: () => isMultiTenant,
 		execute,
 		getLocalOriginContext: async () => undefined
-	};
+	} as unknown as IPlatformComponent;
 }
 
 function makeSingleTenantPassthrough(): IPlatformComponent {
