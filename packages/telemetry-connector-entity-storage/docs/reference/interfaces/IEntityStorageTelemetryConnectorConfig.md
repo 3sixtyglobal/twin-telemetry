@@ -60,11 +60,13 @@ Maximum entries to retain in the cache if a flush fails and entries are re-queue
 > `optional` **metricDefinitionCacheCapacity?**: `number`
 
 Maximum number of metric definitions held in the in-memory definition cache.
+Keyed the same way as the last value cache, so it should not be set lower than
+lastValueCacheCapacity or writes will read definitions from storage.
 
 #### Default
 
 ```ts
-100.
+1000.
 ```
 
 ***
@@ -79,4 +81,64 @@ Time-to-idle in milliseconds for cached metric definitions.
 
 ```ts
 3600000.
+```
+
+***
+
+### lastValueCacheCapacity? {#lastvaluecachecapacity}
+
+> `optional` **lastValueCacheCapacity?**: `number`
+
+Maximum number of metrics whose last value is held in memory; values &lt;= 0 mean unlimited.
+Evicting an entry only costs a storage read on the next write for that metric.
+
+#### Default
+
+```ts
+1000.
+```
+
+***
+
+### lastValueCacheTtiMs? {#lastvaluecachettims}
+
+> `optional` **lastValueCacheTtiMs?**: `number`
+
+Time-to-idle in milliseconds for cached last values; values &lt;= 0 disable expiry.
+Releases memory held for metrics that have stopped being written to.
+
+#### Default
+
+```ts
+3600000.
+```
+
+***
+
+### maxTrackedHistory? {#maxtrackedhistory}
+
+> `optional` **maxTrackedHistory?**: `number`
+
+Largest maxHistory for which the retained value ids are held in memory rather than read from
+storage on every trim. Metrics with a larger cap fall back to scanning.
+
+#### Default
+
+```ts
+1000.
+```
+
+***
+
+### trackedHistoryBudget? {#trackedhistorybudget}
+
+> `optional` **trackedHistoryBudget?**: `number`
+
+Total number of retained value ids held across all metrics; values &lt;= 0 mean unlimited.
+Bounds the memory used by history tracking independently of how many metrics are cached.
+
+#### Default
+
+```ts
+50000.
 ```

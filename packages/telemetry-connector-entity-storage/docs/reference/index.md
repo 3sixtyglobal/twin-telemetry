@@ -11,6 +11,8 @@
 - [IBatchMetricValueEntry](interfaces/IBatchMetricValueEntry.md)
 - [IEntityStorageTelemetryConnectorConfig](interfaces/IEntityStorageTelemetryConnectorConfig.md)
 - [IEntityStorageTelemetryConnectorConstructorOptions](interfaces/IEntityStorageTelemetryConnectorConstructorOptions.md)
+- [ILastMetricValue](interfaces/ILastMetricValue.md)
+- [IPendingTrim](interfaces/IPendingTrim.md)
 
 ## Functions
 

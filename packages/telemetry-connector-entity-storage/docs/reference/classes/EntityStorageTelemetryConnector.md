@@ -70,9 +70,10 @@ Default maximum number of entries to hold in the in-memory cache.
 
 ### DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY {#default_metric_definition_cache_capacity}
 
-> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY**: `number` = `100`
+> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY**: `number` = `1000`
 
 Maximum number of metric definitions to hold in the in-memory definition cache.
+Matches the last value cache capacity, as both are keyed by partition and metric id.
 
 ***
 
@@ -83,6 +84,41 @@ Maximum number of metric definitions to hold in the in-memory definition cache.
 Time-to-idle in milliseconds for cached metric definitions.
 Metric definitions are immutable once registered; a long TTI keeps active
 metrics cached without permanent references.
+
+***
+
+### DEFAULT\_LAST\_VALUE\_CACHE\_CAPACITY {#default_last_value_cache_capacity}
+
+> `readonly` `static` **DEFAULT\_LAST\_VALUE\_CACHE\_CAPACITY**: `number` = `1000`
+
+Default maximum number of metrics whose last value is held in memory.
+
+***
+
+### DEFAULT\_MAX\_TRACKED\_HISTORY {#default_max_tracked_history}
+
+> `readonly` `static` **DEFAULT\_MAX\_TRACKED\_HISTORY**: `number` = `1000`
+
+Default largest maxHistory for which the retained value ids are tracked in memory.
+Above this the trim falls back to scanning storage rather than holding a long id list.
+
+***
+
+### DEFAULT\_LAST\_VALUE\_CACHE\_TTI\_MS {#default_last_value_cache_tti_ms}
+
+> `readonly` `static` **DEFAULT\_LAST\_VALUE\_CACHE\_TTI\_MS**: `number` = `3_600_000`
+
+Default time-to-idle in milliseconds for cached last values.
+Matches the metric definition cache, as both are keyed by partition and metric id.
+
+***
+
+### DEFAULT\_TRACKED\_HISTORY\_BUDGET {#default_tracked_history_budget}
+
+> `readonly` `static` **DEFAULT\_TRACKED\_HISTORY\_BUDGET**: `number` = `50_000`
+
+Default total number of retained value ids held across all metrics.
+Caps history tracking by the memory it actually uses rather than by metric count.
 
 ## Methods
 
