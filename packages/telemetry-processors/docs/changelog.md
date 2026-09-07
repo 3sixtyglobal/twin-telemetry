@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.9.3-next.2...telemetry-processors-v0.9.3-next.3) (2026-09-07)
+
+
+### Miscellaneous Chores
+
+* **telemetry-processors:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.2 to 0.9.3-next.3
+
 ## [0.9.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.9.3-next.1...telemetry-processors-v0.9.3-next.2) (2026-09-01)
 
 

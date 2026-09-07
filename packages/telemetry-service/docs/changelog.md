@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.3-next.2...telemetry-service-v0.9.3-next.3) (2026-09-07)
+
+
+### Features
+
+* metric value optimisation ([#114](https://github.com/iotaledger/twin-telemetry/issues/114)) ([8712b8d](https://github.com/iotaledger/twin-telemetry/commit/8712b8d8f0f0c78921c7b93979b9afffb45c5d79))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.2 to 0.9.3-next.3
+
 ## [0.9.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-service-v0.9.3-next.1...telemetry-service-v0.9.3-next.2) (2026-09-01)
 
 
