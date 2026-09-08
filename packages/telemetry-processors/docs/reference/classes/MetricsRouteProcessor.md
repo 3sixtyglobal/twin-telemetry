@@ -36,6 +36,14 @@ The options for the processor.
 
 Runtime name for the class.
 
+***
+
+### DEFAULT\_MAX\_HISTORY {#default_max_history}
+
+> `readonly` `static` **DEFAULT\_MAX\_HISTORY**: `number` = `10000`
+
+Default number of request values to retain.
+
 ## Methods
 
 ### className() {#classname}

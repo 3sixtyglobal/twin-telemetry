@@ -26,6 +26,20 @@ platform
 
 ***
 
+### telemetryComponentType? {#telemetrycomponenttype}
+
+> `optional` **telemetryComponentType?**: `string`
+
+The type of the telemetry component the collected values are recorded with.
+
+#### Default
+
+```ts
+telemetry
+```
+
+***
+
 ### config? {#config}
 
 > `optional` **config?**: [`IMetricsCollectorServiceConfig`](IMetricsCollectorServiceConfig.md)

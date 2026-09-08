@@ -125,22 +125,22 @@ A promise that resolves when all MeterProviders have shut down.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Register a new metric definition. If the connector is already started,
+Register one or more metric definitions. If the connector is already started,
 the OTEL instrument is registered immediately for the current context.
 
 #### Parameters
 
 ##### metric
 
-`ITelemetryMetric`
+`ITelemetryMetric` \| `ITelemetryMetric`[]
 
-The metric details.
+The metric details, or the details of several metrics.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been registered.
+A promise that resolves when the metrics have been registered.
 
 #### Implementation of
 
@@ -211,6 +211,32 @@ A generated 32-character hex id for the recorded value.
 #### Implementation of
 
 `ITelemetryConnector.addMetricValue`
+
+***
+
+### addMetricValues() {#addmetricvalues}
+
+> **addMetricValues**(`values`): `Promise`\<`string`[]\>
+
+Add multiple metric values.
+
+#### Parameters
+
+##### values
+
+`ITelemetryMetricValueEntry`[]
+
+The metric values to add.
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+The created metric value ids, in the order the values were supplied.
+
+#### Implementation of
+
+`ITelemetryConnector.addMetricValues`
 
 ***
 

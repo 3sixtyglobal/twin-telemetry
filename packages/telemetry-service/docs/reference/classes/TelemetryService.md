@@ -58,21 +58,21 @@ The class name of the component.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Create a new metric.
+Create one or more metrics.
 
 #### Parameters
 
 ##### metric
 
-`ITelemetryMetric`
+`ITelemetryMetric` \| `ITelemetryMetric`[]
 
-The metric details.
+The metric details, or the details of several metrics.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been created.
+A promise that resolves when the metrics have been created.
 
 #### Implementation of
 
@@ -197,6 +197,32 @@ The created metric value id. When fanned out per-tenant, this is the id from the
 #### Implementation of
 
 `ITelemetryComponent.addMetricValue`
+
+***
+
+### addMetricValues() {#addmetricvalues}
+
+> **addMetricValues**(`values`): `Promise`\<`string`[]\>
+
+Add multiple metric values.
+
+#### Parameters
+
+##### values
+
+`ITelemetryMetricValueEntry`[]
+
+The metric values to add.
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+The created metric value ids. When fanned out per-tenant, these are the ids from the last tenant written.
+
+#### Implementation of
+
+`ITelemetryComponent.addMetricValues`
 
 ***
 
