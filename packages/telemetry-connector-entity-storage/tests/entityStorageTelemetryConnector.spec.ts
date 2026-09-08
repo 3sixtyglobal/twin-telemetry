@@ -1,7 +1,15 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import { mkdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import {
+	BackgroundTaskService,
+	initSchema as initBackgroundTaskSchema,
+	type BackgroundTask
+} from "@twin.org/background-task-service";
 import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { Mutex } from "@twin.org/core";
+import { ComponentFactory } from "@twin.org/core";
+import { FileEntityStorageConnector } from "@twin.org/entity-storage-connector-file";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
 import { nameof } from "@twin.org/nameof";
@@ -11,30 +19,118 @@ import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.
 import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryConnector.js";
 import { initSchema } from "../src/schema.js";
 
+const TEST_TASK_HANDLER = new URL("./testTelemetryMetricValueTask.js", import.meta.url).href;
+const TEST_VALUE_DIRECTORY = fileURLToPath(new URL("./.tmp/metric-values/", import.meta.url));
+const TEST_TIMEOUT = 30000;
+
 let telemetryMetricsEntityStorage: MemoryEntityStorageConnector<TelemetryMetric>;
-let telemetryMetricsValueEntityStorage: MemoryEntityStorageConnector<TelemetryMetricValue>;
+let telemetryMetricsValueEntityStorage: FileEntityStorageConnector<TelemetryMetricValue>;
+let backgroundTaskEntityStorage: MemoryEntityStorageConnector<BackgroundTask>;
+let backgroundTaskService: BackgroundTaskService;
+let connectors: EntityStorageTelemetryConnector[];
+
+/**
+ * Register the metric value storage on both sides of the worker boundary.
+ * The worker thread has no engine to clone from, so the test handler module builds the same
+ * file backed connector from the environment; sharing the directory is what lets the test read
+ * what the background thread wrote.
+ * @param partitionContextIds The context id keys to partition the storage by.
+ */
+function registerValueStorage(partitionContextIds?: string[]): void {
+	process.env.TEST_TELEMETRY_VALUE_DIRECTORY = TEST_VALUE_DIRECTORY;
+	process.env.TEST_TELEMETRY_VALUE_PARTITIONS = partitionContextIds?.join(",") ?? "";
+
+	telemetryMetricsValueEntityStorage = new FileEntityStorageConnector<TelemetryMetricValue>({
+		entitySchema: nameof<TelemetryMetricValue>(),
+		partitionContextIds,
+		config: { directory: TEST_VALUE_DIRECTORY }
+	});
+	EntityStorageConnectorFactory.register(
+		"telemetry-metric-value",
+		() => telemetryMetricsValueEntityStorage
+	);
+}
+
+/**
+ * Register the metric definition storage.
+ * @param partitionContextIds The context id keys to partition the storage by.
+ */
+function registerMetricStorage(partitionContextIds?: string[]): void {
+	telemetryMetricsEntityStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
+		entitySchema: nameof<TelemetryMetric>(),
+		partitionContextIds,
+		config: { storageKey: "telemetry-metric" }
+	});
+	EntityStorageConnectorFactory.register("telemetry-metric", () => telemetryMetricsEntityStorage);
+}
+
+/**
+ * Create a started connector, tracked so it is stopped when the test ends.
+ * @param options The connector options.
+ * @returns The started connector.
+ */
+async function createConnector(
+	options?: ConstructorParameters<typeof EntityStorageTelemetryConnector>[0]
+): Promise<EntityStorageTelemetryConnector> {
+	const telemetry = new EntityStorageTelemetryConnector({
+		...options,
+		config: {
+			overrideMetricValueTaskHandler: TEST_TASK_HANDLER,
+			// Most tests assert on the task a value creates, so the coalesce window is off unless
+			// the test is about it.
+			taskCoalesceMs: 0,
+			...options?.config
+		}
+	});
+	connectors.push(telemetry);
+	await telemetry.start();
+	return telemetry;
+}
+
+/**
+ * Read the metric values a partition holds, newest first.
+ * @param contextIds The context to read under.
+ * @returns The values.
+ */
+async function readValues(contextIds?: { [key: string]: string }): Promise<TelemetryMetricValue[]> {
+	const result = await ContextIdStore.run(contextIds ?? {}, async () =>
+		telemetryMetricsValueEntityStorage.query(undefined, undefined, undefined, undefined, 1000)
+	);
+	return result.entities as TelemetryMetricValue[];
+}
 
 describe("EntityStorageTelemetryConnector", () => {
-	beforeEach(() => {
+	beforeEach(async () => {
+		connectors = [];
 		initSchema();
-		telemetryMetricsEntityStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
-			entitySchema: nameof<TelemetryMetric>(),
-			config: { storageKey: "telemetry-metric" }
+		initBackgroundTaskSchema();
+
+		await rm(TEST_VALUE_DIRECTORY, { recursive: true, force: true });
+		await mkdir(TEST_VALUE_DIRECTORY, { recursive: true });
+
+		registerMetricStorage();
+		registerValueStorage();
+
+		backgroundTaskEntityStorage = new MemoryEntityStorageConnector<BackgroundTask>({
+			entitySchema: nameof<BackgroundTask>(),
+			config: { storageKey: "background-task" }
 		});
-		telemetryMetricsValueEntityStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
-			entitySchema: nameof<TelemetryMetricValue>(),
-			config: { storageKey: "telemetry-metric-value" }
-		});
-		EntityStorageConnectorFactory.register("telemetry-metric", () => telemetryMetricsEntityStorage);
-		EntityStorageConnectorFactory.register(
-			"telemetry-metric-value",
-			() => telemetryMetricsValueEntityStorage
-		);
+		EntityStorageConnectorFactory.register("background-task", () => backgroundTaskEntityStorage);
+
+		backgroundTaskService = new BackgroundTaskService({ config: { taskInterval: 5 } });
+		ComponentFactory.register("background-task", () => backgroundTaskService);
+		await backgroundTaskService.start();
 	});
 
 	afterEach(async () => {
+		for (const telemetry of connectors) {
+			await telemetry.stop();
+		}
+		await backgroundTaskService.stop();
+		ComponentFactory.unregister("background-task");
 		await telemetryMetricsEntityStorage.teardown();
-		await telemetryMetricsValueEntityStorage.teardown();
+		await backgroundTaskEntityStorage.teardown();
+		await rm(TEST_VALUE_DIRECTORY, { recursive: true, force: true });
 	});
 
 	test("can construct", async () => {
@@ -42,33 +138,120 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(telemetry).toBeDefined();
 	});
 
-	test("passes configured mutex timeout to lock acquisition", async () => {
-		const lockSpy = vi.spyOn(Mutex, "lock");
+	test("registers a single long running worker for the metric value writes", async () => {
+		const registerSpy = vi.spyOn(backgroundTaskService, "registerHandler");
+		const unregisterSpy = vi.spyOn(backgroundTaskService, "unregisterHandler");
 
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: {
-				mutexTimeoutMs: 1234
+		const telemetry = await createConnector();
+
+		expect(registerSpy).toHaveBeenCalledWith(
+			"telemetry-metric-value-write",
+			TEST_TASK_HANDLER,
+			"telemetryMetricValueTask",
+			expect.any(Function),
+			{
+				maxWorkerCount: 1,
+				idleShutdownTimeout: -1,
+				initialiseMethod: "telemetryMetricValueTaskStart",
+				initialiseMethodParams: expect.any(Function),
+				shutdownMethod: "telemetryMetricValueTaskEnd"
 			}
+		);
+
+		await telemetry.stop();
+		expect(unregisterSpy).toHaveBeenCalledWith("telemetry-metric-value-write");
+	});
+
+	test(
+		"holds values for the coalesce window by default",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+			const telemetry = new EntityStorageTelemetryConnector({
+				config: { overrideMetricValueTaskHandler: TEST_TASK_HANDLER }
+			});
+			connectors.push(telemetry);
+			await telemetry.start();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			// The default window keeps the task write off the caller's path.
+			expect(createSpy).not.toHaveBeenCalled();
+
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+			expect((createSpy.mock.calls[0][1] as { values: unknown[] }).values).toHaveLength(2);
+		},
+		TEST_TIMEOUT
+	);
+
+	test("uses the packaged task handler module by default", async () => {
+		const registerSpy = vi.spyOn(backgroundTaskService, "registerHandler");
+
+		const telemetry = new EntityStorageTelemetryConnector();
+		connectors.push(telemetry);
+		await telemetry.start();
+
+		expect(registerSpy.mock.calls[0][1].endsWith("telemetryMetricValueTask.js")).toEqual(true);
+	});
+
+	test("sends the writer config to the thread once when it starts", async () => {
+		const registerSpy = vi.spyOn(backgroundTaskService, "registerHandler");
+
+		await createConnector({
+			config: { batchSize: 4, batchIntervalMs: 0, maxCacheSize: 7, mutexTimeoutMs: 1234 }
 		});
 
+		const handlerOptions = registerSpy.mock.calls[0][4] as {
+			initialiseMethodParams: () => Promise<unknown[]>;
+		};
+		await expect(handlerOptions.initialiseMethodParams()).resolves.toEqual([
+			{
+				telemetryMetricValueStorageConnectorType: undefined,
+				loggingComponentType: undefined,
+				batchSize: 4,
+				batchIntervalMs: 0,
+				maxCacheSize: 7,
+				mutexTimeoutMs: 1234
+			}
+		]);
+	});
+
+	test("passes only the metric value details with each task", async () => {
+		const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+		const telemetry = await createConnector();
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
-			type: MetricType.Counter
+			type: MetricType.Counter,
+			maxHistory: 3
 		});
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		const valueId = await telemetry.addMetricValue("test", 5, { some: "data" });
 
-		expect(lockSpy).toHaveBeenCalledWith(`${EntityStorageTelemetryConnector.CLASS_NAME}|||test`, {
-			throwOnTimeout: true,
-			timeoutMs: 1234
+		expect(createSpy).toHaveBeenCalledTimes(1);
+		expect(createSpy.mock.calls[0][0]).toEqual("telemetry-metric-value-write");
+		expect(createSpy.mock.calls[0][1]).toEqual({
+			values: [
+				{
+					valueId,
+					metricId: "test",
+					metricType: MetricType.Counter,
+					operation: 5,
+					ts: expect.any(Number),
+					maxHistory: 3,
+					customData: { some: "data" },
+					contextIds: { [ContextIdKeys.Node]: "", [ContextIdKeys.Tenant]: "" }
+				}
+			]
 		});
-
-		lockSpy.mockRestore();
 	});
 
 	test("can create a metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
@@ -86,8 +269,83 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(store?.[0].type).toEqual(0);
 	});
 
+	test("creates several metrics with a single read and a single write", async () => {
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "existing", label: "Existing", type: MetricType.Counter });
+
+		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+		const querySpy = vi.spyOn(telemetryMetricsEntityStorage, "query");
+		const setBatchSpy = vi.spyOn(telemetryMetricsEntityStorage, "setBatch");
+
+		await telemetry.createMetric([
+			{ id: "existing", label: "Existing", type: MetricType.Counter },
+			{ id: "a", label: "A", type: MetricType.Counter, maxHistory: 5 },
+			{ id: "b", label: "B", type: MetricType.Gauge }
+		]);
+
+		// One query resolves what already exists, one batch writes the rest.
+		expect(getSpy).not.toHaveBeenCalled();
+		expect(querySpy).toHaveBeenCalledTimes(1);
+		expect(setBatchSpy).toHaveBeenCalledTimes(1);
+		expect(setBatchSpy.mock.calls[0][0].map(metric => metric.id)).toEqual(["a", "b"]);
+		getSpy.mockRestore();
+		querySpy.mockRestore();
+		setBatchSpy.mockRestore();
+
+		const store = await telemetryMetricsEntityStorage.getStore();
+		expect(store?.map(metric => metric.id).sort()).toEqual(["a", "b", "existing"]);
+		expect(store?.find(metric => metric.id === "a")?.maxHistory).toEqual(5);
+	});
+
+	test("an array of metrics leaves an existing metric untouched", async () => {
+		const telemetry = await createConnector();
+		await telemetry.createMetric({
+			id: "test",
+			label: "Original",
+			type: MetricType.Counter,
+			maxHistory: 3
+		});
+
+		await telemetry.createMetric([
+			{ id: "test", label: "Replacement", type: MetricType.Gauge, maxHistory: 99 }
+		]);
+
+		const store = await telemetryMetricsEntityStorage.getStore();
+		expect(store).toHaveLength(1);
+		expect(store?.[0].label).toEqual("Original");
+		expect(store?.[0].maxHistory).toEqual(3);
+	});
+
+	test("an array of metrics is validated before any of them are written", async () => {
+		const telemetry = await createConnector();
+		const setBatchSpy = vi.spyOn(telemetryMetricsEntityStorage, "setBatch");
+
+		await expect(
+			telemetry.createMetric([
+				{ id: "a", label: "A", type: MetricType.Counter },
+				{ id: "b", label: "B", type: MetricType.Counter, maxHistory: 0 }
+			])
+		).rejects.toMatchObject({
+			name: "GeneralError",
+			message: "entityStorageTelemetryConnector.maxHistoryMustBePositiveInteger"
+		});
+
+		expect(setBatchSpy).not.toHaveBeenCalled();
+		setBatchSpy.mockRestore();
+	});
+
+	test("an array of metrics pre-warms the definition cache", async () => {
+		const telemetry = await createConnector();
+		await telemetry.createMetric([{ id: "test", label: "Test", type: MetricType.Counter }]);
+
+		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		expect(getSpy).not.toHaveBeenCalled();
+		getSpy.mockRestore();
+	});
+
 	test("can update a metric details", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
@@ -105,222 +363,84 @@ describe("EntityStorageTelemetryConnector", () => {
 
 		const store = await telemetryMetricsEntityStorage.getStore();
 		expect(store?.length).toEqual(1);
-		expect(store?.[0].id).toEqual("test");
 		expect(store?.[0].label).toEqual("Test2");
 		expect(store?.[0].description).toEqual("Test metric2");
 		expect(store?.[0].unit).toEqual("kgs2");
 		expect(store?.[0].type).toEqual(0);
 	});
 
-	test("can create a counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
-
-		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(1);
-		expect(store?.[0].id).toEqual("test");
-		expect(store?.[0].label).toEqual("Test");
-		expect(store?.[0].description).toEqual("Test metric");
-		expect(store?.[0].unit).toEqual("kgs");
-		expect(store?.[0].type).toEqual(0);
-	});
-
 	test("can create a inc dec counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.IncDecCounter
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.IncDecCounter });
 
 		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(1);
-		expect(store?.[0].id).toEqual("test");
-		expect(store?.[0].label).toEqual("Test");
-		expect(store?.[0].description).toEqual("Test metric");
-		expect(store?.[0].unit).toEqual("kgs");
 		expect(store?.[0].type).toEqual(1);
 	});
 
 	test("can create a gauge metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Gauge
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Gauge });
 
 		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(1);
-		expect(store?.[0].id).toEqual("test");
-		expect(store?.[0].label).toEqual("Test");
-		expect(store?.[0].description).toEqual("Test metric");
-		expect(store?.[0].unit).toEqual("kgs");
 		expect(store?.[0].type).toEqual(2);
 	});
 
-	test("can increment a counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
+	test(
+		"can increment a counter metric",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-
-		expect(valueStore?.length).toEqual(1);
-		expect(valueStore?.[0].id.length).toEqual(32);
-		expect(valueStore?.[0].metricId).toEqual("test");
-		expect(valueStore?.[0].ts).toBeGreaterThan(0);
-		expect(valueStore?.[0].value).toEqual(1);
-
-		await telemetry.addMetricValue("test", 5);
-		await telemetry.flush();
-
-		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore2?.length).toEqual(2);
-		expect(valueStore2?.[1].id.length).toEqual(32);
-		expect(valueStore2?.[1].metricId).toEqual("test");
-		expect(valueStore2?.[1].ts).toBeGreaterThan(0);
-		expect(valueStore2?.[1].value).toEqual(6);
-	});
-
-	test("keeps counter increments accurate during same-tick bursts", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		for (let i = 0; i < 20; i++) {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
+			await telemetry.addMetricValue("test", 5);
 
-		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 25);
-		expect(result.entities.length).toEqual(20);
-		expect(result.entities.map(entity => entity.value)).toEqual([
-			20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
-		]);
-	});
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([6, 1]);
+			expect(result.entities[0].id.length).toEqual(32);
+			expect(result.entities[0].ts).toBeGreaterThan(0);
+		},
+		TEST_TIMEOUT
+	);
 
-	test("does not query storage for the last value when batching is disabled", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
+	test(
+		"keeps counter increments accurate during same-tick bursts",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			for (let i = 0; i < 20; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 25);
+			expect(result.entities.map(entity => entity.value)).toEqual([
+				20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+			]);
+		},
+		TEST_TIMEOUT
+	);
 
-		expect(querySpy).toHaveBeenCalledTimes(0);
-		querySpy.mockRestore();
+	test(
+		"returns the value id before the background thread has written it",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2, 3]);
-	});
+			const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			expect(await readValues()).toHaveLength(0);
 
-	test("reads the last value from storage on the first unbatched write", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-	});
-
-	test("does not cache the last value when the unbatched write fails", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		const setSpy = vi
-			.spyOn(telemetryMetricsValueEntityStorage, "set")
-			.mockRejectedValueOnce(new Error("storage failure"));
-
-		await expect(
-			telemetry.addMetricValue("test", MetricCounterOperation.Increment)
-		).rejects.toThrow("storage failure");
-		setSpy.mockRestore();
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.map(entry => entry.value)).toEqual([1]);
-	});
-
-	test("re-reads the last value from storage after the connector is stopped", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.stop();
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2]);
-	});
+			const value = await telemetry.getMetricValue("test", valueId);
+			expect(value.id).toEqual(valueId);
+			expect(value.value).toEqual(1);
+		},
+		TEST_TIMEOUT
+	);
 
 	test("can fail to decrement a counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
+		const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		await expect(
 			telemetry.addMetricValue("test", MetricCounterOperation.Decrement)
@@ -328,77 +448,44 @@ describe("EntityStorageTelemetryConnector", () => {
 			name: "GeneralError",
 			message: "entityStorageTelemetryConnector.counterIncOnly"
 		});
+
+		// The invalid operation is rejected before it reaches the background thread.
+		expect(createSpy).not.toHaveBeenCalled();
 	});
 
-	test("can increment an inc/dec counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.IncDecCounter
-		});
+	test(
+		"can increment an inc/dec counter metric",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.IncDecCounter });
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment, undefined);
-		await telemetry.flush();
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment, undefined);
+			await telemetry.addMetricValue("test", 5);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(1);
-		expect(valueStore?.[0].id.length).toEqual(32);
-		expect(valueStore?.[0].metricId).toEqual("test");
-		expect(valueStore?.[0].ts).toBeGreaterThan(0);
-		expect(valueStore?.[0].value).toEqual(1);
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([6, 1]);
+		},
+		TEST_TIMEOUT
+	);
 
-		await telemetry.addMetricValue("test", 5);
-		await telemetry.flush();
+	test(
+		"can decrement an inc/dec counter metric",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.IncDecCounter });
 
-		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore2?.[1].id.length).toEqual(32);
-		expect(valueStore2?.[1].metricId).toEqual("test");
-		expect(valueStore2?.[1].ts).toBeGreaterThan(0);
-		expect(valueStore2?.[1].value).toEqual(6);
-	});
+			await telemetry.addMetricValue("test", MetricCounterOperation.Decrement);
+			await telemetry.addMetricValue("test", -5);
 
-	test("can decrement an inc/dec counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.IncDecCounter
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Decrement);
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(1);
-		expect(valueStore?.[0].id.length).toEqual(32);
-		expect(valueStore?.[0].metricId).toEqual("test");
-		expect(valueStore?.[0].ts).toBeGreaterThan(0);
-		expect(valueStore?.[0].value).toEqual(-1);
-
-		await telemetry.addMetricValue("test", -5);
-		await telemetry.flush();
-
-		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore2?.[1].id.length).toEqual(32);
-		expect(valueStore2?.[1].metricId).toEqual("test");
-		expect(valueStore2?.[1].ts).toBeGreaterThan(0);
-		expect(valueStore2?.[1].value).toEqual(-6);
-	});
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([-6, -1]);
+		},
+		TEST_TIMEOUT
+	);
 
 	test("can fail to set a value to a non integer inc/dec counter metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.IncDecCounter
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.IncDecCounter });
 
 		await expect(telemetry.addMetricValue("test", 5.5)).rejects.toMatchObject({
 			name: "GeneralError",
@@ -406,45 +493,24 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 	});
 
-	test("can set a gauge metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Gauge
-		});
+	test(
+		"can set a gauge metric",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Gauge });
 
-		await telemetry.addMetricValue("test", 11);
-		await telemetry.flush();
+			await telemetry.addMetricValue("test", 11);
+			await telemetry.addMetricValue("test", 12);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(1);
-		expect(valueStore?.[0].id.length).toEqual(32);
-		expect(valueStore?.[0].metricId).toEqual("test");
-		expect(valueStore?.[0].ts).toBeGreaterThan(0);
-		expect(valueStore?.[0].value).toEqual(11);
-
-		await telemetry.addMetricValue("test", 12);
-		await telemetry.flush();
-
-		const valueStore2 = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore2?.[1].id.length).toEqual(32);
-		expect(valueStore2?.[1].metricId).toEqual("test");
-		expect(valueStore2?.[1].ts).toBeGreaterThan(0);
-		expect(valueStore2?.[1].value).toEqual(12);
-	});
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([12, 11]);
+		},
+		TEST_TIMEOUT
+	);
 
 	test("can fail to inc a gauge metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Gauge
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Gauge });
 
 		await expect(
 			telemetry.addMetricValue("test", MetricCounterOperation.Increment)
@@ -455,14 +521,8 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test("can fail to dec a gauge metric", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Gauge
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Gauge });
 
 		await expect(
 			telemetry.addMetricValue("test", MetricCounterOperation.Decrement)
@@ -472,90 +532,59 @@ describe("EntityStorageTelemetryConnector", () => {
 		});
 	});
 
-	test("can remove a metric and its values", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
+	test(
+		"can remove a metric and its values",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		for (let i = 0; i < 10; i++) {
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
+
+			await telemetry.removeMetric("test");
+
+			expect(await telemetryMetricsEntityStorage.getStore()).toHaveLength(0);
+			expect(await readValues()).toHaveLength(0);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"can get a metric value by id",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			const firstValueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
 
-		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(1);
+			const value = await telemetry.getMetricValue("test", firstValueId);
+			expect(value.id).toBe(firstValueId);
+			expect(value.value).toBe(1);
+		},
+		TEST_TIMEOUT
+	);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(10);
+	test(
+		"can fail to get a metric value with wrong metric id",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.removeMetric("test");
-		const storeAfter = await telemetryMetricsEntityStorage.getStore();
-		const valueStoreAfter = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeAfter?.length).toEqual(0);
-		expect(valueStoreAfter?.length).toEqual(0);
-	});
+			const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-	test("can get a metric value by id", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		const firstValueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const value = await telemetry.getMetricValue("test", firstValueId);
-		expect(value.id).toBe(firstValueId);
-		expect(value.value).toBe(1);
-	});
-
-	test("can fail to get a metric value with wrong metric id", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		await expect(telemetry.getMetricValue("wrong-id", valueId)).rejects.toMatchObject({
-			name: "NotFoundError",
-			message: "entityStorageTelemetryConnector.metricValueNotFound"
-		});
-	});
+			await expect(telemetry.getMetricValue("wrong-id", valueId)).rejects.toMatchObject({
+				name: "NotFoundError",
+				message: "entityStorageTelemetryConnector.metricValueNotFound"
+			});
+		},
+		TEST_TIMEOUT
+	);
 
 	test("can fail to get a metric value that does not exist", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await expect(telemetry.getMetricValue("test", "nonexistent")).rejects.toMatchObject({
-			name: "NotFoundError",
-			message: "entityStorageTelemetryConnector.metricValueNotFound"
-		});
-	});
-
-	test("can fail to get a metric value id when the metric has values", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		await expect(telemetry.getMetricValue("test", "nonexistent")).rejects.toMatchObject({
 			name: "NotFoundError",
@@ -564,59 +593,36 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test("can query metrics", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 
 		for (let i = 0; i < 11; i++) {
-			await telemetry.createMetric({
-				id: `test${i}`,
-				label: "Test",
-				description: "Test metric",
-				unit: "kgs",
-				type: MetricType.Counter
-			});
+			await telemetry.createMetric({ id: `test${i}`, label: "Test", type: MetricType.Counter });
 		}
 
-		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(11);
-
 		const query1 = await telemetry.query(undefined, undefined, 10);
-
 		expect(query1.entities.length).toEqual(10);
 	});
 
 	test("can query metrics for specific type", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 
 		for (let i = 0; i < 5; i++) {
-			await telemetry.createMetric({
-				id: `test-${i}`,
-				label: "Test",
-				description: "Test metric",
-				unit: "kgs",
-				type: MetricType.Counter
-			});
+			await telemetry.createMetric({ id: `test-${i}`, label: "Test", type: MetricType.Counter });
 		}
-
 		for (let i = 0; i < 3; i++) {
 			await telemetry.createMetric({
 				id: `test2-${i}`,
 				label: "Test",
-				description: "Test metric",
-				unit: "kgs",
 				type: MetricType.IncDecCounter
 			});
 		}
 
-		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(8);
-
 		const query1 = await telemetry.query(MetricType.IncDecCounter, undefined, 10);
-
 		expect(query1.entities.length).toEqual(3);
 	});
 
 	test("can create a metric with maxHistory", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 		await telemetry.createMetric({
 			id: "test",
 			label: "Test",
@@ -629,7 +635,7 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test("can fail to create a metric with non-positive maxHistory", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 
 		await expect(
 			telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter, maxHistory: 0 })
@@ -652,7 +658,7 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test("can update a metric maxHistory", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
+		const telemetry = await createConnector();
 		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 5 });
@@ -661,439 +667,104 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(store?.[0].maxHistory).toEqual(5);
 	});
 
-	test("prunes oldest values when maxHistory is exceeded", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		for (let i = 0; i < 5; i++) {
-			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(3);
-
-		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-		expect(result.entities[0].value).toEqual(5);
-		expect(result.entities[1].value).toEqual(4);
-		expect(result.entities[2].value).toEqual(3);
-	});
-
-	test("does not prune when maxHistory is not set", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
-
-		for (let i = 0; i < 5; i++) {
-			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(5);
-	});
-
-	test("trim makes no value-storage query in steady state", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		for (let i = 0; i < 3; i++) {
-			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-			await new Promise<void>(resolve => setTimeout(resolve, 2));
-		}
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		// Both the last value and the retained ids come from memory once seeded.
-		expect(querySpy).toHaveBeenCalledTimes(0);
-		querySpy.mockRestore();
-	});
-
-	test("trims to maxHistory across repeated writes without reading storage", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		for (let i = 0; i < 5; i++) {
-			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-		expect(querySpy).toHaveBeenCalledTimes(0);
-		querySpy.mockRestore();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.map(entry => entry.value)).toEqual([4, 5, 6]);
-	});
-
-	test("trims by scanning storage when maxHistory exceeds the tracked limit", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: EntityStorageTelemetryConnector.DEFAULT_MAX_TRACKED_HISTORY + 1
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		// Above the tracking limit the retained ids are not held, so the trim keeps scanning.
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-	});
-
-	test("scans on every trim when maxHistory exceeds the configured tracked limit", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, maxTrackedHistory: 2 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-	});
-
-	test("stops tracking history once the id budget is used up", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, trackedHistoryBudget: 3 }
-		});
-		await telemetry.createMetric({
-			id: "a",
-			label: "A",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-		await telemetry.createMetric({
-			id: "b",
-			label: "B",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		// "a" fills the budget with its three retained ids.
-		for (let i = 0; i < 3; i++) {
-			await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		}
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(0);
-
-		// "b" could not be tracked within the budget, so its trim still scans.
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-
-		// Both metrics are still trimmed correctly whichever path they took.
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.filter(entry => entry.metricId === "a").length).toEqual(3);
-		expect(valueStore?.filter(entry => entry.metricId === "b").length).toEqual(2);
-	});
-
-	test("releases the history budget when a metric is removed", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, trackedHistoryBudget: 3 }
-		});
-		await telemetry.createMetric({
-			id: "a",
-			label: "A",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-		await telemetry.createMetric({
-			id: "b",
-			label: "B",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		for (let i = 0; i < 3; i++) {
-			await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		}
-		await telemetry.removeMetric("a");
-
-		// "a" gave its three ids back, so "b" can be tracked and stops scanning.
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(0);
-		querySpy.mockRestore();
-	});
-
-	test("drops tracking when a raised maxHistory outgrows the budget", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, trackedHistoryBudget: 2 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 1
-		});
-
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 5 });
-
-		// The retained list grows past the budget, so tracking is given up.
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-	});
-
-	test("trim seeding reads a window bounded by maxHistory plus a fixed page", async () => {
-		const maxHistory = 3;
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory
-		});
-
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-
-		// The seeding sweep is the call that projects only the id property. Its window is the
-		// retention cap plus one fixed page, so the buffered ids never scale with table size.
-		const trimCall = querySpy.mock.calls.find(call => Array.isArray(call[2]));
-		expect(trimCall).toBeDefined();
-		expect(trimCall?.[4]).toEqual(maxHistory + 1000);
-		querySpy.mockRestore();
-	});
-
-	test("trims a history larger than one window in successive passes", async () => {
-		const maxHistory = 3;
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory
-		});
-
-		// More rows than one window (maxHistory + 1000) so the seeding sweep has to loop.
-		const seeded: TelemetryMetricValue[] = [];
-		for (let i = 0; i < 1200; i++) {
-			seeded.push({
-				id: `seed-${i}`,
-				metricId: "test",
-				ts: i + 1,
-				value: i + 1
+	test(
+		"prunes oldest values when maxHistory is exceeded",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 3
 			});
-		}
-		await telemetryMetricsValueEntityStorage.setBatch(seeded);
 
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-		// Two windows: the first is full so its oldest page goes, the second finishes the trim.
-		expect(querySpy.mock.calls.filter(call => Array.isArray(call[2]))).toHaveLength(2);
-		querySpy.mockRestore();
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([5, 4, 3]);
+		},
+		TEST_TIMEOUT
+	);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(maxHistory);
-		expect(valueStore?.map(entry => entry.value)).toEqual([1199, 1200, 1201]);
-	});
+	test(
+		"does not prune when maxHistory is not set",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-	test("expires idle metrics from the last value cache", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, lastValueCacheTtiMs: 30 }
-		});
-		await telemetry.createMetric({ id: "a", label: "A", type: MetricType.Counter });
-		await telemetry.createMetric({ id: "b", label: "B", type: MetricType.Counter });
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await new Promise<void>(resolve => setTimeout(resolve, 60));
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.length).toEqual(5);
+		},
+		TEST_TIMEOUT
+	);
 
-		// Writing "b" drives the sweep, which drops the now idle "a".
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
+	test(
+		"prunes all excess entries when maxHistory is reduced after accumulation",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 5
+			});
 
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-		// The value is re-read rather than lost, so the chain still continues.
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.filter(entry => entry.metricId === "a").map(entry => entry.value)).toEqual([
-			1, 2
-		]);
-	});
-
-	test("does not expire last values for entries still waiting in the batch cache", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0, lastValueCacheTtiMs: 30 }
-		});
-		await telemetry.createMetric({ id: "a", label: "A", type: MetricType.Counter });
-		await telemetry.createMetric({ id: "b", label: "B", type: MetricType.Counter });
-
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await new Promise<void>(resolve => setTimeout(resolve, 60));
-
-		// "a" is idle but not yet durable, so the sweep triggered by "b" must leave it alone.
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.filter(entry => entry.metricId === "a").map(entry => entry.value)).toEqual([
-			1, 2
-		]);
-	});
-
-	test("evicts the least recently written metrics from the last value cache", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 0, batchIntervalMs: 0, lastValueCacheCapacity: 1 }
-		});
-		await telemetry.createMetric({ id: "a", label: "A", type: MetricType.Counter });
-		await telemetry.createMetric({ id: "b", label: "B", type: MetricType.Counter });
-
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-
-		// Capacity 1, so writing "b" evicted "a"; "a" reads storage again but still chains to 2.
-		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		expect(querySpy).toHaveBeenCalledTimes(1);
-		querySpy.mockRestore();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.filter(entry => entry.metricId === "a").map(entry => entry.value)).toEqual([
-			1, 2
-		]);
-	});
-
-	test("does not evict last values for entries still waiting in the batch cache", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0, lastValueCacheCapacity: 1 }
-		});
-		await telemetry.createMetric({ id: "a", label: "A", type: MetricType.Counter });
-		await telemetry.createMetric({ id: "b", label: "B", type: MetricType.Counter });
-
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("b", MetricCounterOperation.Increment);
-
-		// Neither entry is durable yet, so evicting "a" would lose the chain and restart it at 1.
-		await telemetry.addMetricValue("a", MetricCounterOperation.Increment);
-		await telemetry.flush();
-
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.filter(entry => entry.metricId === "a").map(entry => entry.value)).toEqual([
-			1, 2
-		]);
-	});
-
-	test("prunes all excess entries when maxHistory is reduced after accumulation", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 5
-		});
-
-		for (let i = 0; i < 5; i++) {
+			await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 3 });
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
 
-		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 3 });
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.flush();
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([6, 5, 4]);
+		},
+		TEST_TIMEOUT
+	);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(3);
+	test(
+		"can query a metric and its values",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				description: "Test metric",
+				unit: "kgs",
+				type: MetricType.Counter
+			});
 
-		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-		expect(result.entities[0].value).toEqual(6);
-		expect(result.entities[1].value).toEqual(5);
-		expect(result.entities[2].value).toEqual(4);
-	});
+			for (let i = 0; i < 25; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-	test("can query a metric and its values", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			description: "Test metric",
-			unit: "kgs",
-			type: MetricType.Counter
-		});
+			const query1 = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
-		for (let i = 0; i < 50; i++) {
-			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
+			expect(query1.metric.id).toEqual("test");
+			expect(query1.metric.label).toEqual("Test");
+			expect(query1.metric.description).toEqual("Test metric");
+			expect(query1.metric.unit).toEqual("kgs");
+			expect(query1.metric.type).toEqual(MetricType.Counter);
+			expect(query1.entities.length).toEqual(10);
 
-		const store = await telemetryMetricsEntityStorage.getStore();
-		expect(store?.length).toEqual(1);
+			const query2 = await telemetry.queryValues("test", undefined, undefined, query1.cursor, 10);
+			expect(query2.entities.length).toEqual(10);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(50);
-
-		const query1 = await telemetry.queryValues("test", undefined, undefined, undefined, 20);
-
-		expect(query1.metric.id).toEqual("test");
-		expect(query1.metric.label).toEqual("Test");
-		expect(query1.metric.description).toEqual("Test metric");
-		expect(query1.metric.unit).toEqual("kgs");
-		expect(query1.metric.type).toEqual(MetricType.Counter);
-
-		expect(query1.entities.length).toEqual(20);
-
-		const query2 = await telemetry.queryValues("test", undefined, undefined, query1.cursor, 20);
-		expect(query2.entities.length).toEqual(20);
-
-		const query3 = await telemetry.queryValues("test", undefined, undefined, query2.cursor, 20);
-		expect(query3.entities.length).toEqual(10);
-	});
+			const query3 = await telemetry.queryValues("test", undefined, undefined, query2.cursor, 10);
+			expect(query3.entities.length).toEqual(5);
+		},
+		TEST_TIMEOUT
+	);
 
 	test("sorts counter values by value when timestamps match", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		const ts = Date.now();
 		await telemetryMetricsValueEntityStorage.set({ id: "a", metricId: "test", ts, value: 2 });
@@ -1105,12 +776,8 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test("sorts counter values by value before timestamp", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter
-		});
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 		const ts = Date.now();
 		await telemetryMetricsValueEntityStorage.set({
@@ -1131,272 +798,377 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(result.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
 	});
 
-	test("holds values in cache until flush is called", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
+	test(
+		"queryValues asks the background thread to write its pending values",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			expect(await readValues()).toHaveLength(0);
+
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		},
+		TEST_TIMEOUT
+	);
+
+	test("does not ask the background thread to write when this node has added nothing", async () => {
+		const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+		const telemetry = await createConnector();
 		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+		await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+		await telemetry.getMetricValue("test", "nonexistent").catch(() => {});
 
-		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeBefore?.length).toEqual(0);
-
-		await telemetry.flush();
-
-		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeAfter?.length).toEqual(3);
-		expect(storeAfter?.[2].value).toEqual(3);
+		// A read only needs the thread to write when this node has given it something.
+		expect(createSpy).not.toHaveBeenCalled();
 	});
 
-	test("flushes automatically when batch size threshold is reached", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 3, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+	test(
+		"asks the background thread to write only once per set of added values",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeBefore?.length).toEqual(0);
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(createSpy).toHaveBeenCalledTimes(1);
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			// Nothing has been added since, so the second read needs no write.
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(createSpy).toHaveBeenCalledTimes(1);
 
-		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeAfter?.length).toEqual(3);
-		expect(storeAfter?.[2].value).toEqual(3);
-	});
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(createSpy).toHaveBeenCalledTimes(3);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		},
+		TEST_TIMEOUT
+	);
 
-	test("queryValues flushes pending entries before querying", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+	test(
+		"hands several values to the thread as one task when coalescing is configured",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const telemetry = await createConnector({
+				config: { batchSize: 100, batchIntervalMs: 0, taskCoalesceMs: 50 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-		expect(result.entities.length).toEqual(2);
-		expect(result.entities[0].value).toEqual(2);
-		expect(result.entities[1].value).toEqual(1);
-	});
+			for (let i = 0; i < 4; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-	test("getMetricValue flushes pending entries before querying", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+			// Still inside the window, so nothing has been handed over yet.
+			expect(createSpy).not.toHaveBeenCalled();
 
-		const valueId = await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
-		const value = await telemetry.getMetricValue("test", valueId);
-		expect(value.id).toEqual(valueId);
-		expect(value.value).toEqual(1);
-	});
+			// One task for the four values, and one to ask the thread to write them.
+			expect(createSpy).toHaveBeenCalledTimes(2);
+			expect(createSpy.mock.calls[0][1]).toMatchObject({ values: expect.any(Array) });
+			expect((createSpy.mock.calls[0][1] as { values: unknown[] }).values).toHaveLength(4);
+			expect(result.entities.map(entity => entity.value)).toEqual([4, 3, 2, 1]);
+		},
+		TEST_TIMEOUT
+	);
 
-	test("removeMetric flushes pending entries before removing", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+	test(
+		"hands the coalesced values over when the window elapses",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const telemetry = await createConnector({
+				config: { batchSize: 0, batchIntervalMs: 0, taskCoalesceMs: 20 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		await telemetry.removeMetric("test");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(0);
-	});
+			for (let i = 0; i < 40 && (await readValues()).length === 0; i++) {
+				await new Promise<void>(resolve => setTimeout(resolve, 100));
+			}
 
-	test("stop flushes remaining cached entries", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+			expect((await readValues()).map(entry => entry.value)).toEqual([1]);
+			expect(createSpy).toHaveBeenCalledTimes(1);
+		},
+		TEST_TIMEOUT
+	);
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+	test(
+		"asks the thread to write again when a write does not complete",
+		async () => {
+			const telemetry = await createConnector({
+				config: { batchSize: 100, batchIntervalMs: 0, flushTimeoutMs: 500 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
-		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeBefore?.length).toEqual(0);
+			// Warm the worker first, so the short flush timeout below is only measuring the
+			// task that never completes and not the one-off thread startup.
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
-		await telemetry.stop();
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
-		expect(storeAfter?.length).toEqual(2);
-	});
+			// A task that never reaches Success must not be taken as the values being written.
+			const createSpy = vi
+				.spyOn(backgroundTaskService, "create")
+				.mockResolvedValueOnce("never-completes");
+			const stale = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(stale.entities.map(entity => entity.value)).toEqual([1]);
+			createSpy.mockRestore();
 
-	test("does not read metric definition from storage after createMetric pre-warms the cache", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		},
+		TEST_TIMEOUT
+	);
 
-		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+	test(
+		"adds several metric values as a single task",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
 
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "counter", label: "Counter", type: MetricType.Counter });
+			await telemetry.createMetric({ id: "gauge", label: "Gauge", type: MetricType.Gauge });
 
-		expect(getSpy).not.toHaveBeenCalled();
-		getSpy.mockRestore();
-	});
+			const valueIds = await telemetry.addMetricValues([
+				{ id: "counter", value: MetricCounterOperation.Increment },
+				{ id: "gauge", value: 42, customData: { some: "data" } },
+				{ id: "counter", value: 5 }
+			]);
 
-	test("invalidates cached metric definition when metric is removed", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.removeMetric("test");
+			// One task for the whole set rather than one per value.
+			expect(createSpy).toHaveBeenCalledTimes(1);
+			expect((createSpy.mock.calls[0][1] as { values: unknown[] }).values).toHaveLength(3);
+			expect(valueIds).toHaveLength(3);
+			expect(new Set(valueIds).size).toEqual(3);
+
+			const counter = await telemetry.queryValues("counter", undefined, undefined, undefined, 10);
+			expect(counter.entities.map(entity => entity.value)).toEqual([6, 1]);
+
+			const gauge = await telemetry.queryValues("gauge", undefined, undefined, undefined, 10);
+			expect(gauge.entities.map(entity => entity.value)).toEqual([42]);
+			expect(gauge.entities[0].customData).toEqual({ some: "data" });
+		},
+		TEST_TIMEOUT
+	);
+
+	test("rejects a batch containing an unknown metric before anything is queued", async () => {
+		const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "counter", label: "Counter", type: MetricType.Counter });
 
 		await expect(
-			telemetry.addMetricValue("test", MetricCounterOperation.Increment)
+			telemetry.addMetricValues([
+				{ id: "counter", value: MetricCounterOperation.Increment },
+				{ id: "missing", value: 1 }
+			])
 		).rejects.toMatchObject({
 			name: "NotFoundError",
 			message: "entityStorageTelemetryConnector.metricNotFound"
 		});
+
+		expect(createSpy).not.toHaveBeenCalled();
 	});
 
-	test("refreshes cached metric definition when metric is updated", async () => {
-		const telemetry = new EntityStorageTelemetryConnector();
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 5
-		});
+	test("rejects a batch containing an operation the metric type does not allow", async () => {
+		const telemetry = await createConnector();
+		await telemetry.createMetric({ id: "counter", label: "Counter", type: MetricType.Counter });
 
-		for (let i = 0; i < 5; i++) {
+		await expect(
+			telemetry.addMetricValues([{ id: "counter", value: MetricCounterOperation.Decrement }])
+		).rejects.toMatchObject({
+			name: "GeneralError",
+			message: "entityStorageTelemetryConnector.counterIncOnly"
+		});
+	});
+
+	test(
+		"removeMetric asks the background thread to write its pending values",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-
-		await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 2 });
-
-		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
-		await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		await telemetry.flush();
-
-		expect(getSpy).not.toHaveBeenCalled();
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(2);
-		getSpy.mockRestore();
-	});
-
-	test("reads metric definition from storage on cache miss when capacity is exceeded", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { metricDefinitionCacheCapacity: 1 }
-		});
-
-		await telemetry.createMetric({ id: "metric1", label: "Metric 1", type: MetricType.Counter });
-		await telemetry.createMetric({ id: "metric2", label: "Metric 2", type: MetricType.Counter });
-		// With capacity 1, only metric2 remains in cache after both creates.
-
-		const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
-		await telemetry.addMetricValue("metric1", MetricCounterOperation.Increment);
-		expect(getSpy).toHaveBeenCalledTimes(1);
-		getSpy.mockRestore();
-	});
-
-	test("prunes oldest values during batch flush when maxHistory is set", async () => {
-		const telemetry = new EntityStorageTelemetryConnector({
-			config: { batchSize: 100, batchIntervalMs: 0 }
-		});
-		await telemetry.createMetric({
-			id: "test",
-			label: "Test",
-			type: MetricType.Counter,
-			maxHistory: 3
-		});
-
-		for (let i = 0; i < 5; i++) {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-		}
-		await telemetry.flush();
 
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.length).toEqual(3);
+			await telemetry.removeMetric("test");
 
-		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-		expect(result.entities[0].value).toEqual(5);
-		expect(result.entities[1].value).toEqual(4);
-		expect(result.entities[2].value).toEqual(3);
-	});
+			expect(await readValues()).toHaveLength(0);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"stop writes the values the background thread still has pending",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			expect(await readValues()).toHaveLength(0);
+
+			await telemetry.stop();
+
+			expect(await readValues()).toHaveLength(2);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"writes the values on the interval without a read to trigger it",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 50 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			for (let i = 0; i < 40 && (await readValues()).length === 0; i++) {
+				await new Promise<void>(resolve => setTimeout(resolve, 100));
+			}
+
+			expect((await readValues()).map(entry => entry.value)).toEqual([1]);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"does not read metric definition from storage after createMetric pre-warms the cache",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			expect(getSpy).not.toHaveBeenCalled();
+			getSpy.mockRestore();
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"invalidates cached metric definition when metric is removed",
+		async () => {
+			const telemetry = await createConnector();
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.removeMetric("test");
+
+			await expect(
+				telemetry.addMetricValue("test", MetricCounterOperation.Increment)
+			).rejects.toMatchObject({
+				name: "NotFoundError",
+				message: "entityStorageTelemetryConnector.metricNotFound"
+			});
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"refreshes cached metric definition when metric is updated",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+			const telemetry = await createConnector();
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 5
+			});
+
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
+
+			await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 2 });
+
+			const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			expect(getSpy).not.toHaveBeenCalled();
+			getSpy.mockRestore();
+
+			// The updated cap travels with the payload, so the thread trims to the new value.
+			expect(createSpy.mock.lastCall?.[1]).toMatchObject({ values: [{ maxHistory: 2 }] });
+
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.length).toEqual(2);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"reads metric definition from storage on cache miss when capacity is exceeded",
+		async () => {
+			const telemetry = await createConnector({
+				config: { metricDefinitionCacheCapacity: 1 }
+			});
+
+			await telemetry.createMetric({ id: "metric1", label: "Metric 1", type: MetricType.Counter });
+			await telemetry.createMetric({ id: "metric2", label: "Metric 2", type: MetricType.Counter });
+			// With capacity 1, only metric2 remains in cache after both creates.
+
+			const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+			await telemetry.addMetricValue("metric1", MetricCounterOperation.Increment);
+			expect(getSpy).toHaveBeenCalledTimes(1);
+			getSpy.mockRestore();
+		},
+		TEST_TIMEOUT
+	);
 
 	describe("tenant-partitioned storage", () => {
 		beforeEach(() => {
 			initSchema();
-			telemetryMetricsEntityStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
-				entitySchema: nameof<TelemetryMetric>(),
-				partitionContextIds: [ContextIdKeys.Tenant],
-				config: { storageKey: "telemetry-metric" }
-			});
-			telemetryMetricsValueEntityStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
-				entitySchema: nameof<TelemetryMetricValue>(),
-				partitionContextIds: [ContextIdKeys.Tenant],
-				config: { storageKey: "telemetry-metric-value" }
-			});
-			EntityStorageConnectorFactory.register(
-				"telemetry-metric",
-				() => telemetryMetricsEntityStorage
-			);
-			EntityStorageConnectorFactory.register(
-				"telemetry-metric-value",
-				() => telemetryMetricsValueEntityStorage
-			);
+			registerMetricStorage([ContextIdKeys.Tenant]);
+			registerValueStorage([ContextIdKeys.Tenant]);
 		});
 
-		test("batch flush writes under the producer's context regardless of who flushes", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
+		test(
+			"counter chaining is scoped per tenant",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				});
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.flush();
-			});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				});
 
-			// The entry was captured under tenant-a's context at enqueue, so it lands in
-			// tenant-a's partition regardless of who triggered the flush.
-			const resultForProducer = await ContextIdStore.run(
-				{ [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(resultForProducer.entities.length).toEqual(1);
+				await telemetry.stop();
 
-			const rawStore = await telemetryMetricsValueEntityStorage.getStore();
-			expect(rawStore?.length).toEqual(1);
-		});
-
-		test("counter chaining is scoped per tenant", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				await telemetry.flush();
-			});
-
-			// Each tenant starts its own independent sequence at 1.
-			const rawStore = await telemetryMetricsValueEntityStorage.getStore();
-			expect(rawStore?.length).toEqual(2);
-			expect(rawStore?.map(entity => entity.value)).toEqual([1, 1]);
-		});
+				// Each tenant chains its own independent sequence in its own partition.
+				expect(
+					(await readValues({ [ContextIdKeys.Tenant]: "tenant-a" })).map(entry => entry.value)
+				).toEqual([2, 1]);
+				expect(
+					(await readValues({ [ContextIdKeys.Tenant]: "tenant-b" })).map(entry => entry.value)
+				).toEqual([1]);
+			},
+			TEST_TIMEOUT
+		);
 
 		test("metric definitions are only visible within the tenant that created them", async () => {
-			const telemetry = new EntityStorageTelemetryConnector();
+			const telemetry = await createConnector();
 
 			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
 				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
@@ -1414,437 +1186,288 @@ describe("EntityStorageTelemetryConnector", () => {
 			});
 		});
 
-		test("mixed-context batch distributes correctly regardless of flush context", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
+		test(
+			"a batch spanning tenants is written to the partition each value came from",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-c" }, async () => {
-				await telemetry.flush();
-			});
-
-			const resultA = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(resultA.entities.length).toEqual(1);
-			expect(resultB.entities.length).toEqual(1);
-		});
-
-		test("trimming runs per partition, not across the whole flushed batch", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({
-					id: "m",
-					label: "M",
-					type: MetricType.Counter,
-					maxHistory: 1
-				});
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({
-					id: "m",
-					label: "M",
-					type: MetricType.Counter,
-					maxHistory: 1
-				});
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
-
-			await telemetry.flush();
-
-			const resultA = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(resultA.entities.length).toEqual(1);
-			expect(resultA.entities[0].value).toEqual(2);
-			expect(resultB.entities.length).toEqual(1);
-			expect(resultB.entities[0].value).toEqual(1);
-		});
-
-		test("per-request context keys do not fragment caches or batch groups", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-1" },
-				async () => {
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
 					await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
 					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-				}
-			);
-
-			// A second request from the same tenant differs only in per-request context keys:
-			// the definition cache must hit and the counter must chain across the two requests.
-			const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-2" },
-				async () => {
+				});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+					await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
 					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-				}
-			);
-			expect(getSpy).not.toHaveBeenCalled();
-			getSpy.mockRestore();
+				});
 
-			const setBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "setBatch");
-			await telemetry.flush();
-			expect(setBatchSpy).toHaveBeenCalledTimes(1);
-			setBatchSpy.mockRestore();
+				// The flush runs under a third tenant, the values still land where they came from.
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-c" }, async () =>
+					telemetry.stop()
+				);
 
-			const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
-		});
+				expect(await readValues({ [ContextIdKeys.Tenant]: "tenant-a" })).toHaveLength(1);
+				expect(await readValues({ [ContextIdKeys.Tenant]: "tenant-b" })).toHaveLength(1);
+				expect(await readValues({ [ContextIdKeys.Tenant]: "tenant-c" })).toHaveLength(0);
+			},
+			TEST_TIMEOUT
+		);
 
-		test("counter chaining spans contexts that share a partition", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
+		test(
+			"trimming runs per partition, not across the whole flushed batch",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
-
-			// Same tenant but with an organization in context (the API-key request shape):
-			// storage partitions on tenant only, so the chain must continue, not restart.
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Tenant]: "tenant-a", [ContextIdKeys.Organization]: "org-a" },
-				async () => {
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+					await telemetry.createMetric({
+						id: "m",
+						label: "M",
+						type: MetricType.Counter,
+						maxHistory: 1
+					});
 					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-				}
-			);
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+					await telemetry.createMetric({
+						id: "m",
+						label: "M",
+						type: MetricType.Counter,
+						maxHistory: 1
+					});
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				});
 
-			const setBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "setBatch");
-			await telemetry.flush();
-			expect(setBatchSpy).toHaveBeenCalledTimes(1);
-			setBatchSpy.mockRestore();
+				await telemetry.stop();
 
-			const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
-				telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
-		});
+				expect(
+					(await readValues({ [ContextIdKeys.Tenant]: "tenant-a" })).map(entry => entry.value)
+				).toEqual([2]);
+				expect(
+					(await readValues({ [ContextIdKeys.Tenant]: "tenant-b" })).map(entry => entry.value)
+				).toEqual([1]);
+			},
+			TEST_TIMEOUT
+		);
 
-		test("a failed group re-queues with its own context and lands correctly on retry", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 100, batchIntervalMs: 0 }
-			});
+		test(
+			"per-request context keys do not fragment the definition cache or batch groups",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
-				await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
-			});
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-1" },
+					async () => {
+						await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+						await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+					}
+				);
 
-			const setBatchSpy = vi
-				.spyOn(telemetryMetricsValueEntityStorage, "setBatch")
-				.mockRejectedValueOnce(new Error("storage unavailable"));
+				// A second request from the same tenant differs only in per-request context keys:
+				// the definition cache must hit and the counter must chain across the two requests.
+				const getSpy = vi.spyOn(telemetryMetricsEntityStorage, "get");
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Tenant]: "tenant-a", remoteRequest: "req-2" },
+					async () => {
+						await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+					}
+				);
+				expect(getSpy).not.toHaveBeenCalled();
+				getSpy.mockRestore();
 
-			await telemetry.flush();
+				const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+					telemetry.queryValues("m", undefined, undefined, undefined, 10)
+				);
+				expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+			},
+			TEST_TIMEOUT
+		);
 
-			const rawStoreAfterFailure = await telemetryMetricsValueEntityStorage.getStore();
-			expect(rawStoreAfterFailure?.length).toEqual(0);
+		test(
+			"counter chaining spans contexts that share a partition",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
 
-			setBatchSpy.mockRestore();
-			await telemetry.flush();
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+					await telemetry.createMetric({ id: "m", label: "M", type: MetricType.Counter });
+					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+				});
 
-			const resultForProducer = await ContextIdStore.run(
-				{ [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => telemetry.queryValues("m", undefined, undefined, undefined, 10)
-			);
-			expect(resultForProducer.entities.length).toEqual(1);
-		});
+				// Same tenant but with an organization in context (the API-key request shape):
+				// storage partitions on tenant only, so the chain must continue, not restart.
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Tenant]: "tenant-a", [ContextIdKeys.Organization]: "org-a" },
+					async () => {
+						await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+					}
+				);
 
-		test("counter chaining is scoped per tenant without batching", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
+				const result = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+					telemetry.queryValues("m", undefined, undefined, undefined, 10)
+				);
+				expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+			},
+			TEST_TIMEOUT
+		);
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
+		test(
+			"removing a metric in one tenant leaves the other tenant untouched",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				});
 
-			const resultA = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
-				telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
-			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
-				telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
+					await telemetry.removeMetric("c");
+				});
 
-			// tenant-a chains off its own cached value; tenant-b starts a fresh sequence.
-			expect(resultA.entities.map(entity => entity.value)).toEqual([2, 1]);
-			expect(resultB.entities.map(entity => entity.value)).toEqual([1]);
-		});
+				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
+					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+				});
 
-		test("the cached last value is keyed per tenant", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-			});
-
-			const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-
-			// tenant-b has no cached value for "c", so it reads its own partition once.
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-			expect(querySpy).toHaveBeenCalledTimes(1);
-
-			// tenant-a's value is still cached from its earlier write, so no further read.
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-			expect(querySpy).toHaveBeenCalledTimes(1);
-			querySpy.mockRestore();
-		});
-
-		test("removing a metric in one tenant leaves the other tenant cached value intact", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
-				await telemetry.removeMetric("c");
-			});
-
-			// The removal only evicts tenant-a's key, so tenant-b keeps chaining from memory.
-			const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-			await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () => {
-				await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-			});
-			expect(querySpy).toHaveBeenCalledTimes(0);
-			querySpy.mockRestore();
-
-			const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
-				telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
-			expect(resultB.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
-
-			await expect(
-				ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+				const resultB = await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-b" }, async () =>
 					telemetry.queryValues("c", undefined, undefined, undefined, 10)
-				)
-			).rejects.toMatchObject({
-				name: "NotFoundError",
-				message: "entityStorageTelemetryConnector.metricNotFound"
-			});
-		});
+				);
+				expect(resultB.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
+
+				await expect(
+					ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () =>
+						telemetry.queryValues("c", undefined, undefined, undefined, 10)
+					)
+				).rejects.toMatchObject({
+					name: "NotFoundError",
+					message: "entityStorageTelemetryConnector.metricNotFound"
+				});
+			},
+			TEST_TIMEOUT
+		);
 	});
 
 	describe("node and tenant partitioned storage", () => {
 		beforeEach(() => {
 			initSchema();
-			telemetryMetricsEntityStorage = new MemoryEntityStorageConnector<TelemetryMetric>({
-				entitySchema: nameof<TelemetryMetric>(),
-				partitionContextIds: [ContextIdKeys.Node, ContextIdKeys.Tenant],
-				config: { storageKey: "telemetry-metric" }
-			});
-			telemetryMetricsValueEntityStorage = new MemoryEntityStorageConnector<TelemetryMetricValue>({
-				entitySchema: nameof<TelemetryMetricValue>(),
-				partitionContextIds: [ContextIdKeys.Node, ContextIdKeys.Tenant],
-				config: { storageKey: "telemetry-metric-value" }
-			});
-			EntityStorageConnectorFactory.register(
-				"telemetry-metric",
-				() => telemetryMetricsEntityStorage
-			);
-			EntityStorageConnectorFactory.register(
-				"telemetry-metric-value",
-				() => telemetryMetricsValueEntityStorage
-			);
+			registerMetricStorage([ContextIdKeys.Node, ContextIdKeys.Tenant]);
+			registerValueStorage([ContextIdKeys.Node, ContextIdKeys.Tenant]);
 		});
 
-		test("counter chaining is scoped per node for the same tenant", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
+		test(
+			"counter chaining is scoped per node for the same tenant",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => {
+						await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					}
+				);
 
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => {
+						await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					}
+				);
 
-			const resultA = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
-			const resultB = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
+				const resultA = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
+				);
+				const resultB = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
+				);
 
-			expect(resultA.entities.map(entity => entity.value)).toEqual([2, 1]);
-			expect(resultB.entities.map(entity => entity.value)).toEqual([1]);
-		});
+				expect(resultA.entities.map(entity => entity.value)).toEqual([2, 1]);
+				expect(resultB.entities.map(entity => entity.value)).toEqual([1]);
+			},
+			TEST_TIMEOUT
+		);
 
-		test("counter chaining is scoped per tenant for the same node", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
+		test(
+			"counter chaining is scoped per tenant for the same node",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
 
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => {
+						await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					}
+				);
 
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-b" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-b" },
+					async () => {
+						await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
+						await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
+					}
+				);
 
-			const resultA = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
-			const resultB = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-b" },
-				async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
-			);
+				const resultA = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
+					async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
+				);
+				const resultB = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-b" },
+					async () => telemetry.queryValues("c", undefined, undefined, undefined, 10)
+				);
 
-			expect(resultA.entities.map(entity => entity.value)).toEqual([2, 1]);
-			expect(resultB.entities.map(entity => entity.value)).toEqual([1]);
-		});
+				expect(resultA.entities.map(entity => entity.value)).toEqual([2, 1]);
+				expect(resultB.entities.map(entity => entity.value)).toEqual([1]);
+			},
+			TEST_TIMEOUT
+		);
 
-		test("ids that concatenate to the same string keep separate chains", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
+		test(
+			"ids that concatenate to the same string keep separate chains",
+			async () => {
+				const telemetry = await createConnector({ config: { batchSize: 0, batchIntervalMs: 0 } });
 
-			// Without a separator both contexts would key as "abc"; the "|" between the node and
-			// tenant slots keeps them as "ab|c|d" and "a|bc|d".
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "ab", [ContextIdKeys.Tenant]: "c" },
-				async () => {
-					await telemetry.createMetric({ id: "d", label: "D", type: MetricType.Counter });
-					await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
-					await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
-				}
-			);
+				// Without a separator both contexts would key as "abc"; the "|" between the node and
+				// tenant slots keeps them as "ab|c|d" and "a|bc|d".
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "ab", [ContextIdKeys.Tenant]: "c" },
+					async () => {
+						await telemetry.createMetric({ id: "d", label: "D", type: MetricType.Counter });
+						await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
+						await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
+					}
+				);
 
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "a", [ContextIdKeys.Tenant]: "bc" },
-				async () => {
-					await telemetry.createMetric({ id: "d", label: "D", type: MetricType.Counter });
-					await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
-				}
-			);
+				await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "a", [ContextIdKeys.Tenant]: "bc" },
+					async () => {
+						await telemetry.createMetric({ id: "d", label: "D", type: MetricType.Counter });
+						await telemetry.addMetricValue("d", MetricCounterOperation.Increment);
+					}
+				);
 
-			const resultFirst = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "ab", [ContextIdKeys.Tenant]: "c" },
-				async () => telemetry.queryValues("d", undefined, undefined, undefined, 10)
-			);
-			const resultSecond = await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "a", [ContextIdKeys.Tenant]: "bc" },
-				async () => telemetry.queryValues("d", undefined, undefined, undefined, 10)
-			);
+				const resultFirst = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "ab", [ContextIdKeys.Tenant]: "c" },
+					async () => telemetry.queryValues("d", undefined, undefined, undefined, 10)
+				);
+				const resultSecond = await ContextIdStore.run(
+					{ [ContextIdKeys.Node]: "a", [ContextIdKeys.Tenant]: "bc" },
+					async () => telemetry.queryValues("d", undefined, undefined, undefined, 10)
+				);
 
-			expect(resultFirst.entities.map(entity => entity.value)).toEqual([2, 1]);
-			expect(resultSecond.entities.map(entity => entity.value)).toEqual([1]);
-		});
-
-		test("the cached last value is keyed per node and tenant pair", async () => {
-			const telemetry = new EntityStorageTelemetryConnector({
-				config: { batchSize: 0, batchIntervalMs: 0 }
-			});
-
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.createMetric({ id: "c", label: "C", type: MetricType.Counter });
-				}
-			);
-
-			const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
-
-			// node-b holds no cached value for "c", so it reads its own partition once.
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-b", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
-			expect(querySpy).toHaveBeenCalledTimes(1);
-
-			// node-a still has its value cached from the earlier write, so no further read.
-			await ContextIdStore.run(
-				{ [ContextIdKeys.Node]: "node-a", [ContextIdKeys.Tenant]: "tenant-a" },
-				async () => {
-					await telemetry.addMetricValue("c", MetricCounterOperation.Increment);
-				}
-			);
-			expect(querySpy).toHaveBeenCalledTimes(1);
-			querySpy.mockRestore();
-		});
+				expect(resultFirst.entities.map(entity => entity.value)).toEqual([2, 1]);
+				expect(resultSecond.entities.map(entity => entity.value)).toEqual([1]);
+			},
+			TEST_TIMEOUT
+		);
 	});
 });

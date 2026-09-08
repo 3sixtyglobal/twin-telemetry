@@ -6,7 +6,8 @@ import {
 	MetricHelper,
 	MetricType,
 	type IMetricsProducer,
-	type ITelemetryComponent
+	type ITelemetryComponent,
+	type ITelemetryMetricValueEntry
 } from "@twin.org/telemetry-models";
 import type { IProcessMetricsProducerConstructorOptions } from "./models/IProcessMetricsProducerConstructorOptions.js";
 
@@ -82,22 +83,17 @@ export class ProcessMetricsProducer implements IMetricsProducer {
 	}
 
 	/**
-	 * Collect and push current process metric values.
-	 * @returns A promise that resolves when all process metric values have been recorded.
+	 * Read the current process metric values.
+	 * @returns The current values for the process metrics.
 	 */
-	public async collect(): Promise<void> {
+	public async collect(): Promise<ITelemetryMetricValueEntry[]> {
 		const mem = process.memoryUsage();
-		await MetricHelper.metricValue(this._telemetry, "process_memory_rss_bytes", mem.rss);
-		await MetricHelper.metricValue(this._telemetry, "process_memory_heap_used_bytes", mem.heapUsed);
-		await MetricHelper.metricValue(
-			this._telemetry,
-			"process_memory_heap_total_bytes",
-			mem.heapTotal
-		);
-		await MetricHelper.metricValue(
-			this._telemetry,
-			"process_uptime_seconds",
-			Number(process.uptime().toFixed(1))
-		);
+
+		return [
+			{ id: "process_memory_rss_bytes", value: mem.rss },
+			{ id: "process_memory_heap_used_bytes", value: mem.heapUsed },
+			{ id: "process_memory_heap_total_bytes", value: mem.heapTotal },
+			{ id: "process_uptime_seconds", value: Number(process.uptime().toFixed(1)) }
+		];
 	}
 }

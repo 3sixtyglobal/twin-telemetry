@@ -18,6 +18,12 @@ export interface IMetricsCollectorServiceConstructorOptions {
 	platformComponentType?: string;
 
 	/**
+	 * The type of the telemetry component the collected values are recorded with.
+	 * @default telemetry
+	 */
+	telemetryComponentType?: string;
+
+	/**
 	 * The configuration options for the metrics collector service.
 	 */
 	config?: IMetricsCollectorServiceConfig;

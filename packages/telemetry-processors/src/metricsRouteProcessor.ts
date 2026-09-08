@@ -7,7 +7,7 @@ import type {
 	IHttpServerRequest
 } from "@twin.org/api-models";
 import type { IContextIds } from "@twin.org/context";
-import { BaseError, ComponentFactory, Is } from "@twin.org/core";
+import { BaseError, Coerce, ComponentFactory, Is } from "@twin.org/core";
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import { MetricHelper, type ITelemetryComponent } from "@twin.org/telemetry-models";
@@ -25,6 +25,11 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 	 * Runtime name for the class.
 	 */
 	public static readonly CLASS_NAME: string = nameof<MetricsRouteProcessor>();
+
+	/**
+	 * Default number of request values to retain.
+	 */
+	public static readonly DEFAULT_MAX_HISTORY: number = 10000;
 
 	/**
 	 * Resolved telemetry component.
@@ -45,6 +50,12 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 	private readonly _excludePaths: string[];
 
 	/**
+	 * Maximum number of request values retained; 0 retains everything.
+	 * @internal
+	 */
+	private readonly _maxHistory: number;
+
+	/**
 	 * Create a new instance of MetricsRouteProcessor.
 	 * @param options The options for the processor.
 	 */
@@ -54,6 +65,10 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 		);
 		this._logging = ComponentFactory.getIfExists<ILoggingComponent>(options?.loggingComponentType);
 		this._excludePaths = options?.config?.excludePaths ?? [];
+
+		const cfgMaxHistory =
+			Coerce.integer(options?.config?.maxHistory) ?? MetricsRouteProcessor.DEFAULT_MAX_HISTORY;
+		this._maxHistory = cfgMaxHistory > 0 ? cfgMaxHistory : 0;
 	}
 
 	/**
@@ -73,7 +88,15 @@ export class MetricsRouteProcessor implements IBaseRouteProcessor {
 			return;
 		}
 
-		await MetricHelper.createMetrics(this._telemetry, RestRequestsMetrics);
+		// A value is recorded for every request, so the history is capped; without it the table
+		// grows for as long as the node serves traffic.
+		await MetricHelper.createMetrics(
+			this._telemetry,
+			RestRequestsMetrics.map(metric => ({
+				...metric,
+				maxHistory: this._maxHistory > 0 ? this._maxHistory : undefined
+			}))
+		);
 	}
 
 	/**

@@ -1,8 +1,14 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
+import {
+	type IBackgroundTask,
+	type IBackgroundTaskComponent,
+	TaskStatus
+} from "@twin.org/background-task-models";
 import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
 import {
 	AlreadyExistsError,
+	BaseError,
 	Coerce,
 	ComponentFactory,
 	Converter,
@@ -10,7 +16,6 @@ import {
 	Guards,
 	Is,
 	LfuCache,
-	Mutex,
 	NotFoundError,
 	RandomHelper
 } from "@twin.org/core";
@@ -30,18 +35,22 @@ import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
 	type ITelemetryMetricValue,
+	type ITelemetryMetricValueEntry,
 	MetricCounterOperation,
 	MetricType
 } from "@twin.org/telemetry-models";
 import type { TelemetryMetric } from "./entities/telemetryMetric.js";
 import type { TelemetryMetricValue } from "./entities/telemetryMetricValue.js";
-import type { IBatchMetricValueEntry } from "./models/IBatchMetricValueEntry.js";
 import type { IEntityStorageTelemetryConnectorConstructorOptions } from "./models/IEntityStorageTelemetryConnectorConstructorOptions.js";
-import type { ILastMetricValue } from "./models/ILastMetricValue.js";
-import type { IPendingTrim } from "./models/IPendingTrim.js";
+import type { ITelemetryMetricValuePayload } from "./models/ITelemetryMetricValuePayload.js";
+import type { ITelemetryMetricValueTaskPayload } from "./models/ITelemetryMetricValueTaskPayload.js";
+import type { ITelemetryMetricValueWriterConfig } from "./models/ITelemetryMetricValueWriterConfig.js";
 
 /**
  * Class for performing telemetry operations in entity storage.
+ * The metric values are written by a long running background thread, so nothing about a value
+ * is held in memory here; only the metric definitions, which are immutable once registered,
+ * are cached.
  */
 export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
@@ -55,23 +64,12 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	public static readonly CLASS_NAME: string = nameof<EntityStorageTelemetryConnector>();
 
 	/**
-	 * Default number of entries to accumulate before flushing.
+	 * Default time in milliseconds to wait for the background thread to confirm a flush.
 	 */
-	public static readonly DEFAULT_BATCH_SIZE: number = 10;
-
-	/**
-	 * Default interval in milliseconds between automatic flushes.
-	 */
-	public static readonly DEFAULT_BATCH_INTERVAL_MS: number = 5000;
-
-	/**
-	 * Default maximum number of entries to hold in the in-memory cache.
-	 */
-	public static readonly DEFAULT_MAX_CACHE_SIZE: number = 1000;
+	public static readonly DEFAULT_FLUSH_TIMEOUT_MS: number = 30_000;
 
 	/**
 	 * Maximum number of metric definitions to hold in the in-memory definition cache.
-	 * Matches the last value cache capacity, as both are keyed by partition and metric id.
 	 */
 	public static readonly DEFAULT_METRIC_DEFINITION_CACHE_CAPACITY: number = 1000;
 
@@ -83,41 +81,23 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	public static readonly DEFAULT_METRIC_DEFINITION_CACHE_TTI_MS: number = 3_600_000;
 
 	/**
-	 * Default maximum number of metrics whose last value is held in memory.
+	 * Default time in milliseconds values are held so several share a single background task.
+	 * Keeps the task write off the caller's path, which matters most for the metrics recorded
+	 * on every REST request.
 	 */
-	public static readonly DEFAULT_LAST_VALUE_CACHE_CAPACITY: number = 1000;
+	public static readonly DEFAULT_TASK_COALESCE_MS: number = 100;
 
 	/**
-	 * Default largest maxHistory for which the retained value ids are tracked in memory.
-	 * Above this the trim falls back to scanning storage rather than holding a long id list.
+	 * Maximum number of values held while coalescing before a task is created regardless of
+	 * how much of the window is left.
 	 */
-	public static readonly DEFAULT_MAX_TRACKED_HISTORY: number = 1000;
+	public static readonly DEFAULT_COALESCE_SIZE: number = 100;
 
 	/**
-	 * Default time-to-idle in milliseconds for cached last values.
-	 * Matches the metric definition cache, as both are keyed by partition and metric id.
-	 */
-	public static readonly DEFAULT_LAST_VALUE_CACHE_TTI_MS: number = 3_600_000;
-
-	/**
-	 * Default total number of retained value ids held across all metrics.
-	 * Caps history tracking by the memory it actually uses rather than by metric count.
-	 */
-	public static readonly DEFAULT_TRACKED_HISTORY_BUDGET: number = 50_000;
-
-	/**
-	 * Longest gap between sweeps for idle last values, clamped down to the configured
-	 * time-to-idle. Keeps the sweep off the hot path without letting expiry drift.
+	 * Task type identifier for the metric value background task.
 	 * @internal
 	 */
-	private static readonly _LAST_VALUE_SWEEP_INTERVAL_MS = 60_000;
-
-	/**
-	 * Page size used when scanning for values to trim.
-	 * Large enough to cover most histories in one or two pages without overwhelming storage.
-	 * @internal
-	 */
-	private static readonly _TRIM_PAGE_SIZE = 1000;
+	private static readonly _METRIC_VALUE_TASK_TYPE: string = "telemetry-metric-value-write";
 
 	/**
 	 * The entity storage for the telemetry metrics.
@@ -126,7 +106,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _metricStorage: IEntityStorageConnector<TelemetryMetric>;
 
 	/**
-	 * The entity storage for the telemetry metric values.
+	 * The entity storage for the telemetry metric values, used for the read operations.
 	 * @internal
 	 */
 	private readonly _metricValueStorage: IEntityStorageConnector<TelemetryMetricValue>;
@@ -138,90 +118,77 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _logging?: ILoggingComponent;
 
 	/**
-	 * The timeout in milliseconds when acquiring a mutex lock.
+	 * The background task component used to run the metric value writes on a background thread.
+	 * Absent when the connector is created inside an engine clone, which builds it only to
+	 * register the metric storage and never writes values through it.
 	 * @internal
 	 */
-	private readonly _mutexTimeoutMs?: number;
+	private readonly _backgroundTaskComponent?: IBackgroundTaskComponent;
 
 	/**
-	 * Flush when the cache reaches this size; undefined or <= 1 disables size-based flushing.
+	 * The URL of the module the background thread runs the metric value writes from.
 	 * @internal
 	 */
-	private readonly _batchSize?: number;
+	private readonly _metricValueTaskHandler: string;
 
 	/**
-	 * Flush every this many milliseconds; undefined or <= 0 disables timer-based flushing.
+	 * The writer settings passed to the background thread with each task payload.
 	 * @internal
 	 */
-	private readonly _batchIntervalMs?: number;
+	private readonly _writerConfig: ITelemetryMetricValueWriterConfig;
 
 	/**
-	 * Maximum entries to keep after a failed flush re-queue; 0 means unlimited.
+	 * How long in milliseconds to wait for the background thread to confirm a flush.
 	 * @internal
 	 */
-	private readonly _maxCacheSize: number;
+	private readonly _flushTimeoutMs: number;
 
 	/**
-	 * Unique key used to serialise concurrent flush calls via Mutex.
+	 * Write requests waiting for their background task to complete, keyed by task id.
 	 * @internal
 	 */
-	private readonly _mutexKey: string;
+	private readonly _pendingWrites: Map<
+		string,
+		{ resolve: (isWritten: boolean) => void; timer: ReturnType<typeof setTimeout> }
+	>;
 
 	/**
-	 * Entries waiting to be written to storage.
+	 * How long in milliseconds to hold values before handing them to the background thread as a
+	 * single task; 0 creates a task per value.
 	 * @internal
 	 */
-	private readonly _batchCache: IBatchMetricValueEntry[];
+	private readonly _taskCoalesceMs: number;
 
 	/**
-	 * Last computed value per partition context + metric id, used to chain increments without a
-	 * storage read. Populated by both the batched and unbatched write paths. When the metric has a
-	 * trackable maxHistory the retained value ids are held alongside it so trimming needs no read.
+	 * Values held for the coalesce window, waiting to be handed to the background thread.
 	 * @internal
 	 */
-	private readonly _lastValue: Map<string, ILastMetricValue>;
+	private readonly _coalesced: ITelemetryMetricValuePayload[];
 
 	/**
-	 * Maximum entries to retain in the last value cache; 0 means unlimited.
+	 * Handle for the coalesce window timer.
 	 * @internal
 	 */
-	private readonly _lastValueCacheCapacity: number;
+	private _coalesceTimer?: ReturnType<typeof setTimeout>;
 
 	/**
-	 * Time-to-idle in milliseconds for cached last values; 0 disables expiry.
+	 * Number of values handed to the background thread, counted once their task is queued.
 	 * @internal
 	 */
-	private readonly _lastValueCacheTtiMs: number;
+	private _valuesQueued: number;
 
 	/**
-	 * Time the idle last values were last swept.
+	 * The value count as of the last write the background thread confirmed.
 	 * @internal
 	 */
-	private _lastValueSweepMs: number;
+	private _valuesWritten: number;
 
 	/**
-	 * Largest maxHistory for which retained value ids are tracked in memory.
+	 * Serialises the write requests. A caller cannot return on a write already in progress, as
+	 * its own values may have been queued behind that write's task.
 	 * @internal
 	 */
-	private readonly _maxTrackedHistory: number;
-
-	/**
-	 * Total retained value ids allowed across all metrics; 0 means unlimited.
-	 * @internal
-	 */
-	private readonly _trackedHistoryBudget: number;
-
-	/**
-	 * Total retained value ids currently held across all metrics.
-	 * @internal
-	 */
-	private _trackedHistoryCount: number;
-
-	/**
-	 * Handle for the interval timer, present only while the connector is running.
-	 * @internal
-	 */
-	private _batchTimer?: ReturnType<typeof setTimeout>;
+	private _writeChain: Promise<void>;
 
 	/**
 	 * Is the service running.
@@ -261,48 +228,44 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		);
 
 		this._logging = ComponentFactory.getIfExists(options?.loggingComponentType);
-		this._mutexTimeoutMs = Coerce.integer(options?.config?.mutexTimeoutMs);
 
-		const cfgBatchSize =
-			Coerce.integer(options?.config?.batchSize) ??
-			EntityStorageTelemetryConnector.DEFAULT_BATCH_SIZE;
-		this._batchSize = cfgBatchSize > 1 ? cfgBatchSize : undefined;
+		// The background task component is used to run metric value writes on a background thread.
+		// but if this component is instantiated from the background thread it is not needed.
+		this._backgroundTaskComponent = ComponentFactory.getIfExists<IBackgroundTaskComponent>(
+			options?.backgroundTaskComponentType ?? "background-task"
+		);
 
-		const cfgIntervalMs =
-			Coerce.integer(options?.config?.batchIntervalMs) ??
-			EntityStorageTelemetryConnector.DEFAULT_BATCH_INTERVAL_MS;
-		this._batchIntervalMs = cfgIntervalMs > 0 ? cfgIntervalMs : undefined;
+		this._metricValueTaskHandler =
+			options?.config?.overrideMetricValueTaskHandler ??
+			new URL("./telemetryMetricValueTask.js", import.meta.url).href;
 
-		const cfgMaxCacheSize =
-			Coerce.integer(options?.config?.maxCacheSize) ??
-			EntityStorageTelemetryConnector.DEFAULT_MAX_CACHE_SIZE;
-		this._maxCacheSize = cfgMaxCacheSize > 0 ? cfgMaxCacheSize : 0;
+		this._writerConfig = {
+			telemetryMetricValueStorageConnectorType: options?.telemetryMetricValueStorageConnectorType,
+			loggingComponentType: options?.loggingComponentType,
+			batchSize: options?.config?.batchSize,
+			batchIntervalMs: options?.config?.batchIntervalMs,
+			maxCacheSize: options?.config?.maxCacheSize,
+			mutexTimeoutMs: options?.config?.mutexTimeoutMs
+		};
 
-		const cfgLastValueCacheCapacity =
-			Coerce.integer(options?.config?.lastValueCacheCapacity) ??
-			EntityStorageTelemetryConnector.DEFAULT_LAST_VALUE_CACHE_CAPACITY;
-		this._lastValueCacheCapacity = cfgLastValueCacheCapacity > 0 ? cfgLastValueCacheCapacity : 0;
+		const cfgFlushTimeoutMs =
+			Coerce.integer(options?.config?.flushTimeoutMs) ??
+			EntityStorageTelemetryConnector.DEFAULT_FLUSH_TIMEOUT_MS;
+		this._flushTimeoutMs =
+			cfgFlushTimeoutMs > 0
+				? cfgFlushTimeoutMs
+				: EntityStorageTelemetryConnector.DEFAULT_FLUSH_TIMEOUT_MS;
 
-		const cfgLastValueCacheTtiMs =
-			Coerce.integer(options?.config?.lastValueCacheTtiMs) ??
-			EntityStorageTelemetryConnector.DEFAULT_LAST_VALUE_CACHE_TTI_MS;
-		this._lastValueCacheTtiMs = cfgLastValueCacheTtiMs > 0 ? cfgLastValueCacheTtiMs : 0;
-		this._lastValueSweepMs = Date.now();
+		const cfgCoalesceMs =
+			Coerce.integer(options?.config?.taskCoalesceMs) ??
+			EntityStorageTelemetryConnector.DEFAULT_TASK_COALESCE_MS;
+		this._taskCoalesceMs = cfgCoalesceMs > 0 ? cfgCoalesceMs : 0;
 
-		const cfgMaxTrackedHistory =
-			Coerce.integer(options?.config?.maxTrackedHistory) ??
-			EntityStorageTelemetryConnector.DEFAULT_MAX_TRACKED_HISTORY;
-		this._maxTrackedHistory = cfgMaxTrackedHistory > 0 ? cfgMaxTrackedHistory : 0;
-
-		const cfgTrackedHistoryBudget =
-			Coerce.integer(options?.config?.trackedHistoryBudget) ??
-			EntityStorageTelemetryConnector.DEFAULT_TRACKED_HISTORY_BUDGET;
-		this._trackedHistoryBudget = cfgTrackedHistoryBudget > 0 ? cfgTrackedHistoryBudget : 0;
-		this._trackedHistoryCount = 0;
-
-		this._mutexKey = RandomHelper.generateUuidV7("compact");
-		this._batchCache = [];
-		this._lastValue = new Map();
+		this._pendingWrites = new Map();
+		this._coalesced = [];
+		this._valuesQueued = 0;
+		this._valuesWritten = 0;
+		this._writeChain = Promise.resolve();
 		this._started = false;
 		this._metricDefinitionCacheCapacity =
 			Coerce.integer(options?.config?.metricDefinitionCacheCapacity) ??
@@ -325,7 +288,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Start the connector; sets up the interval timer when batchIntervalMs is configured.
+	 * Start the connector; registers the long running background thread which writes the
+	 * metric values.
 	 * @returns A promise that resolves when the connector is ready to accept metric values.
 	 */
 	public async start(): Promise<void> {
@@ -335,97 +299,149 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				capacity: this._metricDefinitionCacheCapacity,
 				ttiMs: this._metricDefinitionCacheTtiMs
 			});
-			this.startTimer();
+
+			await this._backgroundTaskComponent?.registerHandler<
+				ITelemetryMetricValueTaskPayload,
+				undefined
+			>(
+				EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE,
+				this._metricValueTaskHandler,
+				"telemetryMetricValueTask",
+				async task => this.metricValueTaskStateChanged(task),
+				{
+					// A single long running worker, kept alive by the negative idle shutdown timeout,
+					// so the values it has batched are never split across threads.
+					maxWorkerCount: 1,
+					idleShutdownTimeout: -1,
+					initialiseMethod: "telemetryMetricValueTaskStart",
+					// The writer settings are sent once when the worker starts rather than with
+					// every value.
+					initialiseMethodParams: async () => [this._writerConfig],
+					shutdownMethod: "telemetryMetricValueTaskEnd"
+				}
+			);
 		}
 	}
 
 	/**
-	 * Stop the connector; flushes any remaining cached entries and clears the timer.
-	 * @returns A promise that resolves when the final flush completes and the timer is cleared.
+	 * Stop the connector; writes any values still pending and releases the background thread.
+	 * @returns A promise that resolves when the final write completes and the thread is released.
 	 */
 	public async stop(): Promise<void> {
-		if (this._started) {
-			this._started = false;
-			this.stopTimer();
-		}
+		this.stopCoalesceTimer();
+
+		// Flush before clearing the started flag, as the background thread is only asked to
+		// write while the connector is running.
 		await this.flush();
+
+		this._started = false;
+
+		// unregisterHandler terminates the worker without calling its shutdown method, so the
+		// flush above is what persists anything the thread still had pending.
+		await this._backgroundTaskComponent?.unregisterHandler(
+			EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE
+		);
+
+		for (const pendingWrite of this._pendingWrites.values()) {
+			globalThis.clearTimeout(pendingWrite.timer);
+			pendingWrite.resolve(false);
+		}
+		this._pendingWrites.clear();
+
 		this._metricDefinitionCache.destroy();
-		this._lastValue.clear();
-		this._trackedHistoryCount = 0;
-		this._lastValueSweepMs = Date.now();
 	}
 
 	/**
-	 * Create a new metric.
-	 * @param metric The metric details.
-	 * @returns A promise that resolves when the metric has been created.
+	 * Create one or more metrics.
+	 * A single metric fails if it already exists; an array declares the set that should exist,
+	 * creating the ones that are missing and leaving the rest untouched. The array form resolves
+	 * what already exists with one query and writes the rest in one batch.
+	 * @param metric The metric details, or the details of several metrics.
+	 * @returns A promise that resolves when the metrics have been created.
+	 * @throws AlreadyExistsError if a single metric already exists.
 	 */
-	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(
-			EntityStorageTelemetryConnector.CLASS_NAME,
-			nameof(metric),
-			metric
-		);
-		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(
-			EntityStorageTelemetryConnector.CLASS_NAME,
-			nameof(metric.label),
-			metric.label
-		);
-		Guards.arrayOneOf(
-			EntityStorageTelemetryConnector.CLASS_NAME,
-			nameof(metric.type),
-			metric.type,
-			Object.values(MetricType)
-		);
+	public async createMetric(metric: ITelemetryMetric | ITelemetryMetric[]): Promise<void> {
+		const isBatch = Is.array<ITelemetryMetric>(metric);
+		const metrics = isBatch ? metric : [metric];
 
-		if (Is.notEmpty(metric.description)) {
-			Guards.string(
-				EntityStorageTelemetryConnector.CLASS_NAME,
-				nameof(metric.description),
-				metric.description
+		for (const entry of metrics) {
+			this.validateMetric(entry);
+		}
+
+		if (metrics.length === 0) {
+			return;
+		}
+
+		const telemetryMetrics: TelemetryMetric[] = [];
+
+		if (isBatch) {
+			const existing = await this._metricStorage.query(
+				{
+					property: "id",
+					comparison: ComparisonOperator.In,
+					value: metrics.map(entry => entry.id)
+				},
+				undefined,
+				["id"],
+				undefined,
+				metrics.length
 			);
-		}
-		if (Is.notEmpty(metric.unit)) {
-			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
-		}
-		if (Is.notEmpty(metric.maxHistory)) {
-			if (!Is.integer(metric.maxHistory) || metric.maxHistory <= 0) {
-				throw new GeneralError(
+			const existingIds = new Set(existing.entities.map(entity => entity.id as string));
+
+			for (const entry of metrics) {
+				if (!existingIds.has(entry.id)) {
+					telemetryMetrics.push(this.toTelemetryMetric(entry));
+				}
+			}
+		} else {
+			const existingMetric = await this._metricStorage.get(metrics[0].id);
+			if (Is.notEmpty(existingMetric)) {
+				throw new AlreadyExistsError(
 					EntityStorageTelemetryConnector.CLASS_NAME,
-					"maxHistoryMustBePositiveInteger"
+					"metricAlreadyExists",
+					metrics[0].id
 				);
 			}
+			telemetryMetrics.push(this.toTelemetryMetric(metrics[0]));
 		}
 
-		const existingMetric = await this._metricStorage.get(metric.id);
-		if (Is.notEmpty(existingMetric)) {
-			throw new AlreadyExistsError(
-				EntityStorageTelemetryConnector.CLASS_NAME,
-				"metricAlreadyExists",
-				metric.id
+		if (telemetryMetrics.length === 0) {
+			return;
+		}
+
+		if (telemetryMetrics.length === 1) {
+			await this._metricStorage.set(telemetryMetrics[0]);
+		} else {
+			await this._metricStorage.setBatch(telemetryMetrics);
+		}
+
+		const contextIds = await this.captureContextIds();
+		for (const telemetryMetric of telemetryMetrics) {
+			this._metricDefinitionCache.set(
+				this.contextKey(contextIds, telemetryMetric.id),
+				telemetryMetric
 			);
 		}
 
-		const telemetryMetric: TelemetryMetric = {
-			id: metric.id,
-			label: metric.label,
-			type: metric.type,
-			unit: metric.unit ?? "",
-			description: metric.description ?? "",
-			maxHistory: metric.maxHistory
-		};
-
-		await this._metricStorage.set(telemetryMetric);
-		const metricKey = this.contextKey(await this.captureContextIds(), metric.id);
-		this._metricDefinitionCache.set(metricKey, telemetryMetric);
-
-		await this._logging?.log({
-			source: EntityStorageTelemetryConnector.CLASS_NAME,
-			message: "metricCreated",
-			level: "info",
-			data: { id: metric.id, type: metric.type, label: metric.label }
-		});
+		if (isBatch) {
+			await this._logging?.log({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricsCreated",
+				level: "info",
+				data: { count: telemetryMetrics.length }
+			});
+		} else {
+			await this._logging?.log({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricCreated",
+				level: "info",
+				data: {
+					id: telemetryMetrics[0].id,
+					type: telemetryMetrics[0].type,
+					label: telemetryMetrics[0].label
+				}
+			});
+		}
 	}
 
 	/**
@@ -512,6 +528,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 	/**
 	 * Add a metric value.
+	 * The value is handed to the background thread which computes it from the value currently
+	 * in storage and performs the write, so it is not visible until the thread has flushed.
 	 * @param id The id of the metric.
 	 * @param value The value for the add operation.
 	 * @param customData The custom data for the metric value.
@@ -524,140 +542,50 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	): Promise<string> {
 		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(id), id);
 
-		const contextIds = await this.captureContextIds();
-		const metricKey = this.contextKey(contextIds, id);
+		const metricValue = await this.buildMetricValue(id, value, customData);
 
-		const existingMetric = await this._metricDefinitionCache.getOrSet(metricKey, async () => {
-			const stored = await this._metricStorage.get(id);
-			if (Is.undefined(stored)) {
-				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
-			}
-			return stored;
+		await this.queueMetricValues([metricValue]);
+
+		await this._logging?.log({
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
+			message: "metricValueCreated",
+			level: "info",
+			data: { id }
 		});
 
-		const lockKey = `${EntityStorageTelemetryConnector.CLASS_NAME}|${metricKey}`;
-		await Mutex.lock(lockKey, {
-			throwOnTimeout: true,
-			timeoutMs: this._mutexTimeoutMs
-		});
+		return metricValue.valueId;
+	}
 
-		let lockReleased = false;
-		try {
-			// Use the last in-memory computed value when available; avoids a storage round-trip
-			// for chained increments. The lookup it replaces has no index to serve it, so it
-			// scans the whole partition and sorts the result on every write.
-			const last = this._lastValue.get(metricKey);
-			let lastTs: number | undefined;
-			let lastValue: number | undefined;
+	/**
+	 * Add multiple metric values, handing the whole set to the background thread as a single
+	 * task rather than one per value.
+	 * @param values The metric values to add.
+	 * @returns The ids of the newly created metric value entries, in the order supplied.
+	 */
+	public async addMetricValues(values: ITelemetryMetricValueEntry[]): Promise<string[]> {
+		Guards.array<ITelemetryMetricValueEntry>(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(values),
+			values
+		);
 
-			if (Is.notEmpty(last)) {
-				lastTs = last.ts;
-				lastValue = last.value;
-			} else {
-				const existingMetricValue = await this._metricValueStorage.query(
-					{ property: "metricId", comparison: ComparisonOperator.Equals, value: id },
-					[
-						{
-							property: "ts",
-							sortDirection: SortDirection.Descending
-						}
-					],
-					undefined,
-					undefined,
-					1
-				);
+		const metricValues: ITelemetryMetricValuePayload[] = [];
 
-				const lastMetric = existingMetricValue.entities[0] as TelemetryMetricValue | undefined;
-				if (Is.notEmpty(lastMetric)) {
-					lastTs = lastMetric.ts;
-					lastValue = lastMetric.value;
-				}
-			}
-
-			let newValue = lastValue ?? 0;
-
-			if (existingMetric.type === MetricType.Counter) {
-				if (value === MetricCounterOperation.Increment) {
-					newValue++;
-				} else if (Is.integer(value) && value > 0) {
-					newValue += value;
-				} else {
-					throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
-				}
-			} else if (existingMetric.type === MetricType.IncDecCounter) {
-				if (value === MetricCounterOperation.Increment) {
-					newValue++;
-				} else if (value === MetricCounterOperation.Decrement) {
-					newValue--;
-				} else if (Is.integer(value)) {
-					newValue += value;
-				} else {
-					throw new GeneralError(
-						EntityStorageTelemetryConnector.CLASS_NAME,
-						"upDownCounterIncOrDecOnly"
-					);
-				}
-			} else if (Is.number(value)) {
-				newValue = value;
-			} else {
-				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
-			}
-
-			// Keep timestamps strictly increasing per metric to preserve deterministic ordering.
-			const now = Date.now();
-			const ts = Is.notEmpty(lastTs) ? Math.max(now, lastTs + 1) : now;
-
-			const telemetryMetricValue: TelemetryMetricValue = {
-				id: Converter.bytesToHex(RandomHelper.generate(16)),
-				metricId: id,
-				ts,
-				value: newValue,
-				customData
-			};
-
-			let shouldFlush = false;
-			if (Is.empty(this._batchSize) && Is.empty(this._batchIntervalMs)) {
-				await this._metricValueStorage.set(telemetryMetricValue);
-				this.recordLastValue(metricKey, ts, newValue);
-
-				if (Is.integer(existingMetric.maxHistory) && existingMetric.maxHistory > 0) {
-					await this.trimMetricHistory(metricKey, id, existingMetric.maxHistory, [
-						telemetryMetricValue.id
-					]);
-				}
-			} else {
-				// push and set are synchronous — no yield points, no race with flush's splice.
-				this._batchCache.push({
-					entity: telemetryMetricValue,
-					maxHistory: existingMetric.maxHistory,
-					contextIds
-				});
-				this.recordLastValue(metricKey, ts, newValue);
-				shouldFlush = !Is.empty(this._batchSize) && this._batchCache.length >= this._batchSize;
-			}
-
-			Mutex.unlock(lockKey);
-			lockReleased = true;
-
-			if (shouldFlush) {
-				await this.flush();
-			}
-
-			this.pruneLastValues();
-
-			await this._logging?.log({
-				source: EntityStorageTelemetryConnector.CLASS_NAME,
-				message: "metricValueCreated",
-				level: "info",
-				data: { id, value: newValue }
-			});
-
-			return telemetryMetricValue.id;
-		} finally {
-			if (!lockReleased) {
-				Mutex.unlock(lockKey);
-			}
+		for (const entry of values) {
+			Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(entry.id), entry.id);
+			metricValues.push(await this.buildMetricValue(entry.id, entry.value, entry.customData));
 		}
+
+		await this.queueMetricValues(metricValues);
+
+		await this._logging?.log({
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
+			message: "metricValuesCreated",
+			level: "info",
+			data: { count: metricValues.length }
+		});
+
+		return metricValues.map(metricValue => metricValue.valueId);
 	}
 
 	/**
@@ -732,7 +660,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 					value: id
 				},
 				undefined,
-				undefined,
+				["id"],
 				removeValuesCursor
 			);
 			valueIdsToRemove.push(...existingMetricValuesResult.entities.map(e => e.id as string));
@@ -741,8 +669,6 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		if (valueIdsToRemove.length > 0) {
 			await this._metricValueStorage.removeBatch(valueIdsToRemove);
 		}
-
-		this.deleteLastValue(metricKey);
 
 		await this._logging?.log({
 			source: EntityStorageTelemetryConnector.CLASS_NAME,
@@ -902,106 +828,358 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Write all cached entries to storage and clear the cache.
-	 * If the mutex cannot be acquired the call returns without writing.
-	 * On a storage write failure the entries are returned to the head of the cache for the next attempt.
-	 * @returns A promise that resolves when all cached entries have been written to storage.
+	 * Ask the background thread to write everything it currently has pending, so a read sees
+	 * the values which have been added but not yet persisted.
+	 * @returns A promise that resolves when the background thread confirms the write, or when
+	 * the flush timeout elapses.
+	 * @internal
 	 */
-	public async flush(): Promise<void> {
-		this.stopTimer();
-
-		if (this._batchCache.length === 0) {
-			this.startTimer();
+	private async flush(): Promise<void> {
+		if (
+			!this._started ||
+			Is.empty(this._backgroundTaskComponent) ||
+			(this._coalesced.length === 0 && this._valuesQueued === this._valuesWritten)
+		) {
 			return;
 		}
 
-		const locked = await Mutex.lock(this._mutexKey, {
-			throwOnTimeout: false,
-			timeoutMs: this._mutexTimeoutMs
+		// A caller has to take its turn behind any write already running rather than join it: the
+		// values it added may have been queued after that write's task, so joining would let it
+		// read storage before its own values were written. The handed on promise is only ever
+		// resolved, never rejected, so a failed write does not stop the caller behind it.
+		const previous = this._writeChain;
+		let release: (() => void) | undefined;
+		this._writeChain = new Promise<void>(resolve => {
+			release = resolve;
 		});
-		if (!locked) {
-			this.startTimer();
-			return;
-		}
+
+		await previous;
 
 		try {
-			const entries = this._batchCache.splice(0);
-
-			const groups = new Map<string, IBatchMetricValueEntry[]>();
-			for (const entry of entries) {
-				const contextGroupKey = this.contextKey(entry.contextIds ?? {});
-				let group = groups.get(contextGroupKey);
-				if (Is.undefined(group)) {
-					group = [];
-					groups.set(contextGroupKey, group);
-				}
-				group.push(entry);
-			}
-
-			const failedEntries: IBatchMetricValueEntry[] = [];
-			const errors: unknown[] = [];
-			for (const group of groups.values()) {
-				try {
-					await ContextIdStore.run(group[0].contextIds ?? {}, async () => {
-						const entities = group.map(e => e.entity);
-						await this._metricValueStorage.setBatch(entities);
-
-						const toTrim = new Map<string, IPendingTrim>();
-						for (const entry of group) {
-							if (Is.integer(entry.maxHistory) && entry.maxHistory > 0) {
-								const trimKey = this.contextKey(entry.contextIds ?? {}, entry.entity.metricId);
-								let pendingTrim = toTrim.get(trimKey);
-								if (Is.undefined(pendingTrim)) {
-									pendingTrim = {
-										metricId: entry.entity.metricId,
-										maxHistory: entry.maxHistory,
-										addedIds: []
-									};
-									toTrim.set(trimKey, pendingTrim);
-								} else {
-									// A metric updated mid-batch trims to the cap in force at the last write.
-									pendingTrim.maxHistory = entry.maxHistory;
-								}
-								pendingTrim.addedIds.push(entry.entity.id);
-							}
-						}
-
-						for (const [trimKey, pendingTrim] of toTrim) {
-							await this.trimMetricHistory(
-								trimKey,
-								pendingTrim.metricId,
-								pendingTrim.maxHistory,
-								pendingTrim.addedIds
-							);
-						}
-					});
-				} catch (err) {
-					failedEntries.push(...group);
-					errors.push(err);
-				}
-			}
-
-			if (Is.arrayValue(errors)) {
-				await this._logging?.log({
-					source: EntityStorageTelemetryConnector.CLASS_NAME,
-					message: "flushFailed",
-					level: "error",
-					data: { error: errors.length === 1 ? errors[0] : errors }
-				});
-				this._batchCache.unshift(...failedEntries);
-				if (this._maxCacheSize > 0 && this._batchCache.length > this._maxCacheSize) {
-					this._batchCache.splice(0, this._batchCache.length - this._maxCacheSize);
-				}
-			}
+			await this.requestWrite();
 		} finally {
-			Mutex.unlock(this._mutexKey);
+			release?.();
 		}
-
-		this.startTimer();
 	}
 
 	/**
-	 * Build the partition key used for the caches, counter chaining and batch grouping.
+	 * Ask the background thread to write, once any values still inside the coalesce window have
+	 * been handed to it.
+	 * @returns A promise that resolves when the background thread confirms the write, or when the
+	 * write timeout elapses.
+	 * @internal
+	 */
+	private async requestWrite(): Promise<void> {
+		if (!this._started) {
+			return;
+		}
+
+		await this.sendCoalesced();
+
+		if (this._valuesQueued === this._valuesWritten) {
+			return;
+		}
+
+		// Read before the task is created, so every value it counts belongs to a task the thread
+		// already has; anything queued afterwards leaves the counts apart for the next read.
+		const queued = this._valuesQueued;
+
+		if (await this.createMetricValueTask({ flush: true }, true)) {
+			this._valuesWritten = queued;
+		}
+	}
+
+	/**
+	 * Resolve the metric definition, check the operation against it and build the payload the
+	 * background thread needs to write the value.
+	 * @param id The id of the metric.
+	 * @param value The value for the add operation.
+	 * @param customData The custom data for the metric value.
+	 * @returns The payload for the background thread.
+	 * @throws NotFoundError if the metric does not exist.
+	 * @internal
+	 */
+	private async buildMetricValue(
+		id: string,
+		value: MetricCounterOperation | number,
+		customData?: { [key: string]: unknown }
+	): Promise<ITelemetryMetricValuePayload> {
+		const contextIds = await this.captureContextIds();
+		const metricKey = this.contextKey(contextIds, id);
+
+		const existingMetric = await this._metricDefinitionCache.getOrSet(metricKey, async () => {
+			const stored = await this._metricStorage.get(id);
+			if (Is.undefined(stored)) {
+				throw new NotFoundError(EntityStorageTelemetryConnector.CLASS_NAME, "metricNotFound", id);
+			}
+			return stored;
+		});
+
+		const metricType = existingMetric.type as MetricType;
+		this.validateOperation(metricType, value);
+
+		return {
+			valueId: Converter.bytesToHex(RandomHelper.generate(16)),
+			metricId: id,
+			metricType,
+			operation: value,
+			ts: Date.now(),
+			maxHistory: existingMetric.maxHistory,
+			customData,
+			contextIds
+		};
+	}
+
+	/**
+	 * Hand values to the background thread, holding them for the coalesce window when one is
+	 * configured so several share a single task.
+	 * @param metricValues The values to hand over.
+	 * @returns A promise that resolves when the values have been queued or buffered.
+	 * @internal
+	 */
+	private async queueMetricValues(metricValues: ITelemetryMetricValuePayload[]): Promise<void> {
+		if (metricValues.length === 0) {
+			return;
+		}
+
+		if (this._taskCoalesceMs === 0) {
+			await this.createMetricValueTask({ values: metricValues });
+			this._valuesQueued += metricValues.length;
+			return;
+		}
+
+		this._coalesced.push(...metricValues);
+
+		if (this._coalesced.length >= EntityStorageTelemetryConnector.DEFAULT_COALESCE_SIZE) {
+			await this.sendCoalesced();
+		} else if (Is.empty(this._coalesceTimer)) {
+			this._coalesceTimer = globalThis.setTimeout(async () => {
+				this._coalesceTimer = undefined;
+				try {
+					await this.sendCoalesced();
+				} catch (err) {
+					await this._logging?.log({
+						source: EntityStorageTelemetryConnector.CLASS_NAME,
+						message: "metricValueTaskFailed",
+						level: "error",
+						data: { taskId: "" },
+						error: BaseError.fromError(err)
+					});
+				}
+			}, this._taskCoalesceMs);
+		}
+	}
+
+	/**
+	 * Hand any values held for the coalesce window to the background thread as a single task.
+	 * @returns A promise that resolves when the values have been queued.
+	 * @internal
+	 */
+	private async sendCoalesced(): Promise<void> {
+		this.stopCoalesceTimer();
+
+		if (this._coalesced.length === 0) {
+			return;
+		}
+
+		// splice is synchronous, so there is no yield point where a value could be added twice.
+		const values = this._coalesced.splice(0);
+
+		try {
+			await this.createMetricValueTask({ values });
+			this._valuesQueued += values.length;
+		} catch (err) {
+			// Put them back at the head so the next attempt keeps them in order.
+			this._coalesced.unshift(...values);
+			throw err;
+		}
+	}
+
+	/**
+	 * Stop the coalesce window timer if it is running.
+	 * @internal
+	 */
+	private stopCoalesceTimer(): void {
+		if (!Is.empty(this._coalesceTimer)) {
+			globalThis.clearTimeout(this._coalesceTimer);
+			this._coalesceTimer = undefined;
+		}
+	}
+
+	/**
+	 * Queue a task for the background thread.
+	 * @param payload The task payload.
+	 * @param waitForCompletion Wait until the background thread reports the task complete.
+	 * @returns True when the task completed successfully, or when the caller did not wait for it.
+	 * @throws GeneralError if no background task component is available to run the write.
+	 * @internal
+	 */
+	private async createMetricValueTask(
+		payload: ITelemetryMetricValueTaskPayload,
+		waitForCompletion: boolean = false
+	): Promise<boolean> {
+		if (Is.empty(this._backgroundTaskComponent)) {
+			throw new GeneralError(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				"backgroundTaskComponentMissing"
+			);
+		}
+
+		const taskId = await this._backgroundTaskComponent.create<ITelemetryMetricValueTaskPayload>(
+			EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE,
+			payload
+		);
+
+		if (!waitForCompletion) {
+			return true;
+		}
+
+		return new Promise<boolean>(resolve => {
+			const timer = globalThis.setTimeout(async () => {
+				this._pendingWrites.delete(taskId);
+				await this._logging?.log({
+					source: EntityStorageTelemetryConnector.CLASS_NAME,
+					message: "flushTimeout",
+					level: "warn",
+					data: { taskId, timeoutMs: this._flushTimeoutMs }
+				});
+				resolve(false);
+			}, this._flushTimeoutMs);
+
+			this._pendingWrites.set(taskId, { resolve, timer });
+		});
+	}
+
+	/**
+	 * Handle a state change reported for a metric value task.
+	 * @param task The task which changed state.
+	 * @returns A promise that resolves when any waiting flush has been released.
+	 * @internal
+	 */
+	private async metricValueTaskStateChanged(
+		task: IBackgroundTask<ITelemetryMetricValueTaskPayload, undefined>
+	): Promise<void> {
+		if (
+			task.status !== TaskStatus.Success &&
+			task.status !== TaskStatus.Failed &&
+			task.status !== TaskStatus.Cancelled
+		) {
+			return;
+		}
+
+		const pendingWrite = this._pendingWrites.get(task.id);
+		if (!Is.empty(pendingWrite)) {
+			this._pendingWrites.delete(task.id);
+			globalThis.clearTimeout(pendingWrite.timer);
+			// Only a successful task means the thread wrote what it was holding, so a failure
+			// leaves the counts apart and the next read asks again.
+			pendingWrite.resolve(task.status === TaskStatus.Success);
+		}
+
+		if (task.status === TaskStatus.Failed) {
+			await this._logging?.log({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueTaskFailed",
+				level: "error",
+				data: { taskId: task.id },
+				error: Is.object(task.error) ? BaseError.fromError(task.error) : undefined
+			});
+		}
+	}
+
+	/**
+	 * Build the stored entity for a metric definition.
+	 * @param metric The metric details.
+	 * @returns The entity to store.
+	 * @internal
+	 */
+	private toTelemetryMetric(metric: ITelemetryMetric): TelemetryMetric {
+		return {
+			id: metric.id,
+			label: metric.label,
+			type: metric.type,
+			unit: metric.unit ?? "",
+			description: metric.description ?? "",
+			maxHistory: metric.maxHistory
+		};
+	}
+
+	/**
+	 * Check the metric details are complete and consistent before it is stored.
+	 * @param metric The metric details.
+	 * @throws GeneralError if the maxHistory is not a positive integer.
+	 * @internal
+	 */
+	private validateMetric(metric: ITelemetryMetric): void {
+		Guards.object<ITelemetryMetric>(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric),
+			metric
+		);
+		Guards.stringValue(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
+		Guards.stringValue(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric.label),
+			metric.label
+		);
+		Guards.arrayOneOf(
+			EntityStorageTelemetryConnector.CLASS_NAME,
+			nameof(metric.type),
+			metric.type,
+			Object.values(MetricType)
+		);
+
+		if (Is.notEmpty(metric.description)) {
+			Guards.string(
+				EntityStorageTelemetryConnector.CLASS_NAME,
+				nameof(metric.description),
+				metric.description
+			);
+		}
+		if (Is.notEmpty(metric.unit)) {
+			Guards.string(EntityStorageTelemetryConnector.CLASS_NAME, nameof(metric.unit), metric.unit);
+		}
+		if (Is.notEmpty(metric.maxHistory)) {
+			if (!Is.integer(metric.maxHistory) || metric.maxHistory <= 0) {
+				throw new GeneralError(
+					EntityStorageTelemetryConnector.CLASS_NAME,
+					"maxHistoryMustBePositiveInteger"
+				);
+			}
+		}
+	}
+
+	/**
+	 * Check the operation is valid for the metric type before it is handed to the background
+	 * thread, so the caller still sees an invalid operation as an error.
+	 * @param metricType The type of the metric.
+	 * @param value The value for the add operation.
+	 * @throws GeneralError if the operation cannot be applied to the metric type.
+	 * @internal
+	 */
+	private validateOperation(metricType: MetricType, value: MetricCounterOperation | number): void {
+		if (metricType === MetricType.Counter) {
+			if (value !== MetricCounterOperation.Increment && !(Is.integer(value) && value > 0)) {
+				throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "counterIncOnly");
+			}
+		} else if (metricType === MetricType.IncDecCounter) {
+			if (
+				value !== MetricCounterOperation.Increment &&
+				value !== MetricCounterOperation.Decrement &&
+				!Is.integer(value)
+			) {
+				throw new GeneralError(
+					EntityStorageTelemetryConnector.CLASS_NAME,
+					"upDownCounterIncOrDecOnly"
+				);
+			}
+		} else if (!Is.number(value)) {
+			throw new GeneralError(EntityStorageTelemetryConnector.CLASS_NAME, "gaugeNoIncDec");
+		}
+	}
+
+	/**
+	 * Build the partition key used for the metric definition cache.
 	 * Only the node and tenant ids partition the storage, so the key is built from those two
 	 * directly rather than canonicalising the whole context object on every metric write.
 	 * @param contextIds The context ids to derive the key from.
@@ -1019,7 +1197,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 	/**
 	 * Capture the partition keys of the ambient context ids. Other keys (organization, user,
-	 * per-request ids) vary within a partition and would split counter chaining and the caches.
+	 * per-request ids) vary within a partition and would split the definition cache and the
+	 * background thread batch groups.
 	 * @returns The partition context ids from the ambient context.
 	 * @internal
 	 */
@@ -1029,201 +1208,5 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			[ContextIdKeys.Node]: contextIds?.[ContextIdKeys.Node] ?? "",
 			[ContextIdKeys.Tenant]: contextIds?.[ContextIdKeys.Tenant] ?? ""
 		};
-	}
-
-	/**
-	 * Store the last computed value for a metric, preserving any tracked history ids and moving
-	 * the key to the most recently written position for pruning.
-	 * @param metricKey The partition and metric key.
-	 * @param ts The timestamp of the value.
-	 * @param value The computed value.
-	 * @internal
-	 */
-	private recordLastValue(metricKey: string, ts: number, value: number): void {
-		const accessed = Date.now();
-		const tracked = this._lastValue.get(metricKey);
-		if (Is.empty(tracked)) {
-			this._lastValue.set(metricKey, { ts, value, accessed });
-		} else {
-			tracked.ts = ts;
-			tracked.value = value;
-			tracked.accessed = accessed;
-			this._lastValue.delete(metricKey);
-			this._lastValue.set(metricKey, tracked);
-		}
-	}
-
-	/**
-	 * Evict the least recently written entries once the last value cache exceeds its capacity.
-	 * Keys with entries still waiting in the batch cache are never evicted, as re-reading them from
-	 * storage would miss the rows still waiting to be written and restart the counter chain.
-	 * @internal
-	 */
-	private pruneLastValues(): void {
-		const now = Date.now();
-		const sweepIntervalMs = Math.min(
-			EntityStorageTelemetryConnector._LAST_VALUE_SWEEP_INTERVAL_MS,
-			this._lastValueCacheTtiMs
-		);
-		const isExpiring =
-			this._lastValueCacheTtiMs > 0 && now - this._lastValueSweepMs >= sweepIntervalMs;
-
-		let excess =
-			this._lastValueCacheCapacity > 0 ? this._lastValue.size - this._lastValueCacheCapacity : 0;
-
-		if (!isExpiring && excess <= 0) {
-			return;
-		}
-
-		if (isExpiring) {
-			this._lastValueSweepMs = now;
-		}
-
-		const pendingKeys = new Set<string>();
-		for (const entry of this._batchCache) {
-			pendingKeys.add(this.contextKey(entry.contextIds ?? {}, entry.entity.metricId));
-		}
-
-		for (const [key, tracked] of this._lastValue) {
-			const isIdle = isExpiring && now - tracked.accessed >= this._lastValueCacheTtiMs;
-			if (!pendingKeys.has(key) && (isIdle || excess > 0)) {
-				this.deleteLastValue(key);
-				excess--;
-			}
-		}
-	}
-
-	/**
-	 * Drop a metric from the last value cache, releasing any tracked ids from the budget.
-	 * @param metricKey The partition and metric key.
-	 * @internal
-	 */
-	private deleteLastValue(metricKey: string): void {
-		const tracked = this._lastValue.get(metricKey);
-		if (Is.notEmpty(tracked)) {
-			this._trackedHistoryCount -= tracked.historyIds?.length ?? 0;
-			this._lastValue.delete(metricKey);
-		}
-	}
-
-	/**
-	 * Is there room in the tracked history budget for more value ids.
-	 * @param additional The number of ids about to be tracked.
-	 * @returns True when the ids fit within the budget.
-	 * @internal
-	 */
-	private canTrackHistory(additional: number): boolean {
-		return (
-			this._trackedHistoryBudget <= 0 ||
-			this._trackedHistoryCount + additional <= this._trackedHistoryBudget
-		);
-	}
-
-	/**
-	 * Replace the tracked value ids for a metric, keeping the global tracked id count in step.
-	 * @param tracked The cached metric state to update.
-	 * @param historyIds The ids to track, or undefined to stop tracking the metric.
-	 * @internal
-	 */
-	private setTrackedHistory(tracked: ILastMetricValue, historyIds?: string[]): void {
-		this._trackedHistoryCount -= tracked.historyIds?.length ?? 0;
-		tracked.historyIds = historyIds;
-		this._trackedHistoryCount += historyIds?.length ?? 0;
-	}
-
-	/**
-	 * Delete the oldest values for a metric that exceed its maxHistory cap.
-	 * The retained ids are tracked in memory, so after the first trim for a metric no storage read
-	 * is needed; caps above the tracking limit always scan.
-	 * @param metricKey The partition and metric key the tracked ids are held against.
-	 * @param metricId The metric id.
-	 * @param maxHistory The maximum number of values to retain.
-	 * @param addedIds The ids written since the previous trim, in ascending timestamp order.
-	 * @internal
-	 */
-	private async trimMetricHistory(
-		metricKey: string,
-		metricId: string,
-		maxHistory: number,
-		addedIds: string[]
-	): Promise<void> {
-		const tracked = this._lastValue.get(metricKey);
-		const isTrackable = this._maxTrackedHistory > 0 && maxHistory <= this._maxTrackedHistory;
-
-		if (isTrackable && Is.notEmpty(tracked) && Is.array<string>(tracked.historyIds)) {
-			const trackedIds = tracked.historyIds;
-			trackedIds.push(...addedIds);
-			this._trackedHistoryCount += addedIds.length;
-
-			const trackedExcess = trackedIds.length - maxHistory;
-			if (trackedExcess > 0) {
-				const removedIds = trackedIds.splice(0, trackedExcess);
-				this._trackedHistoryCount -= removedIds.length;
-				await this._metricValueStorage.removeBatch(removedIds);
-			}
-
-			// A metric whose cap was raised can outgrow the budget; drop it back to scanning.
-			if (!this.canTrackHistory(0)) {
-				this.setTrackedHistory(tracked, undefined);
-			}
-			return;
-		}
-
-		// Read the oldest rows a window at a time rather than buffering the whole history, so the
-		// memory used is bounded by the retention cap and not by how large the table has grown.
-		const windowSize = maxHistory + EntityStorageTelemetryConnector._TRIM_PAGE_SIZE;
-		let retainedIds: string[] = [];
-		let isTrimmed = false;
-		while (!isTrimmed) {
-			const page = await this._metricValueStorage.query(
-				{ property: "metricId", comparison: ComparisonOperator.Equals, value: metricId },
-				[{ property: "ts", sortDirection: SortDirection.Ascending }],
-				["id"],
-				undefined,
-				windowSize
-			);
-			const windowIds = page.entities.map(e => e.id as string);
-
-			if (windowIds.length < windowSize) {
-				const excess = windowIds.length - maxHistory;
-				if (excess > 0) {
-					await this._metricValueStorage.removeBatch(windowIds.splice(0, excess));
-				}
-				retainedIds = windowIds;
-				isTrimmed = true;
-			} else {
-				// A full window means more rows follow, so its oldest page is outside the cap.
-				await this._metricValueStorage.removeBatch(
-					windowIds.slice(0, EntityStorageTelemetryConnector._TRIM_PAGE_SIZE)
-				);
-			}
-		}
-
-		if (isTrackable && Is.notEmpty(tracked) && this.canTrackHistory(retainedIds.length)) {
-			this.setTrackedHistory(tracked, retainedIds);
-		}
-	}
-
-	/**
-	 * Start the interval timer if batchIntervalMs is configured and the connector is running.
-	 * @internal
-	 */
-	private startTimer(): void {
-		if (!Is.empty(this._batchIntervalMs) && Is.empty(this._batchTimer) && this._started) {
-			this._batchTimer = globalThis.setTimeout(async () => {
-				await this.flush();
-			}, this._batchIntervalMs);
-		}
-	}
-
-	/**
-	 * Stop the interval timer if it is running.
-	 * @internal
-	 */
-	private stopTimer(): void {
-		if (!Is.empty(this._batchTimer)) {
-			globalThis.clearTimeout(this._batchTimer);
-			this._batchTimer = undefined;
-		}
 	}
 }

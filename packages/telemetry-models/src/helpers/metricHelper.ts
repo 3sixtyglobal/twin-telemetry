@@ -3,6 +3,7 @@
 import { AlreadyExistsError, BaseError, Is } from "@twin.org/core";
 import type { ITelemetryComponent } from "../models/ITelemetryComponent.js";
 import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
+import type { ITelemetryMetricValueEntry } from "../models/ITelemetryMetricValueEntry.js";
 import { MetricCounterOperation } from "../models/metricCounterOperation.js";
 
 /**
@@ -11,6 +12,7 @@ import { MetricCounterOperation } from "../models/metricCounterOperation.js";
 export class MetricHelper {
 	/**
 	 * Create multiple metrics if they don't already exist, swallowing any already exists errors.
+	 * A convenience wrapper over createMetric for callers that always have a list.
 	 * @param telemetryComponent The telemetry component to use for creating the metrics.
 	 * @param metrics The telemetry metrics to create.
 	 * @returns A promise that resolves when all metrics have been created or confirmed to exist.
@@ -19,22 +21,20 @@ export class MetricHelper {
 		telemetryComponent: ITelemetryComponent | undefined,
 		metrics: ITelemetryMetric[]
 	): Promise<void> {
-		if (!Is.undefined(telemetryComponent)) {
-			for (const metric of metrics) {
-				await MetricHelper.createMetric(telemetryComponent, metric);
-			}
+		if (Is.arrayValue(metrics)) {
+			await MetricHelper.createMetric(telemetryComponent, metrics);
 		}
 	}
 
 	/**
-	 * Create a metric if it doesn't already exist, swallowing any already exists errors.
-	 * @param telemetryComponent The telemetry component to use for creating the metric.
-	 * @param metric The telemetry metric to create.
-	 * @returns A promise that resolves when the metric has been created or confirmed to exist.
+	 * Create one or more metrics if they don't already exist, swallowing any already exists errors.
+	 * @param telemetryComponent The telemetry component to use for creating the metrics.
+	 * @param metric The telemetry metric to create, or the metrics to create.
+	 * @returns A promise that resolves when the metrics have been created or confirmed to exist.
 	 */
 	public static async createMetric(
 		telemetryComponent: ITelemetryComponent | undefined,
-		metric: ITelemetryMetric
+		metric: ITelemetryMetric | ITelemetryMetric[]
 	): Promise<void> {
 		if (!Is.undefined(telemetryComponent)) {
 			try {
@@ -117,6 +117,31 @@ export class MetricHelper {
 		if (!Is.undefined(telemetryComponent)) {
 			try {
 				await telemetryComponent.addMetricValue(id, value, customData);
+			} catch (err) {
+				// This method is designed to swallow any errors from the telemetry component
+				// So it can safely be called without interrupting any external flows.
+				await MetricHelper.notifyError(onError, err);
+			}
+		}
+	}
+
+	/**
+	 * Set several metric values at once, swallowing any telemetry errors.
+	 * Components which support it record the whole set in one operation, which for a persisted
+	 * connector is a single write rather than one per value.
+	 * @param telemetryComponent The telemetry component to use for setting the metric values.
+	 * @param values The metric values to set.
+	 * @param onError Optional callback invoked with the swallowed error, for callers that want visibility.
+	 * @returns A promise that resolves when the values have been recorded or the error swallowed.
+	 */
+	public static async metricValues(
+		telemetryComponent: ITelemetryComponent | undefined,
+		values: ITelemetryMetricValueEntry[],
+		onError?: (err: unknown) => Promise<void> | void
+	): Promise<void> {
+		if (!Is.undefined(telemetryComponent) && Is.arrayValue(values)) {
+			try {
+				await telemetryComponent.addMetricValues(values);
 			} catch (err) {
 				// This method is designed to swallow any errors from the telemetry component
 				// So it can safely be called without interrupting any external flows.

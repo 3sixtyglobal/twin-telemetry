@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0.
 import type { IPlatformComponent } from "@twin.org/api-models";
 import { ComponentFactory, GuardError, ValidationError } from "@twin.org/core";
-import { MetricsProducerFactory, type IMetricsProducer } from "@twin.org/telemetry-models";
+import {
+	MetricsProducerFactory,
+	type IMetricsProducer,
+	type ITelemetryComponent,
+	type ITelemetryMetricValueEntry
+} from "@twin.org/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
 
 const DEFAULT_PLATFORM_TYPE = "platform";
@@ -12,7 +17,7 @@ function makeProducer(overrides: Partial<IMetricsProducer> = {}): IMetricsProduc
 	return {
 		className: () => "mock",
 		register: async () => {},
-		collect: async () => {},
+		collect: async () => [],
 		...overrides
 	};
 }
@@ -26,7 +31,7 @@ function makePlatformComponent(
 		isMultiTenant: () => isMultiTenant,
 		execute,
 		getLocalOriginContext: async () => undefined
-	} as unknown as IPlatformComponent;
+	};
 }
 
 function makeSingleTenantPassthrough(): IPlatformComponent {
@@ -49,6 +54,74 @@ describe("MetricsCollectorService", () => {
 		try {
 			ComponentFactory.unregister(CUSTOM_PLATFORM_TYPE);
 		} catch {}
+	});
+
+	describe("tick", () => {
+		test("records the values from every producer in one call", async () => {
+			const batches: ITelemetryMetricValueEntry[][] = [];
+			const telemetry = {
+				className: () => "mock-telemetry",
+				addMetricValue: async () => "v",
+				addMetricValues: async (values: ITelemetryMetricValueEntry[]) => {
+					batches.push(values);
+					return values.map(() => "v");
+				}
+			} as unknown as ITelemetryComponent;
+			ComponentFactory.register("telemetry", () => telemetry);
+
+			MetricsProducerFactory.register("a", () =>
+				makeProducer({ collect: async () => [{ id: "a1", value: 1 }] })
+			);
+			MetricsProducerFactory.register("b", () =>
+				makeProducer({
+					collect: async () => [
+						{ id: "b1", value: 2 },
+						{ id: "b2", value: 3 }
+					]
+				})
+			);
+
+			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
+			await service.tick();
+			await service.stop();
+			ComponentFactory.unregister("telemetry");
+
+			// One call for the whole cycle, not one per producer.
+			expect(batches).toHaveLength(1);
+			expect(batches[0].map(entry => entry.id)).toEqual(["a1", "b1", "b2"]);
+		});
+
+		test("records the other producers when one of them fails", async () => {
+			const batches: ITelemetryMetricValueEntry[][] = [];
+			const telemetry = {
+				className: () => "mock-telemetry",
+				addMetricValue: async () => "v",
+				addMetricValues: async (values: ITelemetryMetricValueEntry[]) => {
+					batches.push(values);
+					return values.map(() => "v");
+				}
+			} as unknown as ITelemetryComponent;
+			ComponentFactory.register("telemetry", () => telemetry);
+
+			MetricsProducerFactory.register("bad", () =>
+				makeProducer({
+					collect: async () => {
+						throw new Error("producer failed");
+					}
+				})
+			);
+			MetricsProducerFactory.register("good", () =>
+				makeProducer({ collect: async () => [{ id: "g1", value: 1 }] })
+			);
+
+			const service = new MetricsCollectorService({ config: { intervalMs: 60_000 } });
+			await service.tick();
+			await service.stop();
+			ComponentFactory.unregister("telemetry");
+
+			expect(batches).toHaveLength(1);
+			expect(batches[0].map(entry => entry.id)).toEqual(["g1"]);
+		});
 	});
 
 	describe("constructor", () => {
@@ -139,6 +212,7 @@ describe("MetricsCollectorService", () => {
 					},
 					collect: async () => {
 						instanceIds.push(`collect:${id}`);
+						return [];
 					}
 				});
 			});
@@ -226,6 +300,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collected.push("p1");
+							return [];
 						}
 					})
 				);
@@ -233,6 +308,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collected.push("p2");
+							return [];
 						}
 					})
 				);
@@ -257,6 +333,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collected.push("good");
+							return [];
 						}
 					})
 				);
@@ -283,6 +360,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collectCalls.push("p1");
+							return [];
 						}
 					})
 				);
@@ -309,6 +387,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collectCalls.push("p1");
+							return [];
 						}
 					})
 				);
@@ -342,6 +421,7 @@ describe("MetricsCollectorService", () => {
 					makeProducer({
 						collect: async () => {
 							collected.push("good");
+							return [];
 						}
 					})
 				);

@@ -7,7 +7,8 @@ import {
 	MetricHelper,
 	MetricType,
 	type IMetricsProducer,
-	type ITelemetryComponent
+	type ITelemetryComponent,
+	type ITelemetryMetricValueEntry
 } from "@twin.org/telemetry-models";
 import type { ISystemMetricsProducerConstructorOptions } from "./models/ISystemMetricsProducerConstructorOptions.js";
 
@@ -102,10 +103,10 @@ export class SystemMetricsProducer implements IMetricsProducer {
 	}
 
 	/**
-	 * Collect and push current system metric values.
-	 * @returns A promise that resolves when all system metric values have been recorded.
+	 * Read the current system metric values.
+	 * @returns The current values for the system metrics.
 	 */
-	public async collect(): Promise<void> {
+	public async collect(): Promise<ITelemetryMetricValueEntry[]> {
 		const currCpuTimes = os.cpus().map(c => c.times);
 		const usages = currCpuTimes.map((curr, i) => {
 			const prev = this._prevCpuTimes[i];
@@ -132,23 +133,13 @@ export class SystemMetricsProducer implements IMetricsProducer {
 		const free = os.freemem();
 		const used = total - free;
 
-		await MetricHelper.metricValue(
-			this._telemetry,
-			"system_cpu_usage_percent",
-			Number(avgCpu.toFixed(2))
-		);
-		await MetricHelper.metricValue(this._telemetry, "system_memory_total_bytes", total);
-		await MetricHelper.metricValue(this._telemetry, "system_memory_used_bytes", used);
-		await MetricHelper.metricValue(this._telemetry, "system_memory_free_bytes", free);
-		await MetricHelper.metricValue(
-			this._telemetry,
-			"system_memory_usage_percent",
-			Number(((100 * used) / total).toFixed(2))
-		);
-		await MetricHelper.metricValue(
-			this._telemetry,
-			"system_uptime_seconds",
-			Number(os.uptime().toFixed(1))
-		);
+		return [
+			{ id: "system_cpu_usage_percent", value: Number(avgCpu.toFixed(2)) },
+			{ id: "system_memory_total_bytes", value: total },
+			{ id: "system_memory_used_bytes", value: used },
+			{ id: "system_memory_free_bytes", value: free },
+			{ id: "system_memory_usage_percent", value: Number(((100 * used) / total).toFixed(2)) },
+			{ id: "system_uptime_seconds", value: Number(os.uptime().toFixed(1)) }
+		];
 	}
 }

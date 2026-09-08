@@ -7,6 +7,7 @@ import type { IMultiTelemetryConnectorConstructorOptions } from "../models/IMult
 import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";
 import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
 import type { ITelemetryMetricValue } from "../models/ITelemetryMetricValue.js";
+import type { ITelemetryMetricValueEntry } from "../models/ITelemetryMetricValueEntry.js";
 import type { MetricCounterOperation } from "../models/metricCounterOperation.js";
 import { MetricType } from "../models/metricType.js";
 
@@ -55,20 +56,24 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Create a new metric.
-	 * @param metric The metric details.
-	 * @returns A promise that resolves when the metric has been created on all connectors.
+	 * Create one or more metrics.
+	 * @param metric The metric details, or the details of several metrics.
+	 * @returns A promise that resolves when the metrics have been created on all connectors.
 	 */
-	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(metric), metric);
-		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.id), metric.id);
-		Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(metric.label), metric.label);
-		Guards.arrayOneOf(
-			MultiTelemetryConnector.CLASS_NAME,
-			nameof(metric.type),
-			metric.type,
-			Object.values(MetricType)
-		);
+	public async createMetric(metric: ITelemetryMetric | ITelemetryMetric[]): Promise<void> {
+		const metrics = Is.array<ITelemetryMetric>(metric) ? metric : [metric];
+
+		for (const entry of metrics) {
+			Guards.object<ITelemetryMetric>(MultiTelemetryConnector.CLASS_NAME, nameof(entry), entry);
+			Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(entry.id), entry.id);
+			Guards.stringValue(MultiTelemetryConnector.CLASS_NAME, nameof(entry.label), entry.label);
+			Guards.arrayOneOf(
+				MultiTelemetryConnector.CLASS_NAME,
+				nameof(entry.type),
+				entry.type,
+				Object.values(MetricType)
+			);
+		}
 
 		await Promise.allSettled(
 			this._telemetryConnectors.map(async telemetryConnector =>
@@ -162,6 +167,32 @@ export class MultiTelemetryConnector implements ITelemetryConnector {
 		}
 		throw new NotSupportedError(MultiTelemetryConnector.CLASS_NAME, "notSupported", {
 			methodName: "addMetricValue"
+		});
+	}
+
+	/**
+	 * Add multiple metric values.
+	 * @param values The metric values to add.
+	 * @returns The created metric value ids, in the order the values were supplied.
+	 */
+	public async addMetricValues(values: ITelemetryMetricValueEntry[]): Promise<string[]> {
+		Guards.array<ITelemetryMetricValueEntry>(
+			MultiTelemetryConnector.CLASS_NAME,
+			nameof(values),
+			values
+		);
+
+		const results = await Promise.allSettled(
+			this._telemetryConnectors.map(async telemetryConnector =>
+				telemetryConnector.addMetricValues(values)
+			)
+		);
+
+		if (results[0]?.status === "fulfilled") {
+			return results[0].value;
+		}
+		throw new NotSupportedError(MultiTelemetryConnector.CLASS_NAME, "notSupported", {
+			methodName: "addMetricValues"
 		});
 	}
 

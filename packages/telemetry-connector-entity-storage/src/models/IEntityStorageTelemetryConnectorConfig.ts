@@ -6,33 +6,49 @@
  */
 export interface IEntityStorageTelemetryConnectorConfig {
 	/**
-	 * The timeout in milliseconds for acquiring the metric write mutex lock.
+	 * The timeout in milliseconds for acquiring the metric value write lock on the background thread.
 	 */
 	mutexTimeoutMs?: number;
 
 	/**
-	 * Flush the cache when it reaches this many entries; values &lt;= 1 disable size-based flushing.
+	 * The background thread writes the pending values when it has this many entries;
+	 * values &lt;= 1 disable size based writing.
 	 * @default 10.
 	 */
 	batchSize?: number;
 
 	/**
-	 * Flush the cache every this many milliseconds; values &lt;= 0 disable timer-based flushing.
+	 * The background thread writes the pending values every this many milliseconds;
+	 * values &lt;= 0 disable timer based writing.
 	 * @default 5000.
 	 */
 	batchIntervalMs?: number;
 
 	/**
-	 * Maximum entries to retain in the cache if a flush fails and entries are re-queued.
+	 * Maximum entries the background thread retains if a write fails and entries are re-queued.
 	 * 0 means unlimited.
 	 * @default 1000.
 	 */
 	maxCacheSize?: number;
 
 	/**
+	 * How long in milliseconds to wait for the background thread to confirm a flush before
+	 * continuing without it.
+	 * @default 30000.
+	 */
+	flushTimeoutMs?: number;
+
+	/**
+	 * Hold values for this many milliseconds so several share a single background task; values
+	 * &lt;= 0 create a task per value. Adds up to this much latency before a value reaches the
+	 * thread, in exchange for far fewer task queue writes and no task write on the caller's path.
+	 * @default 100.
+	 */
+	taskCoalesceMs?: number;
+
+	/**
 	 * Maximum number of metric definitions held in the in-memory definition cache.
-	 * Keyed the same way as the last value cache, so it should not be set lower than
-	 * lastValueCacheCapacity or writes will read definitions from storage.
+	 * Definitions are immutable once registered, so they are safe to cache across nodes.
 	 * @default 1000.
 	 */
 	metricDefinitionCacheCapacity?: number;
@@ -44,30 +60,8 @@ export interface IEntityStorageTelemetryConnectorConfig {
 	metricDefinitionCacheTtiMs?: number;
 
 	/**
-	 * Maximum number of metrics whose last value is held in memory; values &lt;= 0 mean unlimited.
-	 * Evicting an entry only costs a storage read on the next write for that metric.
-	 * @default 1000.
+	 * The URL of the module to use for the metric value background task.
+	 * If not provided, the default telemetryMetricValueTask module will be used.
 	 */
-	lastValueCacheCapacity?: number;
-
-	/**
-	 * Time-to-idle in milliseconds for cached last values; values &lt;= 0 disable expiry.
-	 * Releases memory held for metrics that have stopped being written to.
-	 * @default 3600000.
-	 */
-	lastValueCacheTtiMs?: number;
-
-	/**
-	 * Largest maxHistory for which the retained value ids are held in memory rather than read from
-	 * storage on every trim. Metrics with a larger cap fall back to scanning.
-	 * @default 1000.
-	 */
-	maxTrackedHistory?: number;
-
-	/**
-	 * Total number of retained value ids held across all metrics; values &lt;= 0 mean unlimited.
-	 * Bounds the memory used by history tracking independently of how many metrics are cached.
-	 * @default 50000.
-	 */
-	trackedHistoryBudget?: number;
+	overrideMetricValueTaskHandler?: string;
 }

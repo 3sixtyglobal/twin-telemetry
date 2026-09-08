@@ -8,7 +8,18 @@
 			"upDownCounterIncOrDecOnly": "An up/down counter metric can only be incremented, decremented or adjusted with an integer",
 			"gaugeNoIncDec": "A gauge can not be incremented or decremented",
 			"maxHistoryMustBePositiveInteger": "The maxHistory option must be a positive integer",
-			"flushFailed": "Failed to flush metric values to storage"
+			"metricValueTaskFailed": "The metric value background task failed \"{taskId}\"",
+			"backgroundTaskComponentMissing": "The metric values cannot be written as no background task component is available"
+		},
+		"metricValueWriter": {
+			"flushFailed": "Failed to flush metric values to storage",
+			"invalidMetricOperation": "The operation \"{operation}\" is not valid for metric \"{id}\" of type \"{type}\"",
+			"trimFailed": "Failed to trim the metric history to its retention cap"
+		}
+	},
+	"warn": {
+		"entityStorageTelemetryConnector": {
+			"flushTimeout": "The background thread did not confirm the flush within \"{timeoutMs}\" ms for task \"{taskId}\""
 		}
 	},
 	"info": {
@@ -16,7 +27,9 @@
 			"metricCreated": "The metric was created \"{id}\" with type \"type\" and label \"{label}\"",
 			"metricUpdated": "The metric was updated \"{id}\" with type \"type\" and label \"{label}\"",
 			"metricRemoved": "The metric was removed \"{id}\"",
-			"metricValueCreated": "The metric value was created for \"{id}\" with value \"{value}\""
+			"metricValueCreated": "The metric value was queued for \"{id}\"",
+			"metricValuesCreated": "\"{count}\" metric values were queued",
+			"metricsCreated": "\"{count}\" metrics were created"
 		}
 	}
 }

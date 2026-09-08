@@ -3,20 +3,27 @@
 import type { IBaseRoute, IHttpServerRequest } from "@twin.org/api-models";
 import { ComponentFactory } from "@twin.org/core";
 import type { ILogEntry, ILoggingComponent } from "@twin.org/logging-models";
-import { MetricCounterOperation, type ITelemetryComponent } from "@twin.org/telemetry-models";
+import {
+	MetricCounterOperation,
+	type ITelemetryComponent,
+	type ITelemetryMetric
+} from "@twin.org/telemetry-models";
 import { HttpMethod, HttpStatusCode } from "@twin.org/web";
 import { MetricsRouteProcessor } from "../src/metricsRouteProcessor.js";
 import { TelemetryMetricIds } from "../src/models/telemetryMetricIds.js";
 
 describe("MetricsRouteProcessor", () => {
 	let capturedCalls: { id: string; value: unknown; customData?: { [key: string]: unknown } }[];
+	let capturedMetrics: ITelemetryMetric[];
 	let capturedLogs: ILogEntry[];
 	let processor: MetricsRouteProcessor;
 
 	function makeTelemetry(): ITelemetryComponent {
 		return {
 			className: () => "mockTelemetry",
-			createMetric: async () => {},
+			createMetric: async (metric: ITelemetryMetric | ITelemetryMetric[]) => {
+				capturedMetrics.push(...(Array.isArray(metric) ? metric : [metric]));
+			},
 			addMetricValue: async (
 				id: string,
 				value: unknown,
@@ -47,11 +54,43 @@ describe("MetricsRouteProcessor", () => {
 
 	beforeEach(async () => {
 		capturedCalls = [];
+		capturedMetrics = [];
 		capturedLogs = [];
 		ComponentFactory.register("telemetry", () => makeTelemetry());
 		ComponentFactory.register("logging", () => makeLogging());
 		processor = new MetricsRouteProcessor({ telemetryComponentType: "telemetry" });
 		await processor.start();
+	});
+
+	describe("metric registration", () => {
+		test("caps the request history so the table stays bounded", async () => {
+			// A value is recorded per request, so an uncapped history grows without bound.
+			expect(capturedMetrics).toHaveLength(1);
+			expect(capturedMetrics[0].id).toEqual(TelemetryMetricIds.RestRequests);
+			expect(capturedMetrics[0].maxHistory).toEqual(MetricsRouteProcessor.DEFAULT_MAX_HISTORY);
+		});
+
+		test("uses the configured history cap", async () => {
+			capturedMetrics = [];
+			const capped = new MetricsRouteProcessor({
+				telemetryComponentType: "telemetry",
+				config: { maxHistory: 25 }
+			});
+			await capped.start();
+
+			expect(capturedMetrics[0].maxHistory).toEqual(25);
+		});
+
+		test("retains everything when the cap is disabled", async () => {
+			capturedMetrics = [];
+			const uncapped = new MetricsRouteProcessor({
+				telemetryComponentType: "telemetry",
+				config: { maxHistory: 0 }
+			});
+			await uncapped.start();
+
+			expect(capturedMetrics[0].maxHistory).toBeUndefined();
+		});
 	});
 
 	describe("counter labelling", () => {

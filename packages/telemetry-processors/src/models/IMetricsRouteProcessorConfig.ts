@@ -10,4 +10,12 @@ export interface IMetricsRouteProcessorConfig {
 	 * Useful for suppressing noise from health-check or metrics-scrape endpoints.
 	 */
 	excludePaths?: string[];
+
+	/**
+	 * Maximum number of request values to retain. A value is recorded for every request that
+	 * is not excluded, so without a cap the history grows for as long as the node serves
+	 * traffic; values &lt;= 0 retain everything.
+	 * @default 10000.
+	 */
+	maxHistory?: number;
 }

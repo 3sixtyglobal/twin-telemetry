@@ -57,8 +57,22 @@ describe("TelemetryRestClient", () => {
 				client.createMetric(undefined as unknown as ITelemetryMetric)
 			).rejects.toMatchObject({
 				name: GuardError.CLASS_NAME,
-				message: "guard.objectUndefined"
+				message: "guard.undefined"
 			});
+		});
+
+		test("sends several metrics in a single request", async () => {
+			fetchMock.mockResolvedValueOnce(createdResponse("metric-001"));
+
+			await client.createMetric([TEST_METRIC, { ...TEST_METRIC, id: "metric-002" }]);
+
+			// The route accepts an array, so a batch is one request rather than one per metric.
+			expect(fetchMock).toHaveBeenCalledOnce();
+			const [url, options] = fetchMock.mock.calls[0];
+			expect(url).toBe(`${ENDPOINT}/${PREFIX}/metric`);
+			expect(options.method).toBe(HttpMethod.POST);
+			const body = JSON.parse(options.body);
+			expect(body.map((entry: { id: string }) => entry.id)).toEqual(["metric-001", "metric-002"]);
 		});
 
 		test("sends POST to /telemetry/metric", async () => {

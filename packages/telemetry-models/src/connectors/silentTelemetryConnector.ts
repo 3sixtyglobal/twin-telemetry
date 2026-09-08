@@ -3,6 +3,7 @@
 import { nameof } from "@twin.org/nameof";
 import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";
 import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
+import type { ITelemetryMetricValueEntry } from "../models/ITelemetryMetricValueEntry.js";
 import type { MetricCounterOperation } from "../models/metricCounterOperation.js";
 
 /**
@@ -28,11 +29,11 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Create a new metric.
-	 * @param metric The metric details.
+	 * Create one or more metrics.
+	 * @param metric The metric details, or the details of several metrics.
 	 * @returns A promise that resolves when the metric has been created.
 	 */
-	public async createMetric(metric: ITelemetryMetric): Promise<void> {}
+	public async createMetric(metric: ITelemetryMetric | ITelemetryMetric[]): Promise<void> {}
 
 	/**
 	 * Update metric.
@@ -54,6 +55,15 @@ export class SilentTelemetryConnector implements ITelemetryConnector {
 		customData?: { [key: string]: unknown }
 	): Promise<string> {
 		return "";
+	}
+
+	/**
+	 * Add multiple metric values.
+	 * @param values The metric values to add.
+	 * @returns The created metric value ids.
+	 */
+	public async addMetricValues(values: ITelemetryMetricValueEntry[]): Promise<string[]> {
+		return values.map(() => "");
 	}
 
 	/**

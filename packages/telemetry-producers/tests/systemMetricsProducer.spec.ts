@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { ComponentFactory } from "@twin.org/core";
-import type { ITelemetryComponent } from "@twin.org/telemetry-models";
+import type { ITelemetryComponent, ITelemetryMetricValueEntry } from "@twin.org/telemetry-models";
 import { SystemMetricsProducer } from "../src/systemMetricsProducer.js";
 
 const { mockCpus, mockTotalmem, mockFreemem, mockUptime } = vi.hoisted(() => ({
@@ -35,26 +35,35 @@ function defaultCpu(): {
 	return [{ model: "", speed: 0, times: { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 } }];
 }
 
+/**
+ * Index the collected values by metric id.
+ * @param values The values returned by the producer.
+ * @returns The values keyed by metric id.
+ */
+function toValueMap(values: ITelemetryMetricValueEntry[]): { [key: string]: number } {
+	const map: { [key: string]: number } = {};
+	for (const entry of values) {
+		map[entry.id] = entry.value as number;
+	}
+	return map;
+}
+
 function makeTelemetry(): {
 	telemetry: ITelemetryComponent;
 	registered: string[];
-	emittedValues: { [key: string]: number };
 } {
 	const registered: string[] = [];
-	const emittedValues: { [key: string]: number } = {};
 	const telemetry: ITelemetryComponent = {
 		className: () => "mock",
 		start: async () => {},
 		stop: async () => {},
 		createMetric: async metric => {
-			registered.push(metric.id);
+			registered.push(...(Array.isArray(metric) ? metric : [metric]).map(entry => entry.id));
 		},
 		getMetric: async () => ({ metric: {} as never, value: {} as never }),
 		updateMetric: async () => {},
-		addMetricValue: async (id, value) => {
-			emittedValues[id] = value as number;
-			return "v";
-		},
+		addMetricValue: async () => "v",
+		addMetricValues: async values => values.map(() => "v"),
 		getMetricValue: async (id, valueId) => ({
 			id: valueId,
 			metricId: id,
@@ -65,7 +74,7 @@ function makeTelemetry(): {
 		query: async () => ({ entities: [] }),
 		queryValues: async () => ({ metric: {} as never, entities: [] })
 	};
-	return { telemetry, registered, emittedValues };
+	return { telemetry, registered };
 }
 
 describe("SystemMetricsProducer", () => {
@@ -93,17 +102,17 @@ describe("SystemMetricsProducer", () => {
 	});
 
 	test("collect() emits a value for each metric", async () => {
-		const { telemetry, emittedValues } = makeTelemetry();
+		const { telemetry } = makeTelemetry();
 		ComponentFactory.register("telemetry", () => telemetry);
 		const producer = new SystemMetricsProducer();
-		await producer.collect();
+		const emittedValues = toValueMap(await producer.collect());
 		for (const id of EXPECTED_METRIC_IDS) {
 			expect(Object.keys(emittedValues)).toContain(id);
 		}
 	});
 
 	test("collect() computes CPU delta between ticks", async () => {
-		const { telemetry, emittedValues } = makeTelemetry();
+		const { telemetry } = makeTelemetry();
 		ComponentFactory.register("telemetry", () => telemetry);
 
 		// baseline: all zeros; after interval: user 200ms + idle 800ms = 1000ms total → 20% CPU
@@ -114,14 +123,14 @@ describe("SystemMetricsProducer", () => {
 			.mockReturnValueOnce([{ model: "", speed: 0, times: afterTimes }]); // collect
 
 		const producer = new SystemMetricsProducer();
-		await producer.collect();
+		const emittedValues = toValueMap(await producer.collect());
 
 		// idle=800, total=1000 → idleFraction=0.8 → cpuUsage=(1-0.8)*100=20%
 		expect(emittedValues.system_cpu_usage_percent).toBe(20);
 	});
 
 	test("collect() emits memory values from os", async () => {
-		const { telemetry, emittedValues } = makeTelemetry();
+		const { telemetry } = makeTelemetry();
 		ComponentFactory.register("telemetry", () => telemetry);
 
 		mockTotalmem.mockReturnValue(8_000_000_000);
@@ -129,7 +138,7 @@ describe("SystemMetricsProducer", () => {
 		mockUptime.mockReturnValue(3600);
 
 		const producer = new SystemMetricsProducer();
-		await producer.collect();
+		const emittedValues = toValueMap(await producer.collect());
 
 		expect(emittedValues.system_memory_total_bytes).toBe(8_000_000_000);
 		expect(emittedValues.system_memory_free_bytes).toBe(2_000_000_000);

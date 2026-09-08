@@ -3,6 +3,7 @@
 import type { IComponent } from "@twin.org/core";
 import type { ITelemetryMetric } from "./ITelemetryMetric.js";
 import type { ITelemetryMetricValue } from "./ITelemetryMetricValue.js";
+import type { ITelemetryMetricValueEntry } from "./ITelemetryMetricValueEntry.js";
 import type { MetricCounterOperation } from "./metricCounterOperation.js";
 import type { MetricType } from "./metricType.js";
 
@@ -11,11 +12,14 @@ import type { MetricType } from "./metricType.js";
  */
 export interface ITelemetryComponent extends IComponent {
 	/**
-	 * Create a new metric.
-	 * @param metric The metric details.
-	 * @returns A promise that resolves when the metric has been created.
+	 * Create one or more metrics.
+	 * A single metric fails if it already exists; an array declares the set that should exist,
+	 * creating the ones that are missing and leaving the rest untouched, so implementations
+	 * which persist the definitions can resolve the whole set in one operation.
+	 * @param metric The metric details, or the details of several metrics.
+	 * @returns A promise that resolves when the metrics have been created.
 	 */
-	createMetric(metric: ITelemetryMetric): Promise<void>;
+	createMetric(metric: ITelemetryMetric | ITelemetryMetric[]): Promise<void>;
 
 	/**
 	 * Get the metric details and it's most recent value.
@@ -54,6 +58,14 @@ export interface ITelemetryComponent extends IComponent {
 		value: MetricCounterOperation | number,
 		customData?: { [key: string]: unknown }
 	): Promise<string>;
+
+	/**
+	 * Add multiple metric values, so implementations which persist them can do so in one
+	 * operation instead of one per value.
+	 * @param values The metric values to add.
+	 * @returns The created metric value ids, in the order the values were supplied.
+	 */
+	addMetricValues(values: ITelemetryMetricValueEntry[]): Promise<string[]>;
 
 	/**
 	 * Remove metric.

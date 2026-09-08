@@ -24,6 +24,13 @@ export interface IEntityStorageTelemetryConnectorConstructorOptions {
 	loggingComponentType?: string;
 
 	/**
+	 * The type of the background task component which runs the metric value writes on a
+	 * background thread.
+	 * @default background-task
+	 */
+	backgroundTaskComponentType?: string;
+
+	/**
 	 * The configuration for the connector.
 	 */
 	config?: IEntityStorageTelemetryConnectorConfig;
