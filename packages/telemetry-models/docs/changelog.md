@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.9.3-next.3...telemetry-models-v0.9.3-next.4) (2026-09-08)
+
+
+### Features
+
+* metric values in background ([#118](https://github.com/iotaledger/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/iotaledger/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
+
 ## [0.9.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-models-v0.9.3-next.2...telemetry-models-v0.9.3-next.3) (2026-09-07)
 
 
