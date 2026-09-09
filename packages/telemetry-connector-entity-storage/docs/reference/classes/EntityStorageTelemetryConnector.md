@@ -75,20 +75,37 @@ metrics cached without permanent references.
 
 ### DEFAULT\_TASK\_COALESCE\_MS {#default_task_coalesce_ms}
 
-> `readonly` `static` **DEFAULT\_TASK\_COALESCE\_MS**: `number` = `100`
+> `readonly` `static` **DEFAULT\_TASK\_COALESCE\_MS**: `number` = `1000`
 
 Default time in milliseconds values are held so several share a single background task.
 Keeps the task write off the caller's path, which matters most for the metrics recorded
 on every REST request.
+The window is also what limits how many tasks the connector can produce, as one task
+carries a whole window regardless of how many values it holds. The scheduler moves a
+single task per cycle for a task type, which is of the order of a few per second once
+the task queue is on a database, so the window is set an order of magnitude below that:
+one task per second whatever the metric rate.
 
 ***
 
 ### DEFAULT\_COALESCE\_SIZE {#default_coalesce_size}
 
-> `readonly` `static` **DEFAULT\_COALESCE\_SIZE**: `number` = `100`
+> `readonly` `static` **DEFAULT\_COALESCE\_SIZE**: `number` = `10_000`
 
 Maximum number of values held while coalescing before a task is created regardless of
 how much of the window is left.
+This is a bound on the values held for the window rather than a throughput control; a
+limit low enough to be reached by ordinary traffic would raise the task rate above what
+the scheduler can drain.
+
+***
+
+### DEFAULT\_TASK\_STALL\_TIMEOUT\_MS {#default_task_stall_timeout_ms}
+
+> `readonly` `static` **DEFAULT\_TASK\_STALL\_TIMEOUT\_MS**: `number` = `60_000`
+
+Default time in milliseconds with tasks outstanding and none of them completing before
+the background thread is treated as stalled.
 
 ## Methods
 
