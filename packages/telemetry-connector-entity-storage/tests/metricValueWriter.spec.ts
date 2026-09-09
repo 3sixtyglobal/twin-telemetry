@@ -1,10 +1,11 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { Mutex } from "@twin.org/core";
+import { ComponentFactory, Mutex } from "@twin.org/core";
 import { SortDirection } from "@twin.org/entity";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
+import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
 import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";
@@ -546,5 +547,48 @@ describe("MetricValueWriter", () => {
 
 		lockSpy.mockRestore();
 		await writer.stop();
+	});
+	test("keeps the interval running when a write and its own logging both fail", async () => {
+		// Logging is the last thing a failed write does, and on the worker thread it writes to
+		// storage as well, so it is the realistic way for writePending itself to throw.
+		const failingLogging = {
+			className: () => "FailingLoggingComponent",
+			log: async (): Promise<void> => {
+				throw new Error("logging unavailable");
+			}
+		} as unknown as ILoggingComponent;
+		ComponentFactory.register("failing-logging", () => failingLogging);
+
+		const setBatchSpy = vi
+			.spyOn(telemetryMetricsValueEntityStorage, "setBatch")
+			.mockRejectedValueOnce(new Error("storage unavailable"));
+
+		const writer = new MetricValueWriter();
+		await writer.start({
+			batchSize: 100,
+			batchIntervalMs: 50,
+			loggingComponentType: "failing-logging"
+		});
+
+		await writer.add([buildPayload()]);
+
+		// An unhandled rejection from the interval timer would take the whole worker thread with
+		// it, and a timer left un-armed would end the interval writes for good; the value has to
+		// arrive on a later interval instead.
+		for (
+			let i = 0;
+			i < 40 && ((await telemetryMetricsValueEntityStorage.getStore()) ?? []).length === 0;
+			i++
+		) {
+			await new Promise<void>(resolve => setTimeout(resolve, 100));
+		}
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([1]);
+		expect(setBatchSpy.mock.calls.length).toBeGreaterThan(1);
+
+		setBatchSpy.mockRestore();
+		await writer.stop();
+		ComponentFactory.unregister("failing-logging");
 	});
 });

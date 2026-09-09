@@ -29,7 +29,7 @@ import {
 	EntityStorageConnectorFactory,
 	type IEntityStorageConnector
 } from "@twin.org/entity-storage-models";
-import type { ILoggingComponent } from "@twin.org/logging-models";
+import type { ILogEntry, ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import {
 	type ITelemetryConnector,
@@ -84,14 +84,28 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * Default time in milliseconds values are held so several share a single background task.
 	 * Keeps the task write off the caller's path, which matters most for the metrics recorded
 	 * on every REST request.
+	 * The window is also what limits how many tasks the connector can produce, as one task
+	 * carries a whole window regardless of how many values it holds. The scheduler moves a
+	 * single task per cycle for a task type, which is of the order of a few per second once
+	 * the task queue is on a database, so the window is set an order of magnitude below that:
+	 * one task per second whatever the metric rate.
 	 */
-	public static readonly DEFAULT_TASK_COALESCE_MS: number = 100;
+	public static readonly DEFAULT_TASK_COALESCE_MS: number = 1000;
 
 	/**
 	 * Maximum number of values held while coalescing before a task is created regardless of
 	 * how much of the window is left.
+	 * This is a bound on the values held for the window rather than a throughput control; a
+	 * limit low enough to be reached by ordinary traffic would raise the task rate above what
+	 * the scheduler can drain.
 	 */
-	public static readonly DEFAULT_COALESCE_SIZE: number = 100;
+	public static readonly DEFAULT_COALESCE_SIZE: number = 10_000;
+
+	/**
+	 * Default time in milliseconds with tasks outstanding and none of them completing before
+	 * the background thread is treated as stalled.
+	 */
+	public static readonly DEFAULT_TASK_STALL_TIMEOUT_MS: number = 60_000;
 
 	/**
 	 * Task type identifier for the metric value background task.
@@ -170,6 +184,34 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @internal
 	 */
 	private _coalesceTimer?: ReturnType<typeof setTimeout>;
+
+	/**
+	 * How long in milliseconds with tasks outstanding and none of them completing before the
+	 * background thread is treated as stalled; 0 disables the check.
+	 * @internal
+	 */
+	private readonly _taskStallTimeoutMs: number;
+
+	/**
+	 * Ids of the tasks handed to the background thread which have not yet reported a final
+	 * state, oldest first. Ids only; the values they carry belong to the thread.
+	 * @internal
+	 */
+	private readonly _outstandingTaskIds: Set<string>;
+
+	/**
+	 * The time a task last reached a final state, or the time the first of the outstanding tasks
+	 * was created when none has completed since. A thread which has stopped answering is only
+	 * visible as the absence of this moving on.
+	 * @internal
+	 */
+	private _lastTaskProgress: number;
+
+	/**
+	 * Handle for the stall check timer, present only while tasks are outstanding.
+	 * @internal
+	 */
+	private _stallTimer?: ReturnType<typeof setTimeout>;
 
 	/**
 	 * Number of values handed to the background thread, counted once their task is queued.
@@ -261,8 +303,15 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			EntityStorageTelemetryConnector.DEFAULT_TASK_COALESCE_MS;
 		this._taskCoalesceMs = cfgCoalesceMs > 0 ? cfgCoalesceMs : 0;
 
+		const cfgTaskStallTimeoutMs =
+			Coerce.integer(options?.config?.taskStallTimeoutMs) ??
+			EntityStorageTelemetryConnector.DEFAULT_TASK_STALL_TIMEOUT_MS;
+		this._taskStallTimeoutMs = cfgTaskStallTimeoutMs > 0 ? cfgTaskStallTimeoutMs : 0;
+
 		this._pendingWrites = new Map();
 		this._coalesced = [];
+		this._outstandingTaskIds = new Set();
+		this._lastTaskProgress = 0;
 		this._valuesQueued = 0;
 		this._valuesWritten = 0;
 		this._writeChain = Promise.resolve();
@@ -300,26 +349,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				ttiMs: this._metricDefinitionCacheTtiMs
 			});
 
-			await this._backgroundTaskComponent?.registerHandler<
-				ITelemetryMetricValueTaskPayload,
-				undefined
-			>(
-				EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE,
-				this._metricValueTaskHandler,
-				"telemetryMetricValueTask",
-				async task => this.metricValueTaskStateChanged(task),
-				{
-					// A single long running worker, kept alive by the negative idle shutdown timeout,
-					// so the values it has batched are never split across threads.
-					maxWorkerCount: 1,
-					idleShutdownTimeout: -1,
-					initialiseMethod: "telemetryMetricValueTaskStart",
-					// The writer settings are sent once when the worker starts rather than with
-					// every value.
-					initialiseMethodParams: async () => [this._writerConfig],
-					shutdownMethod: "telemetryMetricValueTaskEnd"
-				}
-			);
+			await this.registerMetricValueHandler();
 		}
 	}
 
@@ -331,10 +361,22 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		this.stopCoalesceTimer();
 
 		// Flush before clearing the started flag, as the background thread is only asked to
-		// write while the connector is running.
-		await this.flush();
+		// write while the connector is running. A failed final write must not abandon the rest
+		// of the teardown, which is what releases the thread and the callers waiting on it.
+		try {
+			await this.flush();
+		} catch (err) {
+			await this.logWithoutThrowing({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "stopFlushFailed",
+				level: "error",
+				error: BaseError.fromError(err)
+			});
+		}
 
 		this._started = false;
+		this.stopStallTimer();
+		this._outstandingTaskIds.clear();
 
 		// unregisterHandler terminates the worker without calling its shutdown method, so the
 		// flush above is what persists anything the thread still had pending.
@@ -828,6 +870,36 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * Register the handler which runs the metric value writes on the background thread.
+	 * Also used to replace a thread which has stopped answering, so the registration is kept in
+	 * one place.
+	 * @returns A promise that resolves when the handler is registered.
+	 * @internal
+	 */
+	private async registerMetricValueHandler(): Promise<void> {
+		await this._backgroundTaskComponent?.registerHandler<
+			ITelemetryMetricValueTaskPayload,
+			undefined
+		>(
+			EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE,
+			this._metricValueTaskHandler,
+			"telemetryMetricValueTask",
+			async task => this.metricValueTaskStateChanged(task),
+			{
+				// A single long running worker, kept alive by the negative idle shutdown timeout,
+				// so the values it has batched are never split across threads.
+				maxWorkerCount: 1,
+				idleShutdownTimeout: -1,
+				initialiseMethod: "telemetryMetricValueTaskStart",
+				// The writer settings are sent once when the worker starts rather than with
+				// every value.
+				initialiseMethodParams: async () => [this._writerConfig],
+				shutdownMethod: "telemetryMetricValueTaskEnd"
+			}
+		);
+	}
+
+	/**
 	 * Ask the background thread to write everything it currently has pending, so a read sees
 	 * the values which have been added but not yet persisted.
 	 * @returns A promise that resolves when the background thread confirms the write, or when
@@ -863,8 +935,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Ask the background thread to write, once any values still inside the coalesce window have
-	 * been handed to it.
+	 * Ask the background thread to write, handing over any values still inside the coalesce
+	 * window with the same task so a read costs one task rather than two.
 	 * @returns A promise that resolves when the background thread confirms the write, or when the
 	 * write timeout elapses.
 	 * @internal
@@ -874,17 +946,35 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			return;
 		}
 
-		await this.sendCoalesced();
+		this.stopCoalesceTimer();
 
-		if (this._valuesQueued === this._valuesWritten) {
+		// splice is synchronous, so there is no yield point where a value could be handed over twice.
+		const values = this._coalesced.splice(0);
+
+		if (values.length === 0 && this._valuesQueued === this._valuesWritten) {
 			return;
 		}
 
-		// Read before the task is created, so every value it counts belongs to a task the thread
-		// already has; anything queued afterwards leaves the counts apart for the next read.
+		let taskId: string;
+		try {
+			taskId = await this.createMetricValueTask(
+				values.length > 0 ? { values, flush: true } : { flush: true }
+			);
+		} catch (err) {
+			// Nothing was handed over, so put them back at the head for the next attempt.
+			this._coalesced.unshift(...values);
+			throw err;
+		}
+
+		this._valuesQueued += values.length;
+
+		// Read before waiting, so every value it counts belongs to a task the thread already
+		// has; anything queued afterwards leaves the counts apart for the next read.
 		const queued = this._valuesQueued;
 
-		if (await this.createMetricValueTask({ flush: true }, true)) {
+		// A task which does not confirm stays in the queue rather than being sent again, as the
+		// thread may already have its values; the counts stay apart so the next read asks again.
+		if (await this.waitForTask(taskId)) {
 			this._valuesWritten = queued;
 		}
 	}
@@ -952,22 +1042,38 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 		if (this._coalesced.length >= EntityStorageTelemetryConnector.DEFAULT_COALESCE_SIZE) {
 			await this.sendCoalesced();
-		} else if (Is.empty(this._coalesceTimer)) {
-			this._coalesceTimer = globalThis.setTimeout(async () => {
-				this._coalesceTimer = undefined;
-				try {
-					await this.sendCoalesced();
-				} catch (err) {
-					await this._logging?.log({
-						source: EntityStorageTelemetryConnector.CLASS_NAME,
-						message: "metricValueTaskFailed",
-						level: "error",
-						data: { taskId: "" },
-						error: BaseError.fromError(err)
-					});
-				}
-			}, this._taskCoalesceMs);
+		} else {
+			this.armCoalesceTimer();
 		}
+	}
+
+	/**
+	 * Arm the timer which hands the values held for the coalesce window over.
+	 * @internal
+	 */
+	private armCoalesceTimer(): void {
+		if (!Is.empty(this._coalesceTimer)) {
+			return;
+		}
+
+		this._coalesceTimer = globalThis.setTimeout(async () => {
+			this._coalesceTimer = undefined;
+			try {
+				await this.sendCoalesced();
+			} catch (err) {
+				await this.logWithoutThrowing({
+					source: EntityStorageTelemetryConnector.CLASS_NAME,
+					message: "metricValueTaskFailed",
+					level: "error",
+					data: { taskId: "" },
+					error: BaseError.fromError(err)
+				});
+
+				// The values are back at the head of the window, so the window has to keep
+				// running: nothing else would hand them over until the next value is added.
+				this.armCoalesceTimer();
+			}
+		}, this._taskCoalesceMs);
 	}
 
 	/**
@@ -1009,15 +1115,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	/**
 	 * Queue a task for the background thread.
 	 * @param payload The task payload.
-	 * @param waitForCompletion Wait until the background thread reports the task complete.
-	 * @returns True when the task completed successfully, or when the caller did not wait for it.
+	 * @returns The id of the created task.
 	 * @throws GeneralError if no background task component is available to run the write.
 	 * @internal
 	 */
-	private async createMetricValueTask(
-		payload: ITelemetryMetricValueTaskPayload,
-		waitForCompletion: boolean = false
-	): Promise<boolean> {
+	private async createMetricValueTask(payload: ITelemetryMetricValueTaskPayload): Promise<string> {
 		if (Is.empty(this._backgroundTaskComponent)) {
 			throw new GeneralError(
 				EntityStorageTelemetryConnector.CLASS_NAME,
@@ -1030,10 +1132,23 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			payload
 		);
 
-		if (!waitForCompletion) {
-			return true;
+		if (this._outstandingTaskIds.size === 0) {
+			// Nothing was outstanding, so the wait for the thread to show progress starts here.
+			this._lastTaskProgress = Date.now();
 		}
+		this._outstandingTaskIds.add(taskId);
+		this.armStallTimer();
 
+		return taskId;
+	}
+
+	/**
+	 * Wait for the background thread to report a task complete.
+	 * @param taskId The id of the task to wait for.
+	 * @returns True when the task completed successfully.
+	 * @internal
+	 */
+	private async waitForTask(taskId: string): Promise<boolean> {
 		return new Promise<boolean>(resolve => {
 			const timer = globalThis.setTimeout(async () => {
 				this._pendingWrites.delete(taskId);
@@ -1041,13 +1156,169 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 					source: EntityStorageTelemetryConnector.CLASS_NAME,
 					message: "flushTimeout",
 					level: "warn",
-					data: { taskId, timeoutMs: this._flushTimeoutMs }
+					data: {
+						taskId,
+						timeoutMs: this._flushTimeoutMs,
+						taskCount: this._outstandingTaskIds.size
+					}
 				});
 				resolve(false);
 			}, this._flushTimeoutMs);
 
 			this._pendingWrites.set(taskId, { resolve, timer });
 		});
+	}
+
+	/**
+	 * Arm the timer which checks whether the background thread has stopped answering, for
+	 * whenever the stall timeout will have elapsed with no task having completed.
+	 * @internal
+	 */
+	private armStallTimer(): void {
+		if (this._taskStallTimeoutMs === 0 || !this._started || !Is.empty(this._stallTimer)) {
+			return;
+		}
+
+		const delay = Math.max(this._taskStallTimeoutMs - (Date.now() - this._lastTaskProgress), 0);
+
+		this._stallTimer = globalThis.setTimeout(async () => {
+			this._stallTimer = undefined;
+			try {
+				await this.checkForStalledThread();
+			} catch (err) {
+				// Supervision has to survive its own failures, and an unhandled rejection from
+				// a timer would take the process with it.
+				await this.logWithoutThrowing({
+					source: EntityStorageTelemetryConnector.CLASS_NAME,
+					message: "metricValueThreadCheckFailed",
+					level: "error",
+					error: BaseError.fromError(err)
+				});
+				this.armStallTimer();
+			}
+		}, delay);
+	}
+
+	/**
+	 * Stop the stall check timer if it is running.
+	 * @internal
+	 */
+	private stopStallTimer(): void {
+		if (!Is.empty(this._stallTimer)) {
+			globalThis.clearTimeout(this._stallTimer);
+			this._stallTimer = undefined;
+		}
+	}
+
+	/**
+	 * Replace the background thread when it has tasks outstanding but has completed none of
+	 * them for the stall timeout.
+	 * @returns A promise that resolves when the check, and any replacement, is complete.
+	 * @internal
+	 */
+	private async checkForStalledThread(): Promise<void> {
+		if (!this._started || this._outstandingTaskIds.size === 0) {
+			return;
+		}
+
+		const stalledForMs = Date.now() - this._lastTaskProgress;
+
+		if (stalledForMs < this._taskStallTimeoutMs) {
+			// A task completed while the timer was armed, so the wait starts again from there.
+			this.armStallTimer();
+			return;
+		}
+
+		// No task has completed since the oldest one outstanding was created, so that is the one
+		// the thread would be stuck on. Replacing the thread costs whatever the writer has
+		// batched, so the task is checked before it is done: a task which is no longer in the
+		// queue means a state change was missed rather than the thread having stopped.
+		const stalledTaskId = this._outstandingTaskIds.values().next().value as string;
+		const stalledTask = await this._backgroundTaskComponent?.get(stalledTaskId);
+
+		if (
+			Is.empty(stalledTask) ||
+			(stalledTask.status !== TaskStatus.Pending && stalledTask.status !== TaskStatus.Processing)
+		) {
+			await this.logWithoutThrowing({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueTaskStateMissed",
+				level: "warn",
+				data: { taskId: stalledTaskId, status: stalledTask?.status }
+			});
+			this._outstandingTaskIds.clear();
+			this._lastTaskProgress = Date.now();
+			return;
+		}
+
+		await this.restartMetricValueThread(stalledForMs, stalledTaskId);
+	}
+
+	/**
+	 * Replace the background thread after it has stopped completing the tasks handed to it.
+	 * Nothing else recovers from this: the handler has no execution timeout, so the scheduler
+	 * goes on waiting for the one worker it believes is busy and never dispatches for this task
+	 * type again. Re-registering the handler terminates that worker, which releases the
+	 * scheduler's claim on the task it was given, so the tasks in the queue are dispatched to
+	 * the replacement rather than left waiting on a thread that will never answer.
+	 * @param stalledForMs How long the thread has had tasks outstanding without completing one.
+	 * @param stalledTaskId The id of the task the thread has not completed.
+	 * @returns A promise that resolves when the handler has been re-registered.
+	 * @internal
+	 */
+	private async restartMetricValueThread(
+		stalledForMs: number,
+		stalledTaskId: string
+	): Promise<void> {
+		await this.logWithoutThrowing({
+			source: EntityStorageTelemetryConnector.CLASS_NAME,
+			message: "metricValueThreadStalled",
+			level: "error",
+			data: { stalledForMs, taskId: stalledTaskId, taskCount: this._outstandingTaskIds.size }
+		});
+
+		// The tasks themselves are left in the queue, so the values already handed over are
+		// written by the replacement rather than lost. Anything waiting on one of them is
+		// released by its own flush timeout, or when the replacement completes it.
+		this._outstandingTaskIds.clear();
+		this._lastTaskProgress = Date.now();
+
+		try {
+			await this._backgroundTaskComponent?.unregisterHandler(
+				EntityStorageTelemetryConnector._METRIC_VALUE_TASK_TYPE
+			);
+			await this.registerMetricValueHandler();
+
+			await this.logWithoutThrowing({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueThreadRestarted",
+				level: "warn"
+			});
+		} catch (err) {
+			await this.logWithoutThrowing({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueThreadRestartFailed",
+				level: "error",
+				error: BaseError.fromError(err)
+			});
+		}
+	}
+
+	/**
+	 * Log on one of the paths which has no caller to report to, without the logging itself
+	 * becoming the failure. An unhandled rejection from a timer callback would end the
+	 * supervision it came from, and take the process with it.
+	 * @param logEntry The entry to log.
+	 * @returns A promise that resolves when the entry has been logged, or given up on.
+	 * @internal
+	 */
+	private async logWithoutThrowing(logEntry: ILogEntry): Promise<void> {
+		try {
+			await this._logging?.log(logEntry);
+		} catch {
+			// The logging component is the only sink available, and it writes to storage which is
+			// what tends to be failing when this path is reached at all.
+		}
 	}
 
 	/**
@@ -1066,6 +1337,12 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		) {
 			return;
 		}
+
+		// A final state is the only evidence the thread is still working through what it has
+		// been given. Only this connector's own tasks are tracked, so a state reported for one
+		// belonging to another connector in the process is simply not found.
+		this._outstandingTaskIds.delete(task.id);
+		this._lastTaskProgress = Date.now();
 
 		const pendingWrite = this._pendingWrites.get(task.id);
 		if (!Is.empty(pendingWrite)) {

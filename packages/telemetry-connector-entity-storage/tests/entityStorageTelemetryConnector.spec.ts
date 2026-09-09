@@ -20,6 +20,7 @@ import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryCo
 import { initSchema } from "../src/schema.js";
 
 const TEST_TASK_HANDLER = new URL("./testTelemetryMetricValueTask.js", import.meta.url).href;
+const STALLING_TASK_HANDLER = new URL("./testStallingMetricValueTask.js", import.meta.url).href;
 const TEST_VALUE_DIRECTORY = fileURLToPath(new URL("./.tmp/metric-values/", import.meta.url));
 const TEST_TIMEOUT = 30000;
 
@@ -871,9 +872,13 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
-			// One task for the four values, and one to ask the thread to write them.
-			expect(createSpy).toHaveBeenCalledTimes(2);
-			expect(createSpy.mock.calls[0][1]).toMatchObject({ values: expect.any(Array) });
+			// The read takes the four values with it, so one task covers handing them over and
+			// asking the thread to write them.
+			expect(createSpy).toHaveBeenCalledTimes(1);
+			expect(createSpy.mock.calls[0][1]).toMatchObject({
+				values: expect.any(Array),
+				flush: true
+			});
 			expect((createSpy.mock.calls[0][1] as { values: unknown[] }).values).toHaveLength(4);
 			expect(result.entities.map(entity => entity.value)).toEqual([4, 3, 2, 1]);
 		},
@@ -898,6 +903,152 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			expect((await readValues()).map(entry => entry.value)).toEqual([1]);
 			expect(createSpy).toHaveBeenCalledTimes(1);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"hands a whole window over as one task however many values it holds",
+		async () => {
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
+
+			const telemetry = await createConnector({
+				config: { batchSize: 0, batchIntervalMs: 0, taskCoalesceMs: 10000 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			const values = [];
+			for (let i = 0; i < 250; i++) {
+				values.push({ id: "test", value: MetricCounterOperation.Increment });
+			}
+			await telemetry.addMetricValues(values);
+			await telemetry.addMetricValues(values);
+
+			// The task rate is what the scheduler cannot keep up with, so the number of values
+			// held must not create more tasks than the window itself does.
+			expect(createSpy).not.toHaveBeenCalled();
+
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 1);
+			expect(createSpy).toHaveBeenCalledTimes(1);
+			expect((createSpy.mock.calls[0][1] as { values: unknown[] }).values).toHaveLength(500);
+			expect(result.entities[0].value).toEqual(500);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"replaces the background thread when it stops completing the tasks it is given",
+		async () => {
+			// The stall timeout has to outlast a task starting the worker thread, or replacing it
+			// would trip on the replacement.
+			const telemetry = await createConnector({
+				config: {
+					batchSize: 100,
+					batchIntervalMs: 0,
+					taskStallTimeoutMs: 1000,
+					// A handler whose task never completes, so the worker is left busy for good.
+					overrideMetricValueTaskHandler: STALLING_TASK_HANDLER
+				}
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			const registerSpy = vi.spyOn(backgroundTaskService, "registerHandler");
+			const unregisterSpy = vi.spyOn(backgroundTaskService, "unregisterHandler");
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			for (let i = 0; i < 200 && registerSpy.mock.calls.length === 0; i++) {
+				await new Promise<void>(resolve => setTimeout(resolve, 100));
+			}
+
+			expect(unregisterSpy).toHaveBeenCalledWith("telemetry-metric-value-write");
+			expect(registerSpy).toHaveBeenCalledWith(
+				"telemetry-metric-value-write",
+				STALLING_TASK_HANDLER,
+				"telemetryMetricValueTask",
+				expect.any(Function),
+				expect.objectContaining({ maxWorkerCount: 1, idleShutdownTimeout: -1 })
+			);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"leaves the background thread alone when a task completion was missed",
+		async () => {
+			const telemetry = await createConnector({
+				config: { batchSize: 100, batchIntervalMs: 0, taskStallTimeoutMs: 150 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			const unregisterSpy = vi.spyOn(backgroundTaskService, "unregisterHandler");
+
+			// The task is no longer in the queue, so its completion was missed rather than the
+			// thread having stopped; replacing a working thread costs everything it has batched.
+			const createSpy = vi
+				.spyOn(backgroundTaskService, "create")
+				.mockResolvedValue("never-reported");
+			const getSpy = vi.spyOn(backgroundTaskService, "get").mockResolvedValue(undefined);
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			for (let i = 0; i < 200 && getSpy.mock.calls.length === 0; i++) {
+				await new Promise<void>(resolve => setTimeout(resolve, 100));
+			}
+			expect(getSpy).toHaveBeenCalledWith("never-reported");
+			expect(unregisterSpy).not.toHaveBeenCalled();
+
+			// Restored so the connector can be stopped for real when the test ends.
+			createSpy.mockRestore();
+			getSpy.mockRestore();
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"stop releases the background thread even when the final write fails",
+		async () => {
+			const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			const unregisterSpy = vi.spyOn(backgroundTaskService, "unregisterHandler");
+			const createSpy = vi
+				.spyOn(backgroundTaskService, "create")
+				.mockRejectedValue(new Error("task queue unavailable"));
+
+			// A failed final write must not leave the thread running and the callers waiting.
+			await expect(telemetry.stop()).resolves.toBeUndefined();
+			createSpy.mockRestore();
+
+			expect(unregisterSpy).toHaveBeenCalledWith("telemetry-metric-value-write");
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"leaves the background thread alone while it is still completing tasks",
+		async () => {
+			const telemetry = await createConnector({
+				config: { batchSize: 100, batchIntervalMs: 0, taskStallTimeoutMs: 1000 }
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			// Warm the worker first, so what follows is only measuring completed tasks and not
+			// the one-off thread startup.
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+
+			const unregisterSpy = vi.spyOn(backgroundTaskService, "unregisterHandler");
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+
+			// Well past the stall timeout, with every task the thread was given completed.
+			await new Promise<void>(resolve => setTimeout(resolve, 1200));
+
+			expect(unregisterSpy).not.toHaveBeenCalled();
 		},
 		TEST_TIMEOUT
 	);

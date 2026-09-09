@@ -278,22 +278,26 @@ export class MetricValueWriter {
 			}
 
 			if (Is.arrayValue(errors)) {
+				// Re-queued before the failure is reported, as the reporting writes to storage
+				// too: a failure in it would otherwise take the entries with it.
+				this._pending.unshift(...failedEntries);
+				if (this._maxCacheSize > 0 && this._pending.length > this._maxCacheSize) {
+					this._pending.splice(0, this._pending.length - this._maxCacheSize);
+				}
+
 				await this._logging?.log({
 					source: MetricValueWriter.CLASS_NAME,
 					message: "flushFailed",
 					level: "error",
 					data: { error: errors.length === 1 ? errors[0] : errors }
 				});
-				this._pending.unshift(...failedEntries);
-				if (this._maxCacheSize > 0 && this._pending.length > this._maxCacheSize) {
-					this._pending.splice(0, this._pending.length - this._maxCacheSize);
-				}
 			}
 		} finally {
 			Mutex.unlock(this._mutexKey);
+			// Re-armed here rather than after the block, so a failure inside it cannot leave the
+			// writer without its interval for the life of the thread.
+			this.startTimer();
 		}
-
-		this.startTimer();
 	}
 
 	/**
@@ -538,7 +542,24 @@ export class MetricValueWriter {
 	private startTimer(): void {
 		if (!Is.empty(this._batchIntervalMs) && Is.empty(this._batchTimer) && this._started) {
 			this._batchTimer = globalThis.setTimeout(async () => {
-				await this.flush();
+				// Nothing is waiting on the interval write, so a failure has to be reported and
+				// dropped here. An unhandled rejection in a timer takes down the worker thread,
+				// and a thread which has gone is indistinguishable to the scheduler from one
+				// still busy with a task, so it would never dispatch for this task type again.
+				try {
+					await this.flush();
+				} catch (err) {
+					try {
+						await this._logging?.log({
+							source: MetricValueWriter.CLASS_NAME,
+							message: "intervalWriteFailed",
+							level: "error",
+							error: BaseError.fromError(err)
+						});
+					} catch {
+						// need to make sure a logging exception doesn't kill the timer
+					}
+				}
 			}, this._batchIntervalMs);
 		}
 	}

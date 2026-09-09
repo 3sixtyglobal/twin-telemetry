@@ -26,6 +26,10 @@ let writer: MetricValueWriter | undefined;
 // concurrently in the worker thread.
 let startupPromise: Promise<void> | undefined;
 
+// Kept so a startup retried from a task uses the settings the connector sent when the worker
+// started, rather than silently falling back to the writer defaults.
+let writerConfig: ITelemetryMetricValueWriterConfig | undefined;
+
 /**
  * Telemetry Metric Value Task Startup Method.
  * @param engineCloneData Engine clone data used to initialise a worker-thread engine instance.
@@ -36,6 +40,11 @@ export async function telemetryMetricValueTaskStart(
 	engineCloneData: unknown,
 	config?: ITelemetryMetricValueWriterConfig
 ): Promise<void> {
+	// A startup retried from a task has no config of its own, so the last one supplied is kept.
+	if (!Is.empty(config)) {
+		writerConfig = config;
+	}
+
 	startupPromise = (async () => {
 		if (!Is.empty(engineCloneData)) {
 			engine = await ModuleHelper.execModuleMethod<{
@@ -72,11 +81,21 @@ export async function telemetryMetricValueTaskStart(
 		}
 
 		// The storage connectors are only available once the engine clone has started, so the
-		// writer is created here rather than when the module is loaded.
-		writer = new MetricValueWriter();
-		await writer.start(config);
+		// writer is created here rather than when the module is loaded. It is only published
+		// once it has started: a writer with no storage resolved accepts values and drops them.
+		const metricValueWriter = new MetricValueWriter();
+		await metricValueWriter.start(writerConfig);
+		writer = metricValueWriter;
 	})();
-	await startupPromise;
+
+	try {
+		await startupPromise;
+	} catch (err) {
+		// A rejected promise must not be left behind: every task awaits it, so a failed startup
+		// would fail every task for the life of the worker instead of being retried by one.
+		startupPromise = undefined;
+		throw err;
+	}
 }
 
 /**
@@ -110,7 +129,14 @@ export async function telemetryMetricValueTask(
 	// is always set by the time this runs when both messages are dispatched from the same
 	// worker initialisation sequence.
 	if (startupPromise) {
-		await startupPromise;
+		try {
+			await startupPromise;
+		} catch {
+			// The startup left no writer behind, which is what the retry below handles; failing
+			// here instead would fail this task and every task after it. The error surfaces from
+			// the retry when it cannot be recovered.
+			startupPromise = undefined;
+		}
 	}
 
 	Guards.objectValue<ITelemetryMetricValueTaskPayload>(
@@ -119,12 +145,14 @@ export async function telemetryMetricValueTask(
 		payload
 	);
 
-	// The startup method always creates the writer; this only covers a task arriving on a
-	// worker whose initialisation was skipped, so it falls back to the writer defaults.
+	// The startup method always creates the writer, so this covers a task arriving on a worker
+	// whose initialisation was skipped, and one whose initialisation failed.
 	if (Is.empty(writer)) {
-		writer = new MetricValueWriter();
-		await writer.start();
+		await telemetryMetricValueTaskStart(engineCloneData, writerConfig);
 	}
+
+	// The startup either leaves the writer set or throws, so it is always present from here.
+	const metricValueWriter = writer as MetricValueWriter;
 
 	if (Is.arrayValue(payload.values)) {
 		for (const value of payload.values) {
@@ -135,10 +163,10 @@ export async function telemetryMetricValueTask(
 				value.metricId
 			);
 		}
-		await writer.add(payload.values);
+		await metricValueWriter.add(payload.values);
 	}
 
 	if (payload.flush ?? false) {
-		await writer.flush();
+		await metricValueWriter.flush();
 	}
 }

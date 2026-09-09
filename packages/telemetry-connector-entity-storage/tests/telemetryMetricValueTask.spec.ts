@@ -145,4 +145,29 @@ describe("telemetryMetricValueTask", () => {
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2]);
 	});
+	test("retries a failed startup on the next task, keeping the config it was given", async () => {
+		EntityStorageConnectorFactory.unregister("telemetry-metric-value");
+
+		// The writer resolves its storage on startup, so an unavailable connector fails it.
+		await expect(
+			telemetryMetricValueTaskStart(undefined, { batchSize: 100, batchIntervalMs: 0 })
+		).rejects.toBeDefined();
+
+		EntityStorageConnectorFactory.register(
+			"telemetry-metric-value",
+			() => telemetryMetricsValueEntityStorage
+		);
+
+		// A failed startup must not be left behind for every later task to await, and the retry
+		// uses the config from the start rather than falling back to the writer defaults.
+		await telemetryMetricValueTask(undefined, { values: [buildValue()] });
+
+		const storeBefore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeBefore?.length).toEqual(0);
+
+		await telemetryMetricValueTask(undefined, { flush: true });
+
+		const storeAfter = await telemetryMetricsValueEntityStorage.getStore();
+		expect(storeAfter?.map(entry => entry.value)).toEqual([1]);
+	});
 });
