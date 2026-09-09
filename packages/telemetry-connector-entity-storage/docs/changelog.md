@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.3-next.5...telemetry-connector-entity-storage-v0.9.3-next.6) (2026-09-09)
+
+
+### Bug Fixes
+
+* stop the metric value stall detector restarting tasks that have no free worker ([#125](https://github.com/iotaledger/twin-telemetry/issues/125)) ([826403c](https://github.com/iotaledger/twin-telemetry/commit/826403cbfb5c0ab7ad3db6c5e600457add30581e))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.5 to 0.9.3-next.6
+
 ## [0.9.3-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.3-next.4...telemetry-connector-entity-storage-v0.9.3-next.5) (2026-09-09)
 
 
