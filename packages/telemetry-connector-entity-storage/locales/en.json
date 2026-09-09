@@ -26,6 +26,7 @@
 		"entityStorageTelemetryConnector": {
 			"flushTimeout": "The background thread did not confirm the flush within \"{timeoutMs}\" ms for task \"{taskId}\", with \"{taskCount}\" tasks outstanding",
 			"metricValueThreadRestarted": "The stalled metric value background thread was replaced, and the tasks it was given will be processed by the new one",
+			"metricValueTaskNotScheduled": "The metric value background task \"{taskId}\" has waited \"{stalledForMs}\" ms to be scheduled, with \"{taskCount}\" tasks outstanding, so the background thread is left in place as it has not been given the task",
 			"metricValueTaskStateMissed": "The completion of the metric value background task \"{taskId}\" was never reported, its state is now \"{status}\", so the background thread is treated as working rather than replaced"
 		}
 	},

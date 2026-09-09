@@ -114,6 +114,12 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private static readonly _METRIC_VALUE_TASK_TYPE: string = "telemetry-metric-value-write";
 
 	/**
+	 * Cap on how many times the stall wait can double.
+	 * @internal
+	 */
+	private static readonly _STALL_BACKOFF_MAX_MULTIPLIER: number = 8;
+
+	/**
 	 * The entity storage for the telemetry metrics.
 	 * @internal
 	 */
@@ -200,8 +206,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _outstandingTaskIds: Set<string>;
 
 	/**
-	 * The time a task last reached a final state, or the time the first of the outstanding tasks
-	 * was created when none has completed since. A thread which has stopped answering is only
+	 * The time a task last reached a final state, the outstanding tasks were created, or a task
+	 * was last reported still waiting for a worker. A thread which has stopped answering is only
 	 * visible as the absence of this moving on.
 	 * @internal
 	 */
@@ -212,6 +218,19 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * @internal
 	 */
 	private _stallTimer?: ReturnType<typeof setTimeout>;
+
+	/**
+	 * True while a stall check, or the replacement it starts, is running.
+	 * @internal
+	 */
+	private _stallCheckRunning: boolean;
+
+	/**
+	 * Number of consecutive replacements with no completion between them; reset once a task
+	 * completes. Used to back off the stall wait.
+	 * @internal
+	 */
+	private _stallRestartCount: number;
 
 	/**
 	 * Number of values handed to the background thread, counted once their task is queued.
@@ -312,6 +331,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		this._coalesced = [];
 		this._outstandingTaskIds = new Set();
 		this._lastTaskProgress = 0;
+		this._stallCheckRunning = false;
+		this._stallRestartCount = 0;
 		this._valuesQueued = 0;
 		this._valuesWritten = 0;
 		this._writeChain = Promise.resolve();
@@ -1170,19 +1191,40 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
+	 * The delay before the next stall check: the configured timeout, doubled per consecutive
+	 * replacement not followed by a completion, capped at _STALL_BACKOFF_MAX_MULTIPLIER times.
+	 * @returns The delay in milliseconds.
+	 * @internal
+	 */
+	private stallWaitMs(): number {
+		const multiplier = Math.min(
+			2 ** this._stallRestartCount,
+			EntityStorageTelemetryConnector._STALL_BACKOFF_MAX_MULTIPLIER
+		);
+		return this._taskStallTimeoutMs * multiplier;
+	}
+
+	/**
 	 * Arm the timer which checks whether the background thread has stopped answering, for
-	 * whenever the stall timeout will have elapsed with no task having completed.
+	 * whenever the stall wait will have elapsed with no task having completed.
 	 * @internal
 	 */
 	private armStallTimer(): void {
-		if (this._taskStallTimeoutMs === 0 || !this._started || !Is.empty(this._stallTimer)) {
+		if (
+			this._taskStallTimeoutMs === 0 ||
+			!this._started ||
+			!Is.empty(this._stallTimer) ||
+			this._stallCheckRunning
+		) {
 			return;
 		}
 
-		const delay = Math.max(this._taskStallTimeoutMs - (Date.now() - this._lastTaskProgress), 0);
+		const delay = Math.max(this.stallWaitMs() - (Date.now() - this._lastTaskProgress), 0);
 
 		this._stallTimer = globalThis.setTimeout(async () => {
 			this._stallTimer = undefined;
+			// Blocks a second check from arming while this one, and any replacement, is running.
+			this._stallCheckRunning = true;
 			try {
 				await this.checkForStalledThread();
 			} catch (err) {
@@ -1194,7 +1236,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 					level: "error",
 					error: BaseError.fromError(err)
 				});
-				this.armStallTimer();
+			} finally {
+				this._stallCheckRunning = false;
+				if (this._outstandingTaskIds.size > 0) {
+					this.armStallTimer();
+				}
 			}
 		}, delay);
 	}
@@ -1211,9 +1257,9 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	}
 
 	/**
-	 * Replace the background thread when it has tasks outstanding but has completed none of
-	 * them for the stall timeout.
-	 * @returns A promise that resolves when the check, and any replacement, is complete.
+	 * Check the oldest outstanding task once none has completed for the stall wait, and act on
+	 * its status: missed, still waiting for a worker, or actually stalled.
+	 * @returns A promise that resolves when the check, and any action it takes, is complete.
 	 * @internal
 	 */
 	private async checkForStalledThread(): Promise<void> {
@@ -1223,9 +1269,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 
 		const stalledForMs = Date.now() - this._lastTaskProgress;
 
-		if (stalledForMs < this._taskStallTimeoutMs) {
-			// A task completed while the timer was armed, so the wait starts again from there.
-			this.armStallTimer();
+		if (stalledForMs < this.stallWaitMs()) {
+			// A task completed while the timer was armed; the caller re-arms for what remains.
 			return;
 		}
 
@@ -1235,6 +1280,12 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		// queue means a state change was missed rather than the thread having stopped.
 		const stalledTaskId = this._outstandingTaskIds.values().next().value as string;
 		const stalledTask = await this._backgroundTaskComponent?.get(stalledTaskId);
+
+		if (!this._outstandingTaskIds.has(stalledTaskId)) {
+			// Completed, or the connector stopped, while the read above was in flight; already
+			// handled by metricValueTaskStateChanged or stop(), so the stale snapshot is moot.
+			return;
+		}
 
 		if (
 			Is.empty(stalledTask) ||
@@ -1248,6 +1299,24 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			});
 			this._outstandingTaskIds.clear();
 			this._lastTaskProgress = Date.now();
+			this._stallRestartCount = 0;
+			return;
+		}
+
+		if (stalledTask.status === TaskStatus.Pending) {
+			// Not yet scheduled, so replacing the thread would not help; report and leave it.
+			const scheduledWaitMs = Date.now() - Date.parse(stalledTask.dateCreated);
+			await this.logWithoutThrowing({
+				source: EntityStorageTelemetryConnector.CLASS_NAME,
+				message: "metricValueTaskNotScheduled",
+				level: "warn",
+				data: {
+					taskId: stalledTaskId,
+					stalledForMs: scheduledWaitMs,
+					taskCount: this._outstandingTaskIds.size
+				}
+			});
+			this._lastTaskProgress = Date.now();
 			return;
 		}
 
@@ -1260,7 +1329,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	 * goes on waiting for the one worker it believes is busy and never dispatches for this task
 	 * type again. Re-registering the handler terminates that worker, which releases the
 	 * scheduler's claim on the task it was given, so the tasks in the queue are dispatched to
-	 * the replacement rather than left waiting on a thread that will never answer.
+	 * the replacement rather than left waiting on a thread that will never answer. Counts toward
+	 * the backoff in stallWaitMs() when not followed by a completion.
 	 * @param stalledForMs How long the thread has had tasks outstanding without completing one.
 	 * @param stalledTaskId The id of the task the thread has not completed.
 	 * @returns A promise that resolves when the handler has been re-registered.
@@ -1282,6 +1352,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		// released by its own flush timeout, or when the replacement completes it.
 		this._outstandingTaskIds.clear();
 		this._lastTaskProgress = Date.now();
+		this._stallRestartCount += 1;
 
 		try {
 			await this._backgroundTaskComponent?.unregisterHandler(
@@ -1343,6 +1414,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		// belonging to another connector in the process is simply not found.
 		this._outstandingTaskIds.delete(task.id);
 		this._lastTaskProgress = Date.now();
+		this._stallRestartCount = 0;
+
+		// The reset can shorten stallWaitMs() below what the current timer expects, so it is
+		// cleared and, if anything is still outstanding, re-armed.
+		this.stopStallTimer();
+		if (this._outstandingTaskIds.size > 0) {
+			this.armStallTimer();
+		}
 
 		const pendingWrite = this._pendingWrites.get(task.id);
 		if (!Is.empty(pendingWrite)) {

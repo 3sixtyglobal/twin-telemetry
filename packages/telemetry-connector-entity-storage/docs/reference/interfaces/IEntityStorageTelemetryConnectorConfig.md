@@ -96,9 +96,11 @@ leaves the queue growing without bound and every read waiting flushTimeoutMs.
 > `optional` **taskStallTimeoutMs?**: `number`
 
 How long in milliseconds to allow with tasks outstanding and none of them completing
-before the background thread is treated as stalled and replaced. Without this a single
-task which never completes ends metric collection for the life of the process, as the
-scheduler goes on waiting for the one worker it believes is still busy.
+before the oldest is checked. A task not yet given to a worker is reported rather than
+replaced; only a task a worker took and never completed is treated as a stalled thread
+and replaced. Without this a single task which never completes ends metric collection for
+the life of the process, as the scheduler goes on waiting for the one worker it believes
+is still busy.
 Values &lt;= 0 disable the check.
 
 #### Default

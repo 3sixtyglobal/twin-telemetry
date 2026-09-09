@@ -3,6 +3,11 @@
 import { mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import {
+	type IBackgroundTask,
+	type IBackgroundTaskComponent,
+	TaskStatus
+} from "@twin.org/background-task-models";
+import {
 	BackgroundTaskService,
 	initSchema as initBackgroundTaskSchema,
 	type BackgroundTask
@@ -12,8 +17,10 @@ import { ComponentFactory } from "@twin.org/core";
 import { FileEntityStorageConnector } from "@twin.org/entity-storage-connector-file";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
+import type { ILogEntry } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+import type { Mock } from "vitest";
 import type { TelemetryMetric } from "../src/entities/telemetryMetric.js";
 import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";
 import { EntityStorageTelemetryConnector } from "../src/entityStorageTelemetryConnector.js";
@@ -23,6 +30,19 @@ const TEST_TASK_HANDLER = new URL("./testTelemetryMetricValueTask.js", import.me
 const STALLING_TASK_HANDLER = new URL("./testStallingMetricValueTask.js", import.meta.url).href;
 const TEST_VALUE_DIRECTORY = fileURLToPath(new URL("./.tmp/metric-values/", import.meta.url));
 const TEST_TIMEOUT = 30000;
+
+/**
+ * Poll a condition until it is true or the attempt bound is reached, for synchronising with
+ * background async work without guessing how long it takes.
+ * @param condition The condition to wait for.
+ * @param maxAttempts The maximum number of 100ms polls before giving up.
+ * @returns A promise that resolves once the condition is true or the bound is reached.
+ */
+async function waitUntil(condition: () => boolean, maxAttempts = 200): Promise<void> {
+	for (let i = 0; i < maxAttempts && !condition(); i++) {
+		await new Promise<void>(resolve => setTimeout(resolve, 100));
+	}
+}
 
 let telemetryMetricsEntityStorage: MemoryEntityStorageConnector<TelemetryMetric>;
 let telemetryMetricsValueEntityStorage: FileEntityStorageConnector<TelemetryMetricValue>;
@@ -957,9 +977,7 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-			for (let i = 0; i < 200 && registerSpy.mock.calls.length === 0; i++) {
-				await new Promise<void>(resolve => setTimeout(resolve, 100));
-			}
+			await waitUntil(() => registerSpy.mock.calls.length > 0);
 
 			expect(unregisterSpy).toHaveBeenCalledWith("telemetry-metric-value-write");
 			expect(registerSpy).toHaveBeenCalledWith(
@@ -992,9 +1010,7 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
-			for (let i = 0; i < 200 && getSpy.mock.calls.length === 0; i++) {
-				await new Promise<void>(resolve => setTimeout(resolve, 100));
-			}
+			await waitUntil(() => getSpy.mock.calls.length > 0);
 			expect(getSpy).toHaveBeenCalledWith("never-reported");
 			expect(unregisterSpy).not.toHaveBeenCalled();
 
@@ -1052,6 +1068,384 @@ describe("EntityStorageTelemetryConnector", () => {
 		},
 		TEST_TIMEOUT
 	);
+
+	describe("stall detection with a background task component stub", () => {
+		/**
+		 * A background task component whose tasks the test can set to any status directly, and
+		 * whose read of a task can be observed and held up.
+		 */
+		class StubBackgroundTaskComponent implements IBackgroundTaskComponent {
+			public taskStatus: TaskStatus;
+
+			public getCalls: number;
+
+			public readonly getEntered: Promise<void>;
+
+			public readonly registerHandler: Mock;
+
+			public readonly unregisterHandler: Mock;
+
+			public readonly restartTimestamps: number[];
+
+			private readonly _tasks: Map<string, IBackgroundTask>;
+
+			private readonly _gate: Promise<void>;
+
+			private _getEnteredResolve!: () => void;
+
+			private _gateResolve?: () => void;
+
+			private _stateChangeCallback?: (task: IBackgroundTask) => Promise<void>;
+
+			private _taskCounter: number;
+
+			/**
+			 * Create a new stub.
+			 * @param taskStatus The status every task starts in, and get() reports.
+			 * @param gated Whether get() waits for releaseGate() before returning.
+			 */
+			constructor(taskStatus: TaskStatus, gated = false) {
+				this.taskStatus = taskStatus;
+				this.getCalls = 0;
+				this.restartTimestamps = [];
+				this._tasks = new Map<string, IBackgroundTask>();
+				this._taskCounter = 0;
+
+				this.getEntered = new Promise(resolve => {
+					this._getEnteredResolve = resolve;
+				});
+				this._gate = gated
+					? new Promise(resolve => {
+							this._gateResolve = resolve;
+						})
+					: Promise.resolve();
+
+				this.registerHandler = vi.fn(
+					async (
+						taskType: string,
+						module: string,
+						method: string,
+						stateChangeCallback?: (task: IBackgroundTask) => Promise<void>
+					): Promise<void> => {
+						this._stateChangeCallback = stateChangeCallback;
+					}
+				);
+				this.unregisterHandler = vi.fn(async (): Promise<void> => {
+					this.restartTimestamps.push(Date.now());
+				});
+			}
+
+			public className(): string {
+				return "StubBackgroundTaskComponent";
+			}
+
+			public releaseGate(): void {
+				this._gateResolve?.();
+			}
+
+			public async create<T>(taskType: string, payload?: T): Promise<string> {
+				this._taskCounter += 1;
+				const id = `task-${this._taskCounter}`;
+				const now = new Date().toISOString();
+				this._tasks.set(id, {
+					id,
+					type: taskType,
+					threadId: "stub",
+					dateCreated: now,
+					dateModified: now,
+					status: this.taskStatus,
+					payload
+				});
+				return id;
+			}
+
+			public async get<T, U>(taskId: string): Promise<IBackgroundTask<T, U> | undefined> {
+				this.getCalls += 1;
+				this._getEnteredResolve();
+				await this._gate;
+				return this._tasks.get(taskId) as IBackgroundTask<T, U> | undefined;
+			}
+
+			/**
+			 * Report a task complete through the callback the connector registered.
+			 * @param taskId The task to complete.
+			 * @param status The final status to report.
+			 * @returns A promise that resolves once the connector has handled the report.
+			 */
+			public async completeTask(taskId: string, status: TaskStatus): Promise<void> {
+				const task = this._tasks.get(taskId);
+				if (!task) {
+					return;
+				}
+				task.status = status;
+				task.dateCompleted = new Date().toISOString();
+				await this._stateChangeCallback?.(task);
+			}
+
+			public async retry(taskId: string): Promise<void> {
+				const task = this._tasks.get(taskId);
+				if (task) {
+					task.status = this.taskStatus;
+				}
+			}
+
+			public async remove(taskId: string): Promise<void> {
+				this._tasks.delete(taskId);
+			}
+
+			public async cancel(taskId: string): Promise<void> {
+				const task = this._tasks.get(taskId);
+				if (task) {
+					task.status = TaskStatus.Cancelled;
+				}
+			}
+
+			public async query(): Promise<{ entities: IBackgroundTask[]; cursor?: string }> {
+				return { entities: [...this._tasks.values()] };
+			}
+		}
+
+		let stub: StubBackgroundTaskComponent;
+		let logEntries: ILogEntry[];
+
+		beforeEach(() => {
+			logEntries = [];
+			ComponentFactory.register("logging", () => ({
+				className: () => "MockLoggingComponent",
+				log: async (entry: ILogEntry) => {
+					logEntries.push(entry);
+				}
+			}));
+		});
+
+		afterEach(() => {
+			ComponentFactory.unregister("background-task-stub");
+			ComponentFactory.unregister("logging");
+		});
+
+		/**
+		 * Create a connector wired to the given stub, tracked so it is stopped when the outer
+		 * afterEach runs.
+		 * @param stubComponent The background task component stub to use.
+		 * @param taskStallTimeoutMs The stall timeout to configure.
+		 * @returns The started connector.
+		 */
+		async function createStubbedConnector(
+			stubComponent: StubBackgroundTaskComponent,
+			taskStallTimeoutMs: number
+		): Promise<EntityStorageTelemetryConnector> {
+			stub = stubComponent;
+			ComponentFactory.register("background-task-stub", () => stub);
+			return createConnector({
+				backgroundTaskComponentType: "background-task-stub",
+				loggingComponentType: "logging",
+				config: {
+					batchSize: 100,
+					batchIntervalMs: 0,
+					taskStallTimeoutMs,
+					// None of these tasks ever confirm through the stub, so this keeps the final
+					// flush stop() attempts from waiting the default 30s during teardown.
+					flushTimeoutMs: 200
+				}
+			});
+		}
+
+		test(
+			"leaves the background thread in place while its task is still waiting to be scheduled",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Pending),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.getCalls >= 1);
+
+				expect(stub.unregisterHandler).not.toHaveBeenCalled();
+				expect(stub.registerHandler).toHaveBeenCalledTimes(1);
+
+				const stalledEntries = logEntries.filter(
+					entry => entry.message === "metricValueTaskNotScheduled"
+				);
+				expect(stalledEntries).toHaveLength(1);
+				expect(stalledEntries[0].level).toEqual("warn");
+				expect(stalledEntries[0].source).toEqual(EntityStorageTelemetryConnector.CLASS_NAME);
+				expect(stalledEntries[0].data).toMatchObject({ taskId: "task-1", taskCount: 1 });
+			},
+			TEST_TIMEOUT
+		);
+
+		test(
+			"reports a task still waiting to be scheduled again after another stall timeout",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Pending),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.getCalls >= 2);
+
+				expect(stub.unregisterHandler).not.toHaveBeenCalled();
+
+				const stalledEntries = logEntries.filter(
+					entry => entry.message === "metricValueTaskNotScheduled"
+				);
+				expect(stalledEntries).toHaveLength(2);
+				expect(stalledEntries[0].data).toMatchObject({ taskId: "task-1", taskCount: 1 });
+				expect(stalledEntries[1].data).toMatchObject({ taskId: "task-1", taskCount: 1 });
+
+				// Measures the task's age from when it was created, not from the previous
+				// warning, so it keeps growing across repeat warnings instead of resetting.
+				const secondWaitMs = (stalledEntries[1].data as { stalledForMs: number }).stalledForMs;
+				expect(secondWaitMs).toBeGreaterThanOrEqual(350);
+			},
+			TEST_TIMEOUT
+		);
+
+		test(
+			"replaces the background thread when its task was taken but never completed",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Processing),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.unregisterHandler.mock.calls.length >= 1);
+				await waitUntil(() => stub.registerHandler.mock.calls.length >= 2);
+
+				const stalledEntries = logEntries.filter(
+					entry => entry.message === "metricValueThreadStalled"
+				);
+				expect(stalledEntries).toHaveLength(1);
+				expect(stalledEntries[0].level).toEqual("error");
+				expect(stalledEntries[0].source).toEqual(EntityStorageTelemetryConnector.CLASS_NAME);
+				expect(stalledEntries[0].data).toMatchObject({ taskId: "task-1", taskCount: 1 });
+
+				const restartedEntries = logEntries.filter(
+					entry => entry.message === "metricValueThreadRestarted"
+				);
+				expect(restartedEntries).toHaveLength(1);
+				expect(restartedEntries[0].level).toEqual("warn");
+
+				expect(stub.registerHandler).toHaveBeenNthCalledWith(
+					2,
+					"telemetry-metric-value-write",
+					TEST_TASK_HANDLER,
+					"telemetryMetricValueTask",
+					expect.any(Function),
+					expect.objectContaining({ maxWorkerCount: 1, idleShutdownTimeout: -1 })
+				);
+			},
+			TEST_TIMEOUT
+		);
+
+		test(
+			"runs one stall check at a time when a value arrives during the check",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Processing, true),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await stub.getEntered;
+
+				// A task created while the check is in flight; before the fix this arms a second
+				// check with no delay, since the progress marker only moves once the restart runs.
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await new Promise<void>(resolve => setTimeout(resolve, 0));
+
+				stub.releaseGate();
+				await waitUntil(() => stub.registerHandler.mock.calls.length >= 2);
+
+				expect(stub.getCalls).toEqual(1);
+				expect(stub.unregisterHandler).toHaveBeenCalledTimes(1);
+
+				const stalledEntries = logEntries.filter(
+					entry => entry.message === "metricValueThreadStalled"
+				);
+				expect(stalledEntries).toHaveLength(1);
+			},
+			TEST_TIMEOUT
+		);
+
+		test(
+			"waits longer before each further replacement until a task completes",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Processing),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				const beforeFirst = Date.now();
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 1);
+				const beforeSecond = Date.now();
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 2);
+				const beforeThird = Date.now();
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 3);
+
+				// Each wait is fixed by the config when measured from its own task's creation
+				// (200, 400, 800ms), which keeps this independent of any prior timer's lateness.
+				const [restart1, restart2, restart3] = stub.restartTimestamps;
+				expect(restart1 - beforeFirst).toBeLessThan(400);
+				expect(restart2 - beforeSecond).toBeGreaterThanOrEqual(350);
+				expect(restart3 - beforeThird).toBeGreaterThanOrEqual(750);
+
+				// A task completed normally: the next stall starts from the base timeout again
+				// rather than continuing to grow.
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				const beforeFourth = Date.now();
+				await stub.completeTask("task-4", TaskStatus.Success);
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 4);
+
+				const restart4 = stub.restartTimestamps[3];
+				expect(restart4 - beforeFourth).toBeLessThan(400);
+			},
+			TEST_TIMEOUT
+		);
+
+		test(
+			"resets the backoff after a task's completion is missed instead of the thread stalling",
+			async () => {
+				const telemetry = await createStubbedConnector(
+					new StubBackgroundTaskComponent(TaskStatus.Processing),
+					200
+				);
+				await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 1);
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await waitUntil(() => stub.restartTimestamps.length >= 2);
+
+				// task-3's completion report is missed rather than the thread having stalled: no
+				// restart, but the backoff the two prior restarts built up should not carry over.
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				await stub.remove("task-3");
+				await waitUntil(() => stub.getCalls >= 3);
+
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+				const beforeFourth = Date.now();
+				await waitUntil(() => stub.restartTimestamps.length >= 3);
+
+				const restart3 = stub.restartTimestamps[2];
+				expect(restart3 - beforeFourth).toBeLessThan(400);
+			},
+			TEST_TIMEOUT
+		);
+	});
 
 	test(
 		"asks the thread to write again when a write does not complete",
