@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.9.3-next.6...telemetry-producers-v0.9.3-next.7) (2026-09-11)
+
+
+### Miscellaneous Chores
+
+* **telemetry-producers:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.6 to 0.9.3-next.7
+
 ## [0.9.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.9.3-next.5...telemetry-producers-v0.9.3-next.6) (2026-09-09)
 
 
