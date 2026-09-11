@@ -1,7 +1,9 @@
 {
-	"debug": {
+	"warn": {
 		"metricsRouteProcessor": {
-			"metricRecordFailed": "Failed to record the request metric for route {route}"
+			"metricRecordsFailed": "Failed to record \"{count}\" request metrics",
+			"metricDrainFailed": "Failed to hand the queued request metrics to the telemetry component",
+			"metricRecordsDropped": "Dropped \"{count}\" request metrics because the recording queue was full"
 		}
 	}
 }
