@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.3-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.3-next.7...telemetry-connector-entity-storage-v0.9.3-next.8) (2026-09-14)
+
+
+### Bug Fixes
+
+* reduce metric reads ([#132](https://github.com/iotaledger/twin-telemetry/issues/132)) ([5e68794](https://github.com/iotaledger/twin-telemetry/commit/5e68794c0cf595193aefdf06586403dc5d722aa9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.9.3-next.7 to 0.9.3-next.8
+
 ## [0.9.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-entity-storage-v0.9.3-next.6...telemetry-connector-entity-storage-v0.9.3-next.7) (2026-09-11)
 
 

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.3-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.7...telemetry-connector-opentelemetry-v0.9.3-next.8) (2026-09-14)
+
+
+### Miscellaneous Chores
+
+* **telemetry-connector-opentelemetry:** Synchronize repo versions
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.7 to 0.9.3-next.8
+    * @twin.org/telemetry-models bumped from 0.9.3-next.7 to 0.9.3-next.8
+
 ## [0.9.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.6...telemetry-connector-opentelemetry-v0.9.3-next.7) (2026-09-11)
 
 
