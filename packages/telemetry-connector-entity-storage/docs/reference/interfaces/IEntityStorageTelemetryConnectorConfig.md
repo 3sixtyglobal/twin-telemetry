@@ -4,14 +4,6 @@ The configuration for the entity storage telemetry connector.
 
 ## Properties
 
-### mutexTimeoutMs? {#mutextimeoutms}
-
-> `optional` **mutexTimeoutMs?**: `number`
-
-The timeout in milliseconds for acquiring the metric value write lock on the background thread.
-
-***
-
 ### batchSize? {#batchsize}
 
 > `optional` **batchSize?**: `number`
@@ -53,6 +45,38 @@ Maximum entries the background thread retains if a write fails and entries are r
 
 ```ts
 1000.
+```
+
+***
+
+### trimIntervalMs? {#trimintervalms}
+
+> `optional` **trimIntervalMs?**: `number`
+
+The background thread applies the retention caps of the metrics it has written every this
+many milliseconds; values &lt;= 0 disable trimming. The cap is applied here rather than on
+the write path, so a metric can sit over its cap by however many values arrive within one
+interval.
+
+#### Default
+
+```ts
+60000.
+```
+
+***
+
+### trimRemoveLimit? {#trimremovelimit}
+
+> `optional` **trimRemoveLimit?**: `number`
+
+Maximum values a single trim pass removes from one metric, so a history far beyond its
+cap is brought back over several passes rather than in one long write.
+
+#### Default
+
+```ts
+10000.
 ```
 
 ***

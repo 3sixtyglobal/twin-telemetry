@@ -69,8 +69,32 @@ Maximum entries to retain if a write fails and the entries are re-queued.
 
 ***
 
-### mutexTimeoutMs? {#mutextimeoutms}
+### trimIntervalMs? {#trimintervalms}
 
-> `optional` **mutexTimeoutMs?**: `number`
+> `optional` **trimIntervalMs?**: `number`
 
-The timeout in milliseconds for acquiring the write lock.
+Apply the retention caps of the metrics written since the last pass every this many
+milliseconds; values &lt;= 0 disable trimming. The cap is applied here rather than on the
+write path, so a metric can sit over its cap by however many values arrive within one
+interval.
+
+#### Default
+
+```ts
+60000.
+```
+
+***
+
+### trimRemoveLimit? {#trimremovelimit}
+
+> `optional` **trimRemoveLimit?**: `number`
+
+Maximum values a single trim pass removes from one metric, so a history far beyond its
+cap is brought back over several passes rather than in one long write.
+
+#### Default
+
+```ts
+10000.
+```

@@ -1,10 +1,12 @@
 # Class: MetricValueWriter
 
 Accumulates metric values and persists them to entity storage.
-Runs on the background thread started by the telemetry connector, so nothing here is
-cached between flushes; the previous value for a metric is always read from storage,
-which keeps the counter chain correct when several load balanced nodes write to the
-same storage.
+Runs on the background thread started by the telemetry connector. The value a counter
+builds on is always read from storage rather than cached, which keeps the chain correct
+when several load balanced nodes write to the same storage, and that read is of the newest
+value alone, so the cost of a write does not grow with the history it is appending to. A
+gauge replaces the stored value rather than building on it, so it is written without any
+read at all. The retention cap is applied by the trim pass on its own interval.
 
 ## Constructors
 
@@ -49,6 +51,22 @@ Default interval in milliseconds between automatic writes.
 > `readonly` `static` **DEFAULT\_MAX\_CACHE\_SIZE**: `number` = `1000`
 
 Default maximum number of entries to hold when a write fails and the entries are re-queued.
+
+***
+
+### DEFAULT\_TRIM\_INTERVAL\_MS {#default_trim_interval_ms}
+
+> `readonly` `static` **DEFAULT\_TRIM\_INTERVAL\_MS**: `number` = `60000`
+
+Default interval in milliseconds between trim passes.
+
+***
+
+### DEFAULT\_TRIM\_REMOVE\_LIMIT {#default_trim_remove_limit}
+
+> `readonly` `static` **DEFAULT\_TRIM\_REMOVE\_LIMIT**: `number` = `10000`
+
+Default maximum number of values a single trim pass removes from one metric.
 
 ## Methods
 
@@ -138,6 +156,19 @@ snapshot would otherwise be skipped by a caller that simply joined it.
 
 A promise that resolves when all pending entries have been written to storage.
 
-#### Throws
+***
 
-GeneralError if the write lock could not be acquired within the timeout.
+### trim() {#trim}
+
+> **trim**(): `Promise`\<`void`\>
+
+Apply the retention cap to every capped metric written since the last pass.
+Runs on its own interval rather than on the write path, and removes at most
+trimRemoveLimit values per metric, so a history far beyond its cap is brought back over
+several passes instead of stalling one write.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when the pass is complete.
