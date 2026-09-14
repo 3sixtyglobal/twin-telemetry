@@ -164,6 +164,14 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 	private readonly _flushTimeoutMs: number;
 
 	/**
+	 * The flush task the background thread has been given which has not yet reached a final
+	 * state, with the value count it will have written once it completes. Present so a read
+	 * waits for a flush already in the queue rather than adding another to it.
+	 * @internal
+	 */
+	private _pendingFlush?: { taskId: string; coveredCount: number };
+
+	/**
 	 * Write requests waiting for their background task to complete, keyed by task id.
 	 * @internal
 	 */
@@ -306,7 +314,8 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			batchSize: options?.config?.batchSize,
 			batchIntervalMs: options?.config?.batchIntervalMs,
 			maxCacheSize: options?.config?.maxCacheSize,
-			mutexTimeoutMs: options?.config?.mutexTimeoutMs
+			trimIntervalMs: options?.config?.trimIntervalMs,
+			trimRemoveLimit: options?.config?.trimRemoveLimit
 		};
 
 		const cfgFlushTimeoutMs =
@@ -398,6 +407,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		this._started = false;
 		this.stopStallTimer();
 		this._outstandingTaskIds.clear();
+		this._pendingFlush = undefined;
 
 		// unregisterHandler terminates the worker without calling its shutdown method, so the
 		// flush above is what persists anything the thread still had pending.
@@ -865,13 +875,17 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			});
 		}
 
-		const sortBy: { property: keyof TelemetryMetricValue; sortDirection: SortDirection }[] =
-			existingMetric.type === MetricType.Counter
-				? [
-						{ property: "value", sortDirection: SortDirection.Descending },
-						{ property: "ts", sortDirection: SortDirection.Descending }
-					]
-				: [{ property: "ts", sortDirection: SortDirection.Descending }];
+		// Newest first, with the value breaking a tie for a counter. Leading on the value instead
+		// meant sorting the whole history by a column no index on the metric can serve, and it
+		// gave the same sequence anyway: the writer only ever moves a counter up, and forces each
+		// timestamp past the one it read, so a larger value always carries a later timestamp.
+		const sortBy: { property: keyof TelemetryMetricValue; sortDirection: SortDirection }[] = [
+			{ property: "ts", sortDirection: SortDirection.Descending }
+		];
+
+		if (existingMetric.type === MetricType.Counter) {
+			sortBy.push({ property: "value", sortDirection: SortDirection.Descending });
+		}
 
 		const result = await this._metricValueStorage.query(
 			condition,
@@ -976,6 +990,22 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 			return;
 		}
 
+		// A flush the thread has already been given which covers everything queued will write
+		// what this caller needs, so it waits for that one. Creating another would lengthen the
+		// very queue the caller is waiting on, which is how a backend slow enough to miss one
+		// flush timeout turns into a queue that grows with every read.
+		const pendingFlush = this._pendingFlush;
+		if (
+			values.length === 0 &&
+			!Is.empty(pendingFlush) &&
+			pendingFlush.coveredCount >= this._valuesQueued
+		) {
+			if (await this.waitForTask(pendingFlush.taskId)) {
+				this._valuesWritten = pendingFlush.coveredCount;
+			}
+			return;
+		}
+
 		let taskId: string;
 		try {
 			taskId = await this.createMetricValueTask(
@@ -992,9 +1022,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		// Read before waiting, so every value it counts belongs to a task the thread already
 		// has; anything queued afterwards leaves the counts apart for the next read.
 		const queued = this._valuesQueued;
+		this._pendingFlush = { taskId, coveredCount: queued };
 
 		// A task which does not confirm stays in the queue rather than being sent again, as the
-		// thread may already have its values; the counts stay apart so the next read asks again.
+		// thread may already have its values. The counts are only closed when it completes,
+		// which for a caller that gave up first happens in metricValueTaskStateChanged.
 		if (await this.waitForTask(taskId)) {
 			this._valuesWritten = queued;
 		}
@@ -1236,6 +1268,11 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 					level: "error",
 					error: BaseError.fromError(err)
 				});
+
+				// A check which could not read the task cannot vouch for the flush being tracked
+				// either, and the reads waiting for it have no other way out, so it is dropped
+				// and the next read asks the thread again.
+				this._pendingFlush = undefined;
 			} finally {
 				this._stallCheckRunning = false;
 				if (this._outstandingTaskIds.size > 0) {
@@ -1298,6 +1335,7 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 				data: { taskId: stalledTaskId, status: stalledTask?.status }
 			});
 			this._outstandingTaskIds.clear();
+			this._pendingFlush = undefined;
 			this._lastTaskProgress = Date.now();
 			this._stallRestartCount = 0;
 			return;
@@ -1350,7 +1388,10 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		// The tasks themselves are left in the queue, so the values already handed over are
 		// written by the replacement rather than lost. Anything waiting on one of them is
 		// released by its own flush timeout, or when the replacement completes it.
+		// The replacement reports the tasks it completes, but the flush being tracked was given
+		// to the thread that has gone, so it is dropped and the next read asks the new one.
 		this._outstandingTaskIds.clear();
+		this._pendingFlush = undefined;
 		this._lastTaskProgress = Date.now();
 		this._stallRestartCount += 1;
 
@@ -1415,6 +1456,16 @@ export class EntityStorageTelemetryConnector implements ITelemetryConnector {
 		this._outstandingTaskIds.delete(task.id);
 		this._lastTaskProgress = Date.now();
 		this._stallRestartCount = 0;
+
+		if (this._pendingFlush?.taskId === task.id) {
+			// A caller which gave up on this task is long gone, but the values it was waiting for
+			// are written all the same, so the counts are closed here rather than being left
+			// apart for every later read to ask about again.
+			if (task.status === TaskStatus.Success) {
+				this._valuesWritten = Math.max(this._valuesWritten, this._pendingFlush.coveredCount);
+			}
+			this._pendingFlush = undefined;
+		}
 
 		// The reset can shorten stallWaitMs() below what the current timer expects, so it is
 		// cleared and, if anything is still outstanding, re-armed.

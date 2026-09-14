@@ -38,8 +38,11 @@ const TEST_TIMEOUT = 30000;
  * @param maxAttempts The maximum number of 100ms polls before giving up.
  * @returns A promise that resolves once the condition is true or the bound is reached.
  */
-async function waitUntil(condition: () => boolean, maxAttempts = 200): Promise<void> {
-	for (let i = 0; i < maxAttempts && !condition(); i++) {
+async function waitUntil(
+	condition: () => boolean | Promise<boolean>,
+	maxAttempts = 200
+): Promise<void> {
+	for (let i = 0; i < maxAttempts && !(await condition()); i++) {
 		await new Promise<void>(resolve => setTimeout(resolve, 100));
 	}
 }
@@ -222,7 +225,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		const registerSpy = vi.spyOn(backgroundTaskService, "registerHandler");
 
 		await createConnector({
-			config: { batchSize: 4, batchIntervalMs: 0, maxCacheSize: 7, mutexTimeoutMs: 1234 }
+			config: { batchSize: 4, batchIntervalMs: 0, maxCacheSize: 7, trimIntervalMs: 30000 }
 		});
 
 		const handlerOptions = registerSpy.mock.calls[0][4] as {
@@ -235,7 +238,8 @@ describe("EntityStorageTelemetryConnector", () => {
 				batchSize: 4,
 				batchIntervalMs: 0,
 				maxCacheSize: 7,
-				mutexTimeoutMs: 1234
+				trimIntervalMs: 30000,
+				trimRemoveLimit: undefined
 			}
 		]);
 	});
@@ -523,8 +527,10 @@ describe("EntityStorageTelemetryConnector", () => {
 			await telemetry.addMetricValue("test", 11);
 			await telemetry.addMetricValue("test", 12);
 
+			// A gauge is stored with the timestamp it arrived with, so two set within the same
+			// millisecond hold the same one and the read cannot order them against each other.
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-			expect(result.entities.map(entity => entity.value)).toEqual([12, 11]);
+			expect(result.entities.map(entity => entity.value).sort()).toEqual([11, 12]);
 		},
 		TEST_TIMEOUT
 	);
@@ -691,7 +697,7 @@ describe("EntityStorageTelemetryConnector", () => {
 	test(
 		"prunes oldest values when maxHistory is exceeded",
 		async () => {
-			const telemetry = await createConnector();
+			const telemetry = await createConnector({ config: { trimIntervalMs: 50 } });
 			await telemetry.createMetric({
 				id: "test",
 				label: "Test",
@@ -703,8 +709,34 @@ describe("EntityStorageTelemetryConnector", () => {
 				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 			}
 
+			// The cap is applied by the trim pass on the background thread rather than by the
+			// write, so the history sits over it until the next pass.
+			await waitUntil(async () => (await readValues()).length === 3);
+
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 			expect(result.entities.map(entity => entity.value)).toEqual([5, 4, 3]);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"does not prune on the write path",
+		async () => {
+			const telemetry = await createConnector({ config: { trimIntervalMs: 0 } });
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 3
+			});
+
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
+
+			// Trimming is off, so nothing but the writes has touched the history.
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([5, 4, 3, 2, 1]);
 		},
 		TEST_TIMEOUT
 	);
@@ -728,7 +760,7 @@ describe("EntityStorageTelemetryConnector", () => {
 	test(
 		"prunes all excess entries when maxHistory is reduced after accumulation",
 		async () => {
-			const telemetry = await createConnector();
+			const telemetry = await createConnector({ config: { trimIntervalMs: 50 } });
 			await telemetry.createMetric({
 				id: "test",
 				label: "Test",
@@ -742,6 +774,8 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			await telemetry.updateMetric({ id: "test", label: "Test", maxHistory: 3 });
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			await waitUntil(async () => (await readValues()).length === 3);
 
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 			expect(result.entities.map(entity => entity.value)).toEqual([6, 5, 4]);
@@ -796,7 +830,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(result.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
 	});
 
-	test("sorts counter values by value before timestamp", async () => {
+	test("sorts counter values by timestamp before value", async () => {
 		const telemetry = await createConnector();
 		await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
@@ -815,8 +849,10 @@ describe("EntityStorageTelemetryConnector", () => {
 			value: 2
 		});
 
+		// A counter written through the connector never has a larger value at an older
+		// timestamp, so the two orderings only part for values written directly as these were.
 		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-		expect(result.entities.map(entity => entity.value)).toEqual([3, 2, 1]);
+		expect(result.entities.map(entity => entity.value)).toEqual([2, 1, 3]);
 	});
 
 	test(
@@ -1448,10 +1484,16 @@ describe("EntityStorageTelemetryConnector", () => {
 	});
 
 	test(
-		"asks the thread to write again when a write does not complete",
+		"does not queue a second flush for a read already waiting on one",
 		async () => {
 			const telemetry = await createConnector({
-				config: { batchSize: 100, batchIntervalMs: 0, flushTimeoutMs: 500 }
+				config: {
+					batchSize: 100,
+					batchIntervalMs: 0,
+					flushTimeoutMs: 300,
+					// Off, so the flush that never completes stays outstanding for the whole test.
+					taskStallTimeoutMs: 0
+				}
 			});
 			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
@@ -1463,12 +1505,97 @@ describe("EntityStorageTelemetryConnector", () => {
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
 			// A task that never reaches Success must not be taken as the values being written.
+			const missedSpy = vi
+				.spyOn(backgroundTaskService, "create")
+				.mockResolvedValueOnce("never-completes");
+			const stale = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(stale.entities.map(entity => entity.value)).toEqual([1]);
+			missedSpy.mockRestore();
+
+			// The flush is still outstanding and covers this read too, so it waits for that one.
+			// Queueing another here is what let a slow backend turn every read into a task on
+			// the queue the reads were already waiting behind.
+			const createSpy = vi.spyOn(backgroundTaskService, "create");
+			const alsoStale = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(createSpy).not.toHaveBeenCalled();
+			expect(alsoStale.entities.map(entity => entity.value)).toEqual([1]);
+			createSpy.mockRestore();
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"asks the thread to write again once the missed flush has been given up on",
+		async () => {
+			const telemetry = await createConnector({
+				config: {
+					batchSize: 100,
+					batchIntervalMs: 0,
+					flushTimeoutMs: 300,
+					taskStallTimeoutMs: 200
+				}
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			// A well formed id for a task which is not in the queue, so the stall check reads its
+			// state rather than failing on the id itself.
+			const createSpy = vi
+				.spyOn(backgroundTaskService, "create")
+				.mockResolvedValueOnce("background-task:entity-storage:never-completes");
+			const stale = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(stale.entities.map(entity => entity.value)).toEqual([1]);
+			createSpy.mockRestore();
+
+			// The task is not in the queue at all, so the stall check reports its state as missed
+			// and drops it; the read after that queues a fresh flush and sees the value.
+			await waitUntil(async () => {
+				const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+				return result.entities.length === 2;
+			});
+
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
+		},
+		TEST_TIMEOUT
+	);
+
+	test(
+		"asks the thread to write again when the stall check itself fails",
+		async () => {
+			const telemetry = await createConnector({
+				config: {
+					batchSize: 100,
+					batchIntervalMs: 0,
+					flushTimeoutMs: 300,
+					taskStallTimeoutMs: 200
+				}
+			});
+			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+
+			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			// An id the task service cannot even parse, so the check throws rather than reporting
+			// a state. The reads waiting on that flush have no other way out, so it has to be
+			// given up on here as well.
 			const createSpy = vi
 				.spyOn(backgroundTaskService, "create")
 				.mockResolvedValueOnce("never-completes");
 			const stale = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 			expect(stale.entities.map(entity => entity.value)).toEqual([1]);
 			createSpy.mockRestore();
+
+			await waitUntil(async () => {
+				const values = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+				return values.entities.length === 2;
+			});
 
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 			expect(result.entities.map(entity => entity.value)).toEqual([2, 1]);
@@ -1629,7 +1756,7 @@ describe("EntityStorageTelemetryConnector", () => {
 		async () => {
 			const createSpy = vi.spyOn(backgroundTaskService, "create");
 
-			const telemetry = await createConnector();
+			const telemetry = await createConnector({ config: { trimIntervalMs: 50 } });
 			await telemetry.createMetric({
 				id: "test",
 				label: "Test",
@@ -1650,6 +1777,8 @@ describe("EntityStorageTelemetryConnector", () => {
 
 			// The updated cap travels with the payload, so the thread trims to the new value.
 			expect(createSpy.mock.lastCall?.[1]).toMatchObject({ values: [{ maxHistory: 2 }] });
+
+			await waitUntil(async () => (await readValues()).length === 2);
 
 			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 			expect(result.entities.length).toEqual(2);
@@ -1760,7 +1889,9 @@ describe("EntityStorageTelemetryConnector", () => {
 		test(
 			"trimming runs per partition, not across the whole flushed batch",
 			async () => {
-				const telemetry = await createConnector({ config: { batchSize: 100, batchIntervalMs: 0 } });
+				const telemetry = await createConnector({
+					config: { batchSize: 100, batchIntervalMs: 0, trimIntervalMs: 50 }
+				});
 
 				await ContextIdStore.run({ [ContextIdKeys.Tenant]: "tenant-a" }, async () => {
 					await telemetry.createMetric({
@@ -1780,9 +1911,18 @@ describe("EntityStorageTelemetryConnector", () => {
 						maxHistory: 1
 					});
 					await telemetry.addMetricValue("m", MetricCounterOperation.Increment);
+
+					// Writes both partitions, so the trim pass has something to cap in each.
+					await telemetry.queryValues("m", undefined, undefined, undefined, 10);
 				});
 
-				await telemetry.stop();
+				// Each partition is trimmed under the context it was written in, so neither is
+				// capped against the values of the other.
+				await waitUntil(
+					async () =>
+						(await readValues({ [ContextIdKeys.Tenant]: "tenant-a" })).length === 1 &&
+						(await readValues({ [ContextIdKeys.Tenant]: "tenant-b" })).length === 1
+				);
 
 				expect(
 					(await readValues({ [ContextIdKeys.Tenant]: "tenant-a" })).map(entry => entry.value)

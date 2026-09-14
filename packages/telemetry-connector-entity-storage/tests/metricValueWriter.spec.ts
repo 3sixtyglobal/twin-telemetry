@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { ComponentFactory, Mutex } from "@twin.org/core";
+import { ComponentFactory } from "@twin.org/core";
 import { SortDirection } from "@twin.org/entity";
 import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
 import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
@@ -33,6 +33,18 @@ function buildPayload(
 		ts: Date.now(),
 		...overrides
 	};
+}
+
+/**
+ * Wait for a condition to hold, polling until it does or the attempts run out.
+ * @param condition The condition to wait for.
+ * @param maxAttempts The maximum number of polls before giving up.
+ * @returns A promise that resolves when the condition holds or the attempts run out.
+ */
+async function waitUntil(condition: () => Promise<boolean>, maxAttempts = 100): Promise<void> {
+	for (let i = 0; i < maxAttempts && !(await condition()); i++) {
+		await new Promise<void>(resolve => setTimeout(resolve, 20));
+	}
 }
 
 describe("MetricValueWriter", () => {
@@ -243,6 +255,7 @@ describe("MetricValueWriter", () => {
 			await writer.add([buildPayload({ maxHistory: 3 })]);
 		}
 		await writer.flush();
+		await writer.trim();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([3, 4, 5]);
@@ -250,7 +263,7 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
-	test("reads once for a capped metric, serving both the chain and the trim", async () => {
+	test("reads only the newest value when writing, whatever the cap", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
 
@@ -261,12 +274,49 @@ describe("MetricValueWriter", () => {
 		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
 		await writer.flush();
 
-		// A single descending read of maxHistory + batch rows seeds the chain and identifies
-		// everything falling outside the cap.
+		// One descending read of a single row seeds the chain; nothing about the write scales
+		// with the cap or with the history already stored.
 		expect(querySpy).toHaveBeenCalledTimes(1);
-		expect(querySpy.mock.calls[0][2]).toEqual(["id", "ts", "value"]);
-		expect(querySpy.mock.calls[0][4]).toEqual(3 + 5);
+		expect(querySpy.mock.calls[0][2]).toEqual(["ts", "value"]);
+		expect(querySpy.mock.calls[0][4]).toEqual(1);
 		querySpy.mockRestore();
+
+		await writer.stop();
+	});
+
+	test("does not trim on the write path", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
+
+		for (let i = 0; i < 5; i++) {
+			await writer.add([buildPayload({ maxHistory: 3 })]);
+		}
+		await writer.flush();
+
+		// The history is over the cap, but applying it is the trim pass's work.
+		expect(removeBatchSpy).not.toHaveBeenCalled();
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2, 3, 4, 5]);
+		removeBatchSpy.mockRestore();
+
+		await writer.stop();
+	});
+
+	test("trims on the configured interval", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0, trimIntervalMs: 50 });
+
+		for (let i = 0; i < 5; i++) {
+			await writer.add([buildPayload({ maxHistory: 3 })]);
+		}
+		await writer.flush();
+
+		await waitUntil(async () => {
+			const store = await telemetryMetricsValueEntityStorage.getStore();
+			return (store?.length ?? 0) === 3;
+		});
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([3, 4, 5]);
@@ -274,7 +324,27 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
-	test("keeps gauge values ordered across writes in the same millisecond", async () => {
+	test("leaves a metric with no cap untrimmed", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		for (let i = 0; i < 5; i++) {
+			await writer.add([buildPayload()]);
+		}
+		await writer.flush();
+
+		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
+		await writer.trim();
+		expect(removeBatchSpy).not.toHaveBeenCalled();
+		removeBatchSpy.mockRestore();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2, 3, 4, 5]);
+
+		await writer.stop();
+	});
+
+	test("stores a gauge with the timestamp it arrived with", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 0, batchIntervalMs: 0 });
 
@@ -282,27 +352,78 @@ describe("MetricValueWriter", () => {
 		await writer.add([buildPayload({ metricType: MetricType.Gauge, operation: 7, ts })]);
 		await writer.add([buildPayload({ metricType: MetricType.Gauge, operation: 9, ts })]);
 
-		// A gauge replaces the previous value rather than building on it, but the previous
-		// timestamp is still read so getMetric has an unambiguous most recent value.
+		// A gauge builds on nothing, so it needs neither the previous value nor the previous
+		// timestamp, and two written in the same millisecond simply share it.
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([7, 9]);
-		expect(valueStore?.map(entry => entry.ts)).toEqual([ts, ts + 1]);
+		expect(valueStore?.map(entry => entry.ts)).toEqual([ts, ts]);
 
 		await writer.stop();
 	});
 
-	test("still reads for a capped gauge so the history can be trimmed", async () => {
+	test("writes a gauge without reading the previous value", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
 
 		for (const operation of [7, 9, 11]) {
-			await writer.add([buildPayload({ metricType: MetricType.Gauge, operation, maxHistory: 2 })]);
+			await writer.add([buildPayload({ metricType: MetricType.Gauge, operation })]);
 		}
 
 		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
 		await writer.flush();
-		expect(querySpy).toHaveBeenCalledTimes(1);
+
+		// A gauge replaces the stored value rather than building on it, so there is nothing to
+		// read back before writing it.
+		expect(querySpy).not.toHaveBeenCalled();
 		querySpy.mockRestore();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([7, 9, 11]);
+
+		await writer.stop();
+	});
+
+	test("reads the previous value for an inc dec counter but not for a gauge", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		await writer.add([
+			buildPayload({
+				metricId: "counter",
+				metricType: MetricType.IncDecCounter,
+				operation: MetricCounterOperation.Increment
+			}),
+			buildPayload({ metricId: "gauge", metricType: MetricType.Gauge, operation: 42 })
+		]);
+
+		const querySpy = vi.spyOn(telemetryMetricsValueEntityStorage, "query");
+		await writer.flush();
+
+		expect(querySpy).toHaveBeenCalledTimes(1);
+		expect(querySpy.mock.calls[0][0]).toMatchObject({ value: "counter" });
+		querySpy.mockRestore();
+
+		await writer.stop();
+	});
+
+	test("trims a capped gauge as well as a counter", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		const ts = Date.now();
+		for (const [index, operation] of [7, 9, 11].entries()) {
+			await writer.add([
+				buildPayload({
+					metricType: MetricType.Gauge,
+					operation,
+					ts: ts + index,
+					maxHistory: 2
+				})
+			]);
+		}
+		await writer.flush();
+
+		await writer.trim();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([9, 11]);
@@ -310,7 +431,72 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
-	test("removes the overflow for every metric in the batch in one call", async () => {
+	test("applies the cap to values which all share a timestamp", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		// A gauge is stored with the timestamp it arrived with, so several written in the same
+		// millisecond all hold it and the cap cannot be applied by timestamp alone.
+		const ts = Date.now();
+		for (const operation of [7, 9, 11, 13]) {
+			await writer.add([
+				buildPayload({ metricType: MetricType.Gauge, operation, ts, maxHistory: 2 })
+			]);
+		}
+		await writer.flush();
+		await writer.trim();
+
+		// The value discriminates between them, so the cap is applied exactly and picks the same
+		// survivors every pass.
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([11, 13]);
+
+		// A second pass has nothing left to remove.
+		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
+		await writer.trim();
+		expect(removeBatchSpy).not.toHaveBeenCalled();
+		removeBatchSpy.mockRestore();
+
+		await writer.stop();
+	});
+
+	test("holds values identical on timestamp and value until a later write moves the boundary", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		const ts = Date.now();
+		for (let i = 0; i < 3; i++) {
+			await writer.add([
+				buildPayload({ metricType: MetricType.Gauge, operation: 7, ts, maxHistory: 2 })
+			]);
+		}
+		await writer.flush();
+		await writer.trim();
+
+		// Nothing separates them, so removing one would be an arbitrary choice between values the
+		// cap cannot order, and the history sits one over instead.
+		expect((await telemetryMetricsValueEntityStorage.getStore())?.length).toEqual(3);
+
+		for (const [index, operation] of [9, 11].entries()) {
+			await writer.add([
+				buildPayload({
+					metricType: MetricType.Gauge,
+					operation,
+					ts: ts + index + 1,
+					maxHistory: 2
+				})
+			]);
+		}
+		await writer.flush();
+		await writer.trim();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([9, 11]);
+
+		await writer.stop();
+	});
+
+	test("trims every capped metric written since the last pass", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
 
@@ -318,23 +504,24 @@ describe("MetricValueWriter", () => {
 			await writer.add([buildPayload({ metricId: "a", maxHistory: 1 })]);
 			await writer.add([buildPayload({ metricId: "b", maxHistory: 1 })]);
 		}
-
-		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
 		await writer.flush();
 
-		// The connectors chunk removeBatch internally, so the ids for both metrics go in one call.
-		expect(removeBatchSpy).toHaveBeenCalledTimes(1);
-		expect(removeBatchSpy.mock.calls[0][0]).toHaveLength(4);
-		removeBatchSpy.mockRestore();
+		await writer.trim();
 
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.filter(entry => entry.metricId === "a").map(e => e.value)).toEqual([3]);
 		expect(valueStore?.filter(entry => entry.metricId === "b").map(e => e.value)).toEqual([3]);
 
+		// A second pass has nothing left to do, as both metrics are back inside their cap.
+		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
+		await writer.trim();
+		expect(removeBatchSpy).not.toHaveBeenCalled();
+		removeBatchSpy.mockRestore();
+
 		await writer.stop();
 	});
 
-	test("scans the history when it is longer than one read window", async () => {
+	test("a write costs one read however far the history is past its cap", async () => {
 		const maxHistory = 3;
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 0, batchIntervalMs: 0 });
@@ -349,19 +536,52 @@ describe("MetricValueWriter", () => {
 		const removeBatchSpy = vi.spyOn(telemetryMetricsValueEntityStorage, "removeBatch");
 		await writer.add([buildPayload({ maxHistory })]);
 
-		// The window comes back full, so the cap is applied by paging the history oldest first.
-		const [seedRead, ...scanReads] = querySpy.mock.calls;
-		expect(seedRead[1]?.[0].sortDirection).toEqual(SortDirection.Descending);
-		expect(seedRead[4]).toEqual(maxHistory + 1);
-		expect(scanReads).toHaveLength(2);
-		expect(scanReads[0][1]?.[0].sortDirection).toEqual(SortDirection.Ascending);
+		expect(querySpy).toHaveBeenCalledTimes(1);
+		expect(querySpy.mock.calls[0][1]?.[0].sortDirection).toEqual(SortDirection.Descending);
+		expect(querySpy.mock.calls[0][4]).toEqual(1);
+		expect(removeBatchSpy).not.toHaveBeenCalled();
+
+		querySpy.mockClear();
+		removeBatchSpy.mockClear();
+		await writer.trim();
+
+		// The boundary read costs the cap rather than the 1201 rows stored, and the removals are
+		// paged behind it.
+		const [boundaryRead, ...removeReads] = querySpy.mock.calls;
+		expect(boundaryRead[1]?.[0].sortDirection).toEqual(SortDirection.Descending);
+		expect(boundaryRead[4]).toEqual(maxHistory);
+		expect(removeReads[0][1]?.[0].sortDirection).toEqual(SortDirection.Ascending);
 		querySpy.mockRestore();
 
-		// Everything outside the cap is still removed in a single call.
-		expect(removeBatchSpy).toHaveBeenCalledTimes(1);
-		expect(removeBatchSpy.mock.calls[0][0]).toHaveLength(1198);
+		expect(removeBatchSpy.mock.calls.flatMap(call => call[0])).toHaveLength(1198);
 		removeBatchSpy.mockRestore();
 
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([1199, 1200, 1201]);
+
+		await writer.stop();
+	});
+
+	test("removes no more than the limit in one trim pass", async () => {
+		const maxHistory = 3;
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 0, batchIntervalMs: 0, trimRemoveLimit: 500 });
+
+		const seeded: TelemetryMetricValue[] = [];
+		for (let i = 0; i < 1200; i++) {
+			seeded.push({ id: `seed-${i}`, metricId: "test", ts: i + 1, value: i + 1 });
+		}
+		await telemetryMetricsValueEntityStorage.setBatch(seeded);
+		await writer.add([buildPayload({ maxHistory })]);
+
+		await writer.trim();
+		expect((await telemetryMetricsValueEntityStorage.getStore())?.length).toEqual(701);
+
+		// The metric stays registered, so the passes which follow finish what this one left.
+		await writer.trim();
+		expect((await telemetryMetricsValueEntityStorage.getStore())?.length).toEqual(201);
+
+		await writer.trim();
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([1199, 1200, 1201]);
 
@@ -403,33 +623,32 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
-	test("does not re-queue the entries when only the trim fails", async () => {
+	test("keeps the values when a trim pass fails and retries it on the next", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
 
 		for (let i = 0; i < 5; i++) {
 			await writer.add([buildPayload({ maxHistory: 3 })]);
 		}
+		await writer.flush();
 
 		const removeBatchSpy = vi
 			.spyOn(telemetryMetricsValueEntityStorage, "removeBatch")
 			.mockRejectedValueOnce(new Error("storage unavailable"));
 
-		await writer.flush();
+		await writer.trim();
 		removeBatchSpy.mockRestore();
 
-		// The values are already durable, so replaying the operations would count them twice.
-		await writer.flush();
-
+		// A failed trim is reported and dropped: the values it could not remove are still there
+		// and, being durable, are never replayed through the write path.
 		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
 		expect(valueStore?.map(entry => entry.value)).toEqual([1, 2, 3, 4, 5]);
 
-		// The cap is applied again by the next write for the metric.
-		await writer.add([buildPayload({ maxHistory: 3 })]);
-		await writer.flush();
+		// The metric was not cleared, so the next pass applies the cap without another write.
+		await writer.trim();
 
 		const trimmedStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(trimmedStore?.map(entry => entry.value)).toEqual([4, 5, 6]);
+		expect(trimmedStore?.map(entry => entry.value)).toEqual([3, 4, 5]);
 
 		await writer.stop();
 	});
@@ -512,42 +731,6 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
-	test("fails the write when the lock cannot be acquired", async () => {
-		const lockSpy = vi.spyOn(Mutex, "lock").mockRejectedValueOnce(new Error("lock timeout"));
-
-		const writer = new MetricValueWriter();
-		await writer.start({ batchSize: 0, batchIntervalMs: 0 });
-
-		// Reporting success while nothing was written would let a read return stale values.
-		await expect(writer.add([buildPayload()])).rejects.toThrow("lock timeout");
-		lockSpy.mockRestore();
-
-		expect(await telemetryMetricsValueEntityStorage.getStore()).toHaveLength(0);
-
-		// The entry stays queued, so the next write still persists it.
-		await writer.flush();
-		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
-		expect(valueStore?.map(entry => entry.value)).toEqual([1]);
-
-		await writer.stop();
-	});
-
-	test("passes the configured mutex timeout to lock acquisition", async () => {
-		const lockSpy = vi.spyOn(Mutex, "lock");
-
-		const writer = new MetricValueWriter();
-		await writer.start({ batchSize: 0, batchIntervalMs: 0, mutexTimeoutMs: 1234 });
-
-		await writer.add([buildPayload()]);
-
-		expect(lockSpy).toHaveBeenCalledWith(expect.any(String), {
-			throwOnTimeout: true,
-			timeoutMs: 1234
-		});
-
-		lockSpy.mockRestore();
-		await writer.stop();
-	});
 	test("keeps the interval running when a write and its own logging both fail", async () => {
 		// Logging is the last thing a failed write does, and on the worker thread it writes to
 		// storage as well, so it is the realistic way for writePending itself to throw.

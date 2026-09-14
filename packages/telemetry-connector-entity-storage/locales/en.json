@@ -18,7 +18,8 @@
 		"metricValueWriter": {
 			"flushFailed": "Failed to flush metric values to storage",
 			"invalidMetricOperation": "The operation \"{operation}\" is not valid for metric \"{id}\" of type \"{type}\"",
-			"trimFailed": "Failed to trim the metric history to its retention cap",
+			"trimFailed": "Failed to trim the history of metric \"{id}\" to its retention cap",
+			"trimPassFailed": "The interval trim of the metric histories failed",
 			"intervalWriteFailed": "The interval write of the pending metric values failed"
 		}
 	},

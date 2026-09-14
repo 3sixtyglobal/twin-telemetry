@@ -36,7 +36,18 @@ export interface ITelemetryMetricValueWriterConfig {
 	maxCacheSize?: number;
 
 	/**
-	 * The timeout in milliseconds for acquiring the write lock.
+	 * Apply the retention caps of the metrics written since the last pass every this many
+	 * milliseconds; values &lt;= 0 disable trimming. The cap is applied here rather than on the
+	 * write path, so a metric can sit over its cap by however many values arrive within one
+	 * interval.
+	 * @default 60000.
 	 */
-	mutexTimeoutMs?: number;
+	trimIntervalMs?: number;
+
+	/**
+	 * Maximum values a single trim pass removes from one metric, so a history far beyond its
+	 * cap is brought back over several passes rather than in one long write.
+	 * @default 10000.
+	 */
+	trimRemoveLimit?: number;
 }

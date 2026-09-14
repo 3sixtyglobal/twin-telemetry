@@ -6,11 +6,6 @@
  */
 export interface IEntityStorageTelemetryConnectorConfig {
 	/**
-	 * The timeout in milliseconds for acquiring the metric value write lock on the background thread.
-	 */
-	mutexTimeoutMs?: number;
-
-	/**
 	 * The background thread writes the pending values when it has this many entries;
 	 * values &lt;= 1 disable size based writing.
 	 * @default 10.
@@ -30,6 +25,22 @@ export interface IEntityStorageTelemetryConnectorConfig {
 	 * @default 1000.
 	 */
 	maxCacheSize?: number;
+
+	/**
+	 * The background thread applies the retention caps of the metrics it has written every this
+	 * many milliseconds; values &lt;= 0 disable trimming. The cap is applied here rather than on
+	 * the write path, so a metric can sit over its cap by however many values arrive within one
+	 * interval.
+	 * @default 60000.
+	 */
+	trimIntervalMs?: number;
+
+	/**
+	 * Maximum values a single trim pass removes from one metric, so a history far beyond its
+	 * cap is brought back over several passes rather than in one long write.
+	 * @default 10000.
+	 */
+	trimRemoveLimit?: number;
 
 	/**
 	 * How long in milliseconds to wait for the background thread to confirm a flush before
