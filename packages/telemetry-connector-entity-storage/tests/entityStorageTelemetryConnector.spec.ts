@@ -707,30 +707,30 @@ describe("EntityStorageTelemetryConnector", () => {
 		expect(store?.[0].maxHistory).toEqual(5);
 	});
 
-	// test(
-	// 	"prunes oldest values when maxHistory is exceeded",
-	// 	async () => {
-	// 		const telemetry = await createConnector({ config: { trimIntervalMs: 50 } });
-	// 		await telemetry.createMetric({
-	// 			id: "test",
-	// 			label: "Test",
-	// 			type: MetricType.Counter,
-	// 			maxHistory: 3
-	// 		});
+	test(
+		"prunes oldest values when maxHistory is exceeded",
+		async () => {
+			const telemetry = await createConnector({ config: { trimIntervalMs: 50 } });
+			await telemetry.createMetric({
+				id: "test",
+				label: "Test",
+				type: MetricType.Counter,
+				maxHistory: 3
+			});
 
-	// 		for (let i = 0; i < 5; i++) {
-	// 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
-	// 		}
+			for (let i = 0; i < 5; i++) {
+				await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+			}
 
-	// 		// The cap is applied by the trim pass on the background thread rather than by the
-	// 		// write, so the history sits over it until the next pass.
-	// 		await waitUntil(async () => (await readValues()).length === 3);
+			// The cap is applied by the trim pass on the background thread rather than by the
+			// write, so the history sits over it until the next pass.
+			await waitUntil(async () => (await readValues()).length === 3);
 
-	// 		const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
-	// 		expect(result.entities.map(entity => entity.value)).toEqual([5, 4, 3]);
-	// 	},
-	// 	TEST_TIMEOUT
-	// );
+			const result = await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			expect(result.entities.map(entity => entity.value)).toEqual([5, 4, 3]);
+		},
+		TEST_TIMEOUT
+	);
 
 	test(
 		"does not prune on the write path",
