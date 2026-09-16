@@ -123,6 +123,19 @@ async function readValues(contextIds?: { [key: string]: string }): Promise<Telem
 	return result.entities as TelemetryMetricValue[];
 }
 
+/**
+ * Wait until the background task queue has nothing left in flight.
+ * @returns A promise that resolves once no task is pending or processing.
+ */
+async function waitForTasksSettled(): Promise<void> {
+	await waitUntil(async () => {
+		const tasks = await backgroundTaskEntityStorage.getStore();
+		return (tasks ?? []).every(
+			task => task.status !== TaskStatus.Pending && task.status !== TaskStatus.Processing
+		);
+	});
+}
+
 describe("EntityStorageTelemetryConnector", () => {
 	beforeEach(async () => {
 		connectors = [];
@@ -1531,8 +1544,11 @@ describe("EntityStorageTelemetryConnector", () => {
 				config: {
 					batchSize: 100,
 					batchIntervalMs: 0,
-					flushTimeoutMs: 300,
-					taskStallTimeoutMs: 200
+					// Both wait longer than a task takes to reach the thread and back: a stall
+					// check which fires while a real task is still in flight replaces the thread,
+					// and the shutdown writes the value the read below must not see yet.
+					flushTimeoutMs: 1500,
+					taskStallTimeoutMs: 1000
 				}
 			});
 			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
@@ -1541,6 +1557,10 @@ describe("EntityStorageTelemetryConnector", () => {
 			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			// The check acts on the oldest task the thread still owes, so the value's own task is
+			// left to complete first and the flush below is the only one outstanding.
+			await waitForTasksSettled();
 
 			// A well formed id for a task which is not in the queue, so the stall check reads its
 			// state rather than failing on the id itself.
@@ -1571,8 +1591,11 @@ describe("EntityStorageTelemetryConnector", () => {
 				config: {
 					batchSize: 100,
 					batchIntervalMs: 0,
-					flushTimeoutMs: 300,
-					taskStallTimeoutMs: 200
+					// Both wait longer than a task takes to reach the thread and back: a stall
+					// check which fires while a real task is still in flight replaces the thread,
+					// and the shutdown writes the value the read below must not see yet.
+					flushTimeoutMs: 1500,
+					taskStallTimeoutMs: 1000
 				}
 			});
 			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
@@ -1581,6 +1604,10 @@ describe("EntityStorageTelemetryConnector", () => {
 			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
 
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
+
+			// The check acts on the oldest task the thread still owes, so the value's own task is
+			// left to complete first and the flush below is the only one outstanding.
+			await waitForTasksSettled();
 
 			// An id the task service cannot even parse, so the check throws rather than reporting
 			// a state. The reads waiting on that flush have no other way out, so it has to be
