@@ -324,6 +324,74 @@ describe("MetricValueWriter", () => {
 		await writer.stop();
 	});
 
+	test("trims the values of a write a trim pass overlapped", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		for (let i = 0; i < 5; i++) {
+			await writer.add([buildPayload({ maxHistory: 3 })]);
+		}
+
+		// The trim pass runs on its own timer, so one can land in the window between the write
+		// registering the metric and its values reaching storage.
+		const setBatchSpy = vi
+			.spyOn(telemetryMetricsValueEntityStorage, "setBatch")
+			.mockImplementationOnce(async entities => {
+				await writer.trim();
+				await telemetryMetricsValueEntityStorage.setBatch(entities);
+			});
+
+		await writer.flush();
+		setBatchSpy.mockRestore();
+
+		await writer.trim();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([3, 4, 5]);
+
+		await writer.stop();
+	});
+
+	test("keeps the metric registered when a write lands during a trim pass", async () => {
+		const writer = new MetricValueWriter();
+		await writer.start({ batchSize: 100, batchIntervalMs: 0 });
+
+		for (let i = 0; i < 4; i++) {
+			await writer.add([buildPayload({ maxHistory: 3 })]);
+		}
+		await writer.flush();
+
+		// The boundary read of the pass cannot see the value written behind it, so retiring the
+		// metric here would leave that value over the cap.
+		const querySpy = vi
+			.spyOn(telemetryMetricsValueEntityStorage, "query")
+			.mockImplementationOnce(async (conditions, sortProperties, properties, cursor, pageSize) => {
+				const boundary = await telemetryMetricsValueEntityStorage.query(
+					conditions,
+					sortProperties,
+					properties,
+					cursor,
+					pageSize
+				);
+				await writer.add([buildPayload({ maxHistory: 3 })]);
+				await writer.flush();
+				return boundary;
+			});
+
+		await writer.trim();
+		querySpy.mockRestore();
+
+		const overlappedStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(overlappedStore?.map(entry => entry.value)).toEqual([2, 3, 4, 5]);
+
+		await writer.trim();
+
+		const valueStore = await telemetryMetricsValueEntityStorage.getStore();
+		expect(valueStore?.map(entry => entry.value)).toEqual([3, 4, 5]);
+
+		await writer.stop();
+	});
+
 	test("leaves a metric with no cap untrimmed", async () => {
 		const writer = new MetricValueWriter();
 		await writer.start({ batchSize: 100, batchIntervalMs: 0 });

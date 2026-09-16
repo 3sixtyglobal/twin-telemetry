@@ -295,8 +295,11 @@ export class MetricValueWriter {
 						this.trimMetric(target.metricId, target.maxHistory)
 					);
 
-					// An incomplete pass leaves the metric registered so the next one continues it.
-					if (isComplete) {
+					// An incomplete pass leaves the metric registered so the next one continues it,
+					// as does a write which landed during the pass: that registration is a new
+					// entry for the same key, and the values it added may be ones the boundary
+					// read of this pass could not see.
+					if (isComplete && this._toTrim.get(key) === target) {
 						this._toTrim.delete(key);
 					}
 				} catch (err) {
@@ -412,6 +415,10 @@ export class MetricValueWriter {
 		}
 
 		const entities: TelemetryMetricValue[] = [];
+		const trimTargets = new Map<
+			string,
+			{ metricId: string; maxHistory: number; contextIds: IContextIds }
+		>();
 
 		for (const [metricId, metricEntries] of byMetric) {
 			// A metric updated mid batch is capped at the value in force at its last write.
@@ -484,7 +491,7 @@ export class MetricValueWriter {
 			}
 
 			if (Is.integer(cap)) {
-				this._toTrim.set(metricKey, {
+				trimTargets.set(metricKey, {
 					metricId,
 					maxHistory: cap,
 					contextIds: metricEntries[0].contextIds ?? {}
@@ -494,6 +501,14 @@ export class MetricValueWriter {
 
 		if (entities.length > 0) {
 			await metricValueStorage.setBatch(entities);
+		}
+
+		// Registered only once the values are stored, as the trim pass runs on its own timer: a
+		// metric registered before the write lands reads a history still inside its cap, retires
+		// itself from the map, and leaves the values arriving behind it uncapped until another
+		// write registers the metric again.
+		for (const [key, target] of trimTargets) {
+			this._toTrim.set(key, target);
 		}
 	}
 
