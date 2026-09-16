@@ -56,15 +56,15 @@ The class name of the component.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Create a new metric.
+Create one or more metrics.
 
 #### Parameters
 
 ##### metric
 
-[`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)
+[`ITelemetryMetric`](../interfaces/ITelemetryMetric.md) \| [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)[]
 
-The metric details.
+The metric details, or the details of several metrics.
 
 #### Returns
 
@@ -137,6 +137,32 @@ The created metric value id.
 #### Implementation of
 
 [`ITelemetryConnector`](../interfaces/ITelemetryConnector.md).[`addMetricValue`](../interfaces/ITelemetryConnector.md#addmetricvalue)
+
+***
+
+### addMetricValues() {#addmetricvalues}
+
+> **addMetricValues**(`values`): `Promise`\<`string`[]\>
+
+Add multiple metric values.
+
+#### Parameters
+
+##### values
+
+[`ITelemetryMetricValueEntry`](../interfaces/ITelemetryMetricValueEntry.md)[]
+
+The metric values to add.
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+The created metric value ids.
+
+#### Implementation of
+
+[`ITelemetryConnector`](../interfaces/ITelemetryConnector.md).[`addMetricValues`](../interfaces/ITelemetryConnector.md#addmetricvalues)
 
 ***
 

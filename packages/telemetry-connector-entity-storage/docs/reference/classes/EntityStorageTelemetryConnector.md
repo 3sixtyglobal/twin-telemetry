@@ -1,6 +1,9 @@
 # Class: EntityStorageTelemetryConnector
 
 Class for performing telemetry operations in entity storage.
+The metric values are written by a long running background thread, so nothing about a value
+is held in memory here; only the metric definitions, which are immutable once registered,
+are cached.
 
 ## Implements
 
@@ -44,33 +47,17 @@ Runtime name for the class.
 
 ***
 
-### DEFAULT\_BATCH\_SIZE {#default_batch_size}
+### DEFAULT\_FLUSH\_TIMEOUT\_MS {#default_flush_timeout_ms}
 
-> `readonly` `static` **DEFAULT\_BATCH\_SIZE**: `number` = `10`
+> `readonly` `static` **DEFAULT\_FLUSH\_TIMEOUT\_MS**: `number` = `30_000`
 
-Default number of entries to accumulate before flushing.
-
-***
-
-### DEFAULT\_BATCH\_INTERVAL\_MS {#default_batch_interval_ms}
-
-> `readonly` `static` **DEFAULT\_BATCH\_INTERVAL\_MS**: `number` = `5000`
-
-Default interval in milliseconds between automatic flushes.
-
-***
-
-### DEFAULT\_MAX\_CACHE\_SIZE {#default_max_cache_size}
-
-> `readonly` `static` **DEFAULT\_MAX\_CACHE\_SIZE**: `number` = `1000`
-
-Default maximum number of entries to hold in the in-memory cache.
+Default time in milliseconds to wait for the background thread to confirm a flush.
 
 ***
 
 ### DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY {#default_metric_definition_cache_capacity}
 
-> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY**: `number` = `100`
+> `readonly` `static` **DEFAULT\_METRIC\_DEFINITION\_CACHE\_CAPACITY**: `number` = `1000`
 
 Maximum number of metric definitions to hold in the in-memory definition cache.
 
@@ -83,6 +70,42 @@ Maximum number of metric definitions to hold in the in-memory definition cache.
 Time-to-idle in milliseconds for cached metric definitions.
 Metric definitions are immutable once registered; a long TTI keeps active
 metrics cached without permanent references.
+
+***
+
+### DEFAULT\_TASK\_COALESCE\_MS {#default_task_coalesce_ms}
+
+> `readonly` `static` **DEFAULT\_TASK\_COALESCE\_MS**: `number` = `1000`
+
+Default time in milliseconds values are held so several share a single background task.
+Keeps the task write off the caller's path, which matters most for the metrics recorded
+on every REST request.
+The window is also what limits how many tasks the connector can produce, as one task
+carries a whole window regardless of how many values it holds. The scheduler moves a
+single task per cycle for a task type, which is of the order of a few per second once
+the task queue is on a database, so the window is set an order of magnitude below that:
+one task per second whatever the metric rate.
+
+***
+
+### DEFAULT\_COALESCE\_SIZE {#default_coalesce_size}
+
+> `readonly` `static` **DEFAULT\_COALESCE\_SIZE**: `number` = `10_000`
+
+Maximum number of values held while coalescing before a task is created regardless of
+how much of the window is left.
+This is a bound on the values held for the window rather than a throughput control; a
+limit low enough to be reached by ordinary traffic would raise the task rate above what
+the scheduler can drain.
+
+***
+
+### DEFAULT\_TASK\_STALL\_TIMEOUT\_MS {#default_task_stall_timeout_ms}
+
+> `readonly` `static` **DEFAULT\_TASK\_STALL\_TIMEOUT\_MS**: `number` = `60_000`
+
+Default time in milliseconds with tasks outstanding and none of them completing before
+the background thread is treated as stalled.
 
 ## Methods
 
@@ -108,7 +131,8 @@ The class name of the component.
 
 > **start**(): `Promise`\<`void`\>
 
-Start the connector; sets up the interval timer when batchIntervalMs is configured.
+Start the connector; registers the long running background thread which writes the
+metric values.
 
 #### Returns
 
@@ -126,13 +150,13 @@ A promise that resolves when the connector is ready to accept metric values.
 
 > **stop**(): `Promise`\<`void`\>
 
-Stop the connector; flushes any remaining cached entries and clears the timer.
+Stop the connector; writes any values still pending and releases the background thread.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the final flush completes and the timer is cleared.
+A promise that resolves when the final write completes and the thread is released.
 
 #### Implementation of
 
@@ -144,21 +168,28 @@ A promise that resolves when the final flush completes and the timer is cleared.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Create a new metric.
+Create one or more metrics.
+A single metric fails if it already exists; an array declares the set that should exist,
+creating the ones that are missing and leaving the rest untouched. The array form resolves
+what already exists with one query and writes the rest in one batch.
 
 #### Parameters
 
 ##### metric
 
-`ITelemetryMetric`
+`ITelemetryMetric` \| `ITelemetryMetric`[]
 
-The metric details.
+The metric details, or the details of several metrics.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been created.
+A promise that resolves when the metrics have been created.
+
+#### Throws
+
+AlreadyExistsError if a single metric already exists.
 
 #### Implementation of
 
@@ -223,6 +254,8 @@ A promise that resolves when the metric has been updated.
 > **addMetricValue**(`id`, `value`, `customData?`): `Promise`\<`string`\>
 
 Add a metric value.
+The value is handed to the background thread which computes it from the value currently
+in storage and performs the write, so it is not visible until the thread has flushed.
 
 #### Parameters
 
@@ -251,6 +284,33 @@ The id of the newly created metric value entry.
 #### Implementation of
 
 `ITelemetryConnector.addMetricValue`
+
+***
+
+### addMetricValues() {#addmetricvalues}
+
+> **addMetricValues**(`values`): `Promise`\<`string`[]\>
+
+Add multiple metric values, handing the whole set to the background thread as a single
+task rather than one per value.
+
+#### Parameters
+
+##### values
+
+`ITelemetryMetricValueEntry`[]
+
+The metric values to add.
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+The ids of the newly created metric value entries, in the order supplied.
+
+#### Implementation of
+
+`ITelemetryConnector.addMetricValues`
 
 ***
 
@@ -403,19 +463,3 @@ and a cursor which can be used to request more entities.
 #### Implementation of
 
 `ITelemetryConnector.queryValues`
-
-***
-
-### flush() {#flush}
-
-> **flush**(): `Promise`\<`void`\>
-
-Write all cached entries to storage and clear the cache.
-If the mutex cannot be acquired the call returns without writing.
-On a storage write failure the entries are returned to the head of the cache for the next attempt.
-
-#### Returns
-
-`Promise`\<`void`\>
-
-A promise that resolves when all cached entries have been written to storage.

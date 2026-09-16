@@ -40,6 +40,21 @@ The type of the logging component to use, can be undefined for no logging.
 
 ***
 
+### backgroundTaskComponentType? {#backgroundtaskcomponenttype}
+
+> `optional` **backgroundTaskComponentType?**: `string`
+
+The type of the background task component which runs the metric value writes on a
+background thread.
+
+#### Default
+
+```ts
+background-task
+```
+
+***
+
 ### config? {#config}
 
 > `optional` **config?**: [`IEntityStorageTelemetryConnectorConfig`](IEntityStorageTelemetryConnectorConfig.md)

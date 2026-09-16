@@ -18,6 +18,7 @@ import type {
 	ITelemetryGetMetricValueRequest,
 	ITelemetryGetMetricValueResponse,
 	ITelemetryListRequest,
+	ITelemetryMetricValueEntry,
 	ITelemetryListResponse,
 	ITelemetryMetric,
 	ITelemetryMetricValue,
@@ -56,12 +57,12 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 	}
 
 	/**
-	 * Create a new metric.
-	 * @param metric The metric details.
-	 * @returns A promise that resolves when the metric has been created.
+	 * Create one or more metrics.
+	 * @param metric The metric details, or the details of several metrics.
+	 * @returns A promise that resolves when the metrics have been created.
 	 */
-	public async createMetric(metric: ITelemetryMetric): Promise<void> {
-		Guards.object<ITelemetryMetric>(TelemetryRestClient.CLASS_NAME, nameof(metric), metric);
+	public async createMetric(metric: ITelemetryMetric | ITelemetryMetric[]): Promise<void> {
+		Guards.defined(TelemetryRestClient.CLASS_NAME, nameof(metric), metric);
 
 		await this.fetch<ITelemetryCreateMetricRequest, ICreatedResponse>("/metric", HttpMethod.POST, {
 			body: metric
@@ -170,6 +171,26 @@ export class TelemetryRestClient extends BaseRestClient implements ITelemetryCom
 			response.headers,
 			`${this.getPathPrefix()}/metric/:metricId/value/:id`
 		);
+	}
+
+	/**
+	 * Add multiple metric values.
+	 * @param values The metric values to add.
+	 * @returns The created metric value ids, in the order the values were supplied.
+	 */
+	public async addMetricValues(values: ITelemetryMetricValueEntry[]): Promise<string[]> {
+		Guards.array<ITelemetryMetricValueEntry>(
+			TelemetryRestClient.CLASS_NAME,
+			nameof(values),
+			values
+		);
+
+		// The REST surface records one value per request, so each value becomes a request.
+		const valueIds: string[] = [];
+		for (const entry of values) {
+			valueIds.push(await this.addMetricValue(entry.id, entry.value, entry.customData));
+		}
+		return valueIds;
 	}
 
 	/**

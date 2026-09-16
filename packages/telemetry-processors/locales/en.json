@@ -1,1 +1,9 @@
-{}
+{
+	"warn": {
+		"metricsRouteProcessor": {
+			"metricRecordsFailed": "Failed to record \"{count}\" request metrics",
+			"metricDrainFailed": "Failed to hand the queued request metrics to the telemetry component",
+			"metricRecordsDropped": "Dropped \"{count}\" request metrics because the recording queue was full"
+		}
+	}
+}

@@ -24,5 +24,6 @@ export * from "./models/ITelemetryComponent.js";
 export * from "./models/ITelemetryConnector.js";
 export * from "./models/ITelemetryMetric.js";
 export * from "./models/ITelemetryMetricValue.js";
+export * from "./models/ITelemetryMetricValueEntry.js";
 export * from "./models/metricCounterOperation.js";
 export * from "./models/metricType.js";

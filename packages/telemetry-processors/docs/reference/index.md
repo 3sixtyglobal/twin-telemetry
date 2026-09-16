@@ -8,6 +8,7 @@
 
 - [IMetricsRouteProcessorConfig](interfaces/IMetricsRouteProcessorConfig.md)
 - [IMetricsRouteProcessorConstructorOptions](interfaces/IMetricsRouteProcessorConstructorOptions.md)
+- [IPendingMetricRecording](interfaces/IPendingMetricRecording.md)
 
 ## Type Aliases
 

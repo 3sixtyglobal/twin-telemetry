@@ -11,8 +11,11 @@ import {
 import type { ILoggingComponent } from "@twin.org/logging-models";
 import { nameof } from "@twin.org/nameof";
 import {
+	MetricHelper,
+	MetricsProducerFactory,
 	type IMetricsCollectorComponent,
-	MetricsProducerFactory
+	type ITelemetryComponent,
+	type ITelemetryMetricValueEntry
 } from "@twin.org/telemetry-models";
 import type { IMetricsCollectorServiceConstructorOptions } from "./models/IMetricsCollectorServiceConstructorOptions.js";
 
@@ -36,6 +39,12 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 	 * @internal
 	 */
 	private readonly _platformComponent: IPlatformComponent;
+
+	/**
+	 * Telemetry component the collected values are recorded with.
+	 * @internal
+	 */
+	private readonly _telemetryComponent?: ITelemetryComponent;
 
 	/**
 	 * Polling interval in milliseconds.
@@ -66,6 +75,9 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 		);
 		this._platformComponent = ComponentFactory.get<IPlatformComponent>(
 			options?.platformComponentType ?? "platform"
+		);
+		this._telemetryComponent = ComponentFactory.getIfExists<ITelemetryComponent>(
+			options?.telemetryComponentType ?? "telemetry"
 		);
 
 		const intervalMs = options?.config?.intervalMs ?? 60_000;
@@ -134,20 +146,44 @@ export class MetricsCollectorService implements IMetricsCollectorComponent {
 		const names = MetricsProducerFactory.names();
 		const producers = names.map(name => MetricsProducerFactory.get(name));
 
-		for (const producer of producers) {
-			try {
-				await this._platformComponent.execute(async () => producer.collect());
-			} catch (err) {
-				await this._loggingComponent?.log({
-					source: MetricsCollectorService.CLASS_NAME,
-					level: "error",
-					message: "producerCollectionFailed",
-					data: {
-						producer: producer.className()
-					},
-					error: BaseError.fromError(err)
-				});
-			}
+		try {
+			await this._platformComponent.execute(async () => {
+				const values: ITelemetryMetricValueEntry[] = [];
+
+				for (const producer of producers) {
+					try {
+						values.push(...(await producer.collect()));
+					} catch (err) {
+						await this._loggingComponent?.log({
+							source: MetricsCollectorService.CLASS_NAME,
+							level: "error",
+							message: "producerCollectionFailed",
+							data: {
+								producer: producer.className()
+							},
+							error: BaseError.fromError(err)
+						});
+					}
+				}
+
+				// The whole cycle is recorded in one call, so a connector which persists the values
+				// writes them together instead of once per producer.
+				await MetricHelper.metricValues(this._telemetryComponent, values, async err =>
+					this._loggingComponent?.log({
+						source: MetricsCollectorService.CLASS_NAME,
+						level: "error",
+						message: "metricRecordFailed",
+						error: BaseError.fromError(err)
+					})
+				);
+			});
+		} catch (err) {
+			await this._loggingComponent?.log({
+				source: MetricsCollectorService.CLASS_NAME,
+				level: "error",
+				message: "collectionCycleFailed",
+				error: BaseError.fromError(err)
+			});
 		}
 
 		this.startTimer();

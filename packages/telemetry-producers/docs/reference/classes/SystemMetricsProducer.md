@@ -74,15 +74,15 @@ A promise that resolves when all system metrics have been registered.
 
 ### collect() {#collect}
 
-> **collect**(): `Promise`\<`void`\>
+> **collect**(): `Promise`\<`ITelemetryMetricValueEntry`[]\>
 
-Collect and push current system metric values.
+Read the current system metric values.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<`ITelemetryMetricValueEntry`[]\>
 
-A promise that resolves when all system metric values have been recorded.
+The current values for the system metrics.
 
 #### Implementation of
 

@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import { ComponentFactory } from "@twin.org/core";
-import type { ITelemetryComponent } from "@twin.org/telemetry-models";
+import type { ITelemetryComponent, ITelemetryMetricValueEntry } from "@twin.org/telemetry-models";
 import { ProcessMetricsProducer } from "../src/processMetricsProducer.js";
 
 const EXPECTED_METRIC_IDS = [
@@ -11,26 +11,35 @@ const EXPECTED_METRIC_IDS = [
 	"process_uptime_seconds"
 ];
 
+/**
+ * Index the collected values by metric id.
+ * @param values The values returned by the producer.
+ * @returns The values keyed by metric id.
+ */
+function toValueMap(values: ITelemetryMetricValueEntry[]): { [key: string]: number } {
+	const map: { [key: string]: number } = {};
+	for (const entry of values) {
+		map[entry.id] = entry.value as number;
+	}
+	return map;
+}
+
 function makeTelemetry(): {
 	telemetry: ITelemetryComponent;
 	registered: string[];
-	emittedValues: { [key: string]: number };
 } {
 	const registered: string[] = [];
-	const emittedValues: { [key: string]: number } = {};
 	const telemetry: ITelemetryComponent = {
 		className: () => "mock",
 		start: async () => {},
 		stop: async () => {},
 		createMetric: async metric => {
-			registered.push(metric.id);
+			registered.push(...(Array.isArray(metric) ? metric : [metric]).map(entry => entry.id));
 		},
 		getMetric: async () => ({ metric: {} as never, value: {} as never }),
 		updateMetric: async () => {},
-		addMetricValue: async (id, value) => {
-			emittedValues[id] = value as number;
-			return "v";
-		},
+		addMetricValue: async () => "v",
+		addMetricValues: async values => values.map(() => "v"),
 		getMetricValue: async (id, valueId) => ({
 			id: valueId,
 			metricId: id,
@@ -41,7 +50,7 @@ function makeTelemetry(): {
 		query: async () => ({ entities: [] }),
 		queryValues: async () => ({ metric: {} as never, entities: [] })
 	};
-	return { telemetry, registered, emittedValues };
+	return { telemetry, registered };
 }
 
 describe("ProcessMetricsProducer", () => {
@@ -65,7 +74,7 @@ describe("ProcessMetricsProducer", () => {
 	});
 
 	test("collect() emits a value for each metric", async () => {
-		const { telemetry, emittedValues } = makeTelemetry();
+		const { telemetry } = makeTelemetry();
 		ComponentFactory.register("telemetry", () => telemetry);
 
 		vi.spyOn(process, "memoryUsage").mockReturnValue({
@@ -78,7 +87,7 @@ describe("ProcessMetricsProducer", () => {
 		vi.spyOn(process, "uptime").mockReturnValue(120.5);
 
 		const producer = new ProcessMetricsProducer();
-		await producer.collect();
+		const emittedValues = toValueMap(await producer.collect());
 
 		expect(emittedValues.process_memory_rss_bytes).toBe(50_000_000);
 		expect(emittedValues.process_memory_heap_used_bytes).toBe(20_000_000);
@@ -87,7 +96,7 @@ describe("ProcessMetricsProducer", () => {
 	});
 
 	test("collect() rounds uptime to 1 decimal place", async () => {
-		const { telemetry, emittedValues } = makeTelemetry();
+		const { telemetry } = makeTelemetry();
 		ComponentFactory.register("telemetry", () => telemetry);
 
 		vi.spyOn(process, "memoryUsage").mockReturnValue({
@@ -100,7 +109,7 @@ describe("ProcessMetricsProducer", () => {
 		vi.spyOn(process, "uptime").mockReturnValue(99.999);
 
 		const producer = new ProcessMetricsProducer();
-		await producer.collect();
+		const emittedValues = toValueMap(await producer.collect());
 
 		expect(emittedValues.process_uptime_seconds).toBe(100);
 	});

@@ -1,6 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
 import type { IComponent } from "@twin.org/core";
+import type { ITelemetryMetricValueEntry } from "./ITelemetryMetricValueEntry.js";
 
 /**
  * Contract for a metrics producer.
@@ -21,9 +22,10 @@ export interface IMetricsProducer extends IComponent {
 	register(): Promise<void>;
 
 	/**
-	 * Push the current values for every metric this producer emits.
-	 * Called on every poll cycle.
-	 * @returns A promise that resolves when all metric values have been recorded.
+	 * Read the current values for every metric this producer emits.
+	 * Called on every poll cycle. The values are returned rather than recorded, so the
+	 * orchestrating service can record a whole cycle in one operation.
+	 * @returns The current values for this producer's metrics.
 	 */
-	collect(): Promise<void>;
+	collect(): Promise<ITelemetryMetricValueEntry[]>;
 }

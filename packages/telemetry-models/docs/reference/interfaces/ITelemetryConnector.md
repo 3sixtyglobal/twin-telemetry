@@ -12,21 +12,24 @@ Interface describing a telemetry connector.
 
 > **createMetric**(`metric`): `Promise`\<`void`\>
 
-Create a new metric.
+Create one or more metrics.
+A single metric fails if it already exists; an array declares the set that should exist,
+creating the ones that are missing and leaving the rest untouched, so implementations
+which persist the definitions can resolve the whole set in one operation.
 
 #### Parameters
 
 ##### metric
 
-[`ITelemetryMetric`](ITelemetryMetric.md)
+[`ITelemetryMetric`](ITelemetryMetric.md) \| [`ITelemetryMetric`](ITelemetryMetric.md)[]
 
-The metric details.
+The metric details, or the details of several metrics.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been created.
+A promise that resolves when the metrics have been created.
 
 ***
 
@@ -131,6 +134,29 @@ The custom data for the update operation.
 `Promise`\<`string`\>
 
 The created metric value id.
+
+***
+
+### addMetricValues() {#addmetricvalues}
+
+> **addMetricValues**(`values`): `Promise`\<`string`[]\>
+
+Add multiple metric values, so implementations which persist them can do so in one
+operation instead of one per value.
+
+#### Parameters
+
+##### values
+
+[`ITelemetryMetricValueEntry`](ITelemetryMetricValueEntry.md)[]
+
+The metric values to add.
+
+#### Returns
+
+`Promise`\<`string`[]\>
+
+The created metric value ids, in the order the values were supplied.
 
 ***
 

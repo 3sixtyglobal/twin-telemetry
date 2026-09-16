@@ -74,15 +74,15 @@ A promise that resolves when all process metrics have been registered.
 
 ### collect() {#collect}
 
-> **collect**(): `Promise`\<`void`\>
+> **collect**(): `Promise`\<`ITelemetryMetricValueEntry`[]\>
 
-Collect and push current process metric values.
+Read the current process metric values.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<`ITelemetryMetricValueEntry`[]\>
 
-A promise that resolves when all process metric values have been recorded.
+The current values for the process metrics.
 
 #### Implementation of
 

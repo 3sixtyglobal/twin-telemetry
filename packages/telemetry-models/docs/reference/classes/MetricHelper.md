@@ -19,6 +19,7 @@ Helper class for performing common metric operations, swallowing any errors from
 > `static` **createMetrics**(`telemetryComponent`, `metrics`): `Promise`\<`void`\>
 
 Create multiple metrics if they don't already exist, swallowing any already exists errors.
+A convenience wrapper over createMetric for callers that always have a list.
 
 #### Parameters
 
@@ -46,7 +47,7 @@ A promise that resolves when all metrics have been created or confirmed to exist
 
 > `static` **createMetric**(`telemetryComponent`, `metric`): `Promise`\<`void`\>
 
-Create a metric if it doesn't already exist, swallowing any already exists errors.
+Create one or more metrics if they don't already exist, swallowing any already exists errors.
 
 #### Parameters
 
@@ -54,25 +55,25 @@ Create a metric if it doesn't already exist, swallowing any already exists error
 
 [`ITelemetryComponent`](../interfaces/ITelemetryComponent.md) \| `undefined`
 
-The telemetry component to use for creating the metric.
+The telemetry component to use for creating the metrics.
 
 ##### metric
 
-[`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)
+[`ITelemetryMetric`](../interfaces/ITelemetryMetric.md) \| [`ITelemetryMetric`](../interfaces/ITelemetryMetric.md)[]
 
-The telemetry metric to create.
+The telemetry metric to create, or the metrics to create.
 
 #### Returns
 
 `Promise`\<`void`\>
 
-A promise that resolves when the metric has been created or confirmed to exist.
+A promise that resolves when the metrics have been created or confirmed to exist.
 
 ***
 
 ### metricIncrement() {#metricincrement}
 
-> `static` **metricIncrement**(`telemetryComponent`, `id`, `customData?`): `Promise`\<`void`\>
+> `static` **metricIncrement**(`telemetryComponent`, `id`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Increment a metric counter, swallowing any telemetry errors.
 
@@ -94,6 +95,12 @@ The metric ID.
 
 Optional custom data for the increment.
 
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
 #### Returns
 
 `Promise`\<`void`\>
@@ -104,7 +111,7 @@ A promise that resolves when the increment has been recorded or the error swallo
 
 ### metricDecrement() {#metricdecrement}
 
-> `static` **metricDecrement**(`telemetryComponent`, `id`, `customData?`): `Promise`\<`void`\>
+> `static` **metricDecrement**(`telemetryComponent`, `id`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Decrement a metric counter, swallowing any telemetry errors.
 
@@ -126,6 +133,12 @@ The metric ID.
 
 Optional custom data for the decrement.
 
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
 #### Returns
 
 `Promise`\<`void`\>
@@ -136,7 +149,7 @@ A promise that resolves when the decrement has been recorded or the error swallo
 
 ### metricValue() {#metricvalue}
 
-> `static` **metricValue**(`telemetryComponent`, `id`, `value`, `customData?`): `Promise`\<`void`\>
+> `static` **metricValue**(`telemetryComponent`, `id`, `value`, `customData?`, `onError?`): `Promise`\<`void`\>
 
 Set a metric value, swallowing any telemetry errors.
 
@@ -164,8 +177,50 @@ The metric value to set.
 
 Optional custom data for setting the value.
 
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
 #### Returns
 
 `Promise`\<`void`\>
 
 A promise that resolves when the value has been recorded or the error swallowed.
+
+***
+
+### metricValues() {#metricvalues}
+
+> `static` **metricValues**(`telemetryComponent`, `values`, `onError?`): `Promise`\<`void`\>
+
+Set several metric values at once, swallowing any telemetry errors.
+Components which support it record the whole set in one operation, which for a persisted
+connector is a single write rather than one per value.
+
+#### Parameters
+
+##### telemetryComponent
+
+[`ITelemetryComponent`](../interfaces/ITelemetryComponent.md) \| `undefined`
+
+The telemetry component to use for setting the metric values.
+
+##### values
+
+[`ITelemetryMetricValueEntry`](../interfaces/ITelemetryMetricValueEntry.md)[]
+
+The metric values to set.
+
+##### onError?
+
+(`err`) => `void` \| `Promise`\<`void`\>
+
+Optional callback invoked with the swallowed error, for callers that want visibility.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when the values have been recorded or the error swallowed.

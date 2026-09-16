@@ -1,7 +1,9 @@
 {
 	"error": {
 		"metricsCollectorService": {
-			"producerCollectionFailed": "Failed to collect metrics from producer \"{producer}\""
+			"producerCollectionFailed": "Failed to collect metrics from producer \"{producer}\"",
+			"metricRecordFailed": "Failed to record the collected metric values",
+			"collectionCycleFailed": "Failed to run the metrics collection cycle"
 		}
 	}
 }

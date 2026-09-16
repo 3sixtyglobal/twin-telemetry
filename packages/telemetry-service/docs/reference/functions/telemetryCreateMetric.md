@@ -2,7 +2,7 @@
 
 > **telemetryCreateMetric**(`httpRequestContext`, `componentName`, `request`, `baseRouteName`): `Promise`\<`ICreatedResponse`\>
 
-Create a new telemetry metric.
+Create one or more telemetry metrics.
 
 ## Parameters
 

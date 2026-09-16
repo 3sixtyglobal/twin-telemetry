@@ -8,7 +8,27 @@
 			"upDownCounterIncOrDecOnly": "An up/down counter metric can only be incremented, decremented or adjusted with an integer",
 			"gaugeNoIncDec": "A gauge can not be incremented or decremented",
 			"maxHistoryMustBePositiveInteger": "The maxHistory option must be a positive integer",
-			"flushFailed": "Failed to flush metric values to storage"
+			"metricValueTaskFailed": "The metric value background task failed \"{taskId}\"",
+			"backgroundTaskComponentMissing": "The metric values cannot be written as no background task component is available",
+			"metricValueThreadStalled": "No metric value background task has completed for \"{stalledForMs}\" ms, with task \"{taskId}\" outstanding of \"{taskCount}\", so the background thread is being replaced",
+			"metricValueThreadRestartFailed": "The stalled metric value background thread could not be replaced, so no further metric values can be written",
+			"stopFlushFailed": "The final metric value write failed while stopping, so the values the background thread was holding may not have been persisted",
+			"metricValueThreadCheckFailed": "The check for a stalled metric value background thread failed"
+		},
+		"metricValueWriter": {
+			"flushFailed": "Failed to flush metric values to storage",
+			"invalidMetricOperation": "The operation \"{operation}\" is not valid for metric \"{id}\" of type \"{type}\"",
+			"trimFailed": "Failed to trim the history of metric \"{id}\" to its retention cap",
+			"trimPassFailed": "The interval trim of the metric histories failed",
+			"intervalWriteFailed": "The interval write of the pending metric values failed"
+		}
+	},
+	"warn": {
+		"entityStorageTelemetryConnector": {
+			"flushTimeout": "The background thread did not confirm the flush within \"{timeoutMs}\" ms for task \"{taskId}\", with \"{taskCount}\" tasks outstanding",
+			"metricValueThreadRestarted": "The stalled metric value background thread was replaced, and the tasks it was given will be processed by the new one",
+			"metricValueTaskNotScheduled": "The metric value background task \"{taskId}\" has waited \"{stalledForMs}\" ms to be scheduled, with \"{taskCount}\" tasks outstanding, so the background thread is left in place as it has not been given the task",
+			"metricValueTaskStateMissed": "The completion of the metric value background task \"{taskId}\" was never reported, its state is now \"{status}\", so the background thread is treated as working rather than replaced"
 		}
 	},
 	"info": {
@@ -16,7 +36,9 @@
 			"metricCreated": "The metric was created \"{id}\" with type \"type\" and label \"{label}\"",
 			"metricUpdated": "The metric was updated \"{id}\" with type \"type\" and label \"{label}\"",
 			"metricRemoved": "The metric was removed \"{id}\"",
-			"metricValueCreated": "The metric value was created for \"{id}\" with value \"{value}\""
+			"metricValueCreated": "The metric value was queued for \"{id}\"",
+			"metricValuesCreated": "\"{count}\" metric values were queued",
+			"metricsCreated": "\"{count}\" metrics were created"
 		}
 	}
 }

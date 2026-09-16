@@ -17,15 +17,18 @@ const TEST_METRIC: ITelemetryMetric = {
 describe("MetricHelper", () => {
 	let createMetricMock: ReturnType<typeof vi.fn>;
 	let addMetricValueMock: ReturnType<typeof vi.fn>;
+	let addMetricValuesMock: ReturnType<typeof vi.fn>;
 	let mockComponent: ITelemetryComponent;
 
 	beforeEach(() => {
 		createMetricMock = vi.fn().mockResolvedValue(undefined);
 		addMetricValueMock = vi.fn().mockResolvedValue("value-id");
+		addMetricValuesMock = vi.fn().mockResolvedValue(["value-id"]);
 		mockComponent = {
 			CLASS_NAME: "MockTelemetryComponent",
 			createMetric: createMetricMock,
 			addMetricValue: addMetricValueMock,
+			addMetricValues: addMetricValuesMock,
 			getMetricValue: vi.fn(),
 			getMetric: vi.fn(),
 			updateMetric: vi.fn(),
@@ -33,6 +36,65 @@ describe("MetricHelper", () => {
 			query: vi.fn(),
 			queryValues: vi.fn()
 		} as unknown as ITelemetryComponent;
+	});
+
+	describe("createMetrics", () => {
+		test("hands the whole set to the component in one call", async () => {
+			await MetricHelper.createMetrics(mockComponent, [TEST_METRIC, TEST_METRIC]);
+
+			expect(createMetricMock).toHaveBeenCalledOnce();
+			expect(createMetricMock).toHaveBeenCalledWith([TEST_METRIC, TEST_METRIC]);
+		});
+
+		test("does nothing when there are no metrics", async () => {
+			await MetricHelper.createMetrics(mockComponent, []);
+			expect(createMetricMock).not.toHaveBeenCalled();
+		});
+
+		test("swallows an already exists error from the component", async () => {
+			createMetricMock.mockRejectedValueOnce(
+				new AlreadyExistsError("test", "metricAlreadyExists", TEST_METRIC.id)
+			);
+
+			await expect(
+				MetricHelper.createMetrics(mockComponent, [TEST_METRIC])
+			).resolves.toBeUndefined();
+		});
+	});
+
+	describe("metricValues", () => {
+		test("does nothing when telemetryComponent is undefined", async () => {
+			await expect(
+				MetricHelper.metricValues(undefined, [{ id: "a", value: 1 }])
+			).resolves.toBeUndefined();
+		});
+
+		test("does nothing when there are no values", async () => {
+			await MetricHelper.metricValues(mockComponent, []);
+			expect(addMetricValuesMock).not.toHaveBeenCalled();
+		});
+
+		test("hands the whole set to the component in one call", async () => {
+			const values = [
+				{ id: "a", value: 1 },
+				{ id: "b", value: MetricCounterOperation.Increment }
+			];
+			await MetricHelper.metricValues(mockComponent, values);
+
+			expect(addMetricValuesMock).toHaveBeenCalledOnce();
+			expect(addMetricValuesMock).toHaveBeenCalledWith(values);
+			expect(addMetricValueMock).not.toHaveBeenCalled();
+		});
+
+		test("swallows errors and reports them to onError", async () => {
+			addMetricValuesMock.mockRejectedValueOnce(new Error("telemetry down"));
+			const onError = vi.fn();
+
+			await expect(
+				MetricHelper.metricValues(mockComponent, [{ id: "a", value: 1 }], onError)
+			).resolves.toBeUndefined();
+			expect(onError).toHaveBeenCalledOnce();
+		});
 	});
 
 	describe("createMetric", () => {
@@ -90,6 +152,28 @@ describe("MetricHelper", () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricIncrement(mockComponent, "test-id")).resolves.toBeUndefined();
 		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
+		});
+
+		test("does not invoke onError when addMetricValue succeeds", async () => {
+			const onError = vi.fn();
+			await MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).not.toHaveBeenCalled();
+		});
+
+		test("swallows errors thrown by onError itself", async () => {
+			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
+			const onError = vi.fn().mockRejectedValueOnce(new Error("onError blew up"));
+			await expect(
+				MetricHelper.metricIncrement(mockComponent, "test-id", undefined, onError)
+			).resolves.toBeUndefined();
+		});
 	});
 
 	describe("metricDecrement", () => {
@@ -120,6 +204,14 @@ describe("MetricHelper", () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricDecrement(mockComponent, "test-id")).resolves.toBeUndefined();
 		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricDecrement(mockComponent, "test-id", undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
+		});
 	});
 
 	describe("metricValue", () => {
@@ -141,6 +233,14 @@ describe("MetricHelper", () => {
 		test("swallows errors from addMetricValue", async () => {
 			addMetricValueMock.mockRejectedValueOnce(new Error("telemetry error"));
 			await expect(MetricHelper.metricValue(mockComponent, "test-id", 42)).resolves.toBeUndefined();
+		});
+
+		test("invokes onError with the swallowed error", async () => {
+			const error = new Error("telemetry error");
+			addMetricValueMock.mockRejectedValueOnce(error);
+			const onError = vi.fn();
+			await MetricHelper.metricValue(mockComponent, "test-id", 42, undefined, onError);
+			expect(onError).toHaveBeenCalledWith(error);
 		});
 	});
 });

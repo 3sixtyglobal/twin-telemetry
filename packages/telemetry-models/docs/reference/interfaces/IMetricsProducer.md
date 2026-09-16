@@ -32,13 +32,14 @@ A promise that resolves when all metrics have been registered.
 
 ### collect() {#collect}
 
-> **collect**(): `Promise`\<`void`\>
+> **collect**(): `Promise`\<[`ITelemetryMetricValueEntry`](ITelemetryMetricValueEntry.md)[]\>
 
-Push the current values for every metric this producer emits.
-Called on every poll cycle.
+Read the current values for every metric this producer emits.
+Called on every poll cycle. The values are returned rather than recorded, so the
+orchestrating service can record a whole cycle in one operation.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<[`ITelemetryMetricValueEntry`](ITelemetryMetricValueEntry.md)[]\>
 
-A promise that resolves when all metric values have been recorded.
+The current values for this producer's metrics.
