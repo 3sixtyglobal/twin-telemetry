@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.10.1-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.10.1-next.0...telemetry-producers-v0.10.1-next.1) (2026-09-18)
+
+
+### Features
+
+* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* doc update ([455fabb](https://github.com/iotaledger/twin-telemetry/commit/455fabbd82d30969aab830c6e804b48478d0f9f2))
+* linting and dependency update ([894df58](https://github.com/iotaledger/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
+* metric values in background ([#118](https://github.com/iotaledger/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/iotaledger/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
+* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* use metric helper to swallow exceptions ([64e26cb](https://github.com/iotaledger/twin-telemetry/commit/64e26cb9bc725d4884b1dfeb9b13f2c754b568c2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.10.1-next.0 to 0.10.1-next.1
+
 ## [0.10.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-producers-v0.10.0...telemetry-producers-v0.10.0) (2026-09-16)
 
 
