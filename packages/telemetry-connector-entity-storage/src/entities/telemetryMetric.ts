@@ -10,13 +10,13 @@ export class TelemetryMetric {
 	/**
 	 * The id.
 	 */
-	@property({ type: "string", isPrimary: true })
+	@property({ type: "string", isPrimary: true, maxLength: 255 })
 	public id!: string;
 
 	/**
 	 * The label.
 	 */
-	@property({ type: "string", isSecondary: true })
+	@property({ type: "string", maxLength: 256, isSecondary: true })
 	public label!: string;
 
 	/**
@@ -28,13 +28,13 @@ export class TelemetryMetric {
 	/**
 	 * The unit.
 	 */
-	@property({ type: "string", optional: true })
+	@property({ type: "string", maxLength: 128, optional: true })
 	public unit?: string;
 
 	/**
 	 * The description.
 	 */
-	@property({ type: "string", optional: true })
+	@property({ type: "string", maxLength: 1024, optional: true })
 	public description?: string;
 
 	/**
