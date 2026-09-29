@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.10.1-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.10.1-next.0...telemetry-processors-v0.10.1-next.1) (2026-09-18)
+
+
+### Features
+
+* add web route processor ([#83](https://github.com/iotaledger/twin-telemetry/issues/83)) ([35c3979](https://github.com/iotaledger/twin-telemetry/commit/35c3979b43d3c0018508605ebfd3dfa6d207d7b0))
+* metric values in background ([#118](https://github.com/iotaledger/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/iotaledger/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
+
+
+### Bug Fixes
+
+* fan out tenant-less metric values per tenant and surface swallowed recording failures ([#110](https://github.com/iotaledger/twin-telemetry/issues/110)) ([cc87cd9](https://github.com/iotaledger/twin-telemetry/commit/cc87cd9b5d17269419c40abfed7070efb8cf8454))
+* overloading connector ([#128](https://github.com/iotaledger/twin-telemetry/issues/128)) ([3f234e5](https://github.com/iotaledger/twin-telemetry/commit/3f234e5019702829ac3d01cf4967ee58698ef54c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @twin.org/telemetry-models bumped from 0.10.1-next.0 to 0.10.1-next.1
+
 ## [0.10.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-processors-v0.10.0...telemetry-processors-v0.10.0) (2026-09-16)
 
 

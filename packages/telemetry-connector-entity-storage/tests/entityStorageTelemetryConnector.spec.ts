@@ -1511,9 +1511,12 @@ describe("EntityStorageTelemetryConnector", () => {
 			await telemetry.createMetric({ id: "test", label: "Test", type: MetricType.Counter });
 
 			// Warm the worker first, so the short flush timeout below is only measuring the
-			// task that never completes and not the one-off thread startup.
+			// task that never completes and not the one-off thread startup. On a loaded machine
+			// that startup outlasts the flush timeout, so wait for the value rather than assume
+			// the read above returned with it written.
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 			await telemetry.queryValues("test", undefined, undefined, undefined, 10);
+			await waitUntil(async () => (await readValues()).length === 1);
 
 			await telemetry.addMetricValue("test", MetricCounterOperation.Increment);
 
