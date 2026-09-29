@@ -1,6 +1,6 @@
 {
 	"name": "@twin.org/telemetry-connector-entity-storage",
-	"version": "0.10.1-next.1",
+	"version": "0.11.0",
 	"description": "Entity storage connector for persisting telemetry metrics.",
 	"repository": {
 		"type": "git",
@@ -28,23 +28,23 @@
 		"dist:no-test": "pnpm run clean && concurrently -g -n build,locales,types \"pnpm run build\" \"pnpm run validate-locales\" \"pnpm run test:build\""
 	},
 	"dependencies": {
-		"@twin.org/background-task-models": "next",
-		"@twin.org/context": "next",
-		"@twin.org/core": "next",
-		"@twin.org/entity": "next",
-		"@twin.org/entity-storage-models": "next",
-		"@twin.org/logging-models": "next",
-		"@twin.org/modules": "next",
-		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.10.1-next.1"
+		"@twin.org/background-task-models": "^0.10.0",
+		"@twin.org/context": "^0.11.0",
+		"@twin.org/core": "^0.11.0",
+		"@twin.org/entity": "^0.11.0",
+		"@twin.org/entity-storage-models": "^0.11.0",
+		"@twin.org/logging-models": "^0.11.0",
+		"@twin.org/modules": "^0.11.0",
+		"@twin.org/nameof": "^0.11.0",
+		"@twin.org/telemetry-models": "^0.11.0"
 	},
 	"devDependencies": {
-		"@twin.org/background-task-service": "next",
-		"@twin.org/entity-storage-connector-file": "next",
-		"@twin.org/entity-storage-connector-memory": "next",
-		"@twin.org/nameof-transformer": "next",
-		"@twin.org/nameof-vitest-plugin": "next",
-		"@twin.org/validate-locales": "next",
+		"@twin.org/background-task-service": "^0.10.0",
+		"@twin.org/entity-storage-connector-file": "^0.11.0",
+		"@twin.org/entity-storage-connector-memory": "^0.11.0",
+		"@twin.org/nameof-transformer": "^0.11.0",
+		"@twin.org/nameof-vitest-plugin": "^0.11.0",
+		"@twin.org/validate-locales": "^0.11.0",
 		"@types/node": "26.6.2",
 		"@vitest/coverage-v8": "5.0.1",
 		"concurrently": "10.0.5",

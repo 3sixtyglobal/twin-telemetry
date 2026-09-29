@@ -242,51 +242,51 @@ importers:
   packages/telemetry-connector-entity-storage:
     dependencies:
       '@twin.org/background-task-models':
-        specifier: next
-        version: 0.10.1-next.1
+        specifier: ^0.10.0
+        version: 0.10.0
       '@twin.org/context':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity-storage-models':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/logging-models':
-        specifier: next
-        version: 0.10.1-next.3
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/modules':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
     devDependencies:
       '@twin.org/background-task-service':
-        specifier: next
-        version: 0.10.1-next.1
+        specifier: ^0.10.0
+        version: 0.10.0
       '@twin.org/entity-storage-connector-file':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity-storage-connector-memory':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@types/node':
         specifier: 26.6.2
         version: 26.6.2
@@ -342,39 +342,39 @@ importers:
         specifier: 2.11.0
         version: 2.11.0(@opentelemetry/api@1.9.1)
       '@twin.org/context':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity-storage-models':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/logging-models':
-        specifier: next
-        version: 0.10.1-next.3
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-connector-entity-storage':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-connector-entity-storage
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
     devDependencies:
       '@twin.org/entity-storage-connector-memory':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@types/node':
         specifier: 26.6.2
         version: 26.6.2
@@ -415,24 +415,24 @@ importers:
   packages/telemetry-models:
     dependencies:
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
     devDependencies:
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@vitest/coverage-v8':
         specifier: 5.0.1
         version: 5.0.1(vitest@5.0.1)
@@ -467,36 +467,36 @@ importers:
   packages/telemetry-processors:
     dependencies:
       '@twin.org/api-models':
-        specifier: next
-        version: 0.10.1-next.6
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/context':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/logging-models':
-        specifier: next
-        version: 0.10.1-next.3
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
     devDependencies:
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/web':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@types/node':
         specifier: 26.6.2
         version: 26.6.2
@@ -534,24 +534,24 @@ importers:
   packages/telemetry-producers:
     dependencies:
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
     devDependencies:
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@types/node':
         specifier: 26.6.2
         version: 26.6.2
@@ -589,36 +589,36 @@ importers:
   packages/telemetry-rest-client:
     dependencies:
       '@twin.org/api-core':
-        specifier: next
-        version: 0.10.1-next.6(supports-color@10.2.2)
+        specifier: ^0.11.0
+        version: 0.11.0(supports-color@10.2.2)
       '@twin.org/api-models':
-        specifier: next
-        version: 0.10.1-next.6
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
       '@twin.org/web':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
     devDependencies:
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@vitest/coverage-v8':
         specifier: 5.0.1
         version: 5.0.1(vitest@5.0.1)
@@ -653,42 +653,42 @@ importers:
   packages/telemetry-service:
     dependencies:
       '@twin.org/api-models':
-        specifier: next
-        version: 0.10.1-next.6
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/context':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/core':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/entity':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/logging-models':
-        specifier: next
-        version: 0.10.1-next.3
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/telemetry-models':
-        specifier: 0.10.1-next.1
+        specifier: ^0.11.0
         version: link:../telemetry-models
       '@twin.org/web':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
     devDependencies:
       '@twin.org/nameof-transformer':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/nameof-vitest-plugin':
-        specifier: next
-        version: 0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
+        specifier: ^0.11.0
+        version: 0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
       '@twin.org/ts-to-openapi':
-        specifier: next
-        version: 0.9.3-next.1
+        specifier: ^0.11.0
+        version: 0.11.0
       '@twin.org/validate-locales':
-        specifier: next
-        version: 0.10.1-next.10
+        specifier: ^0.11.0
+        version: 0.11.0
       '@vitest/coverage-v8':
         specifier: 5.0.1
         version: 5.0.1(vitest@5.0.1)
@@ -1142,8 +1142,14 @@ packages:
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
 
+  '@formatjs/icu-messageformat-parser@3.5.16':
+    resolution: {integrity: sha512-kl6b/4D56gjGZi4ZewSmvXbalHwjOUI5ogEHPZqw42goeXTTrL7/yuPzvdrvr0QigDtvaOeb+UeMf62jks43Yg==}
+
   '@formatjs/icu-messageformat-parser@3.5.20':
     resolution: {integrity: sha512-DUzCb2iskGDKvLU7P+nz/rjpmN59luoTRbWHFFNYNnZTxWCKvwPI94rNll99TGZaI6XoTbDF0QGegk21GFrQZQ==}
+
+  '@formatjs/icu-skeleton-parser@2.1.11':
+    resolution: {integrity: sha512-j8cUmOJzVgkHuS0QiQ6ga76UIoLOFSAMWhs7aZJztH3aAdCOAE6vpC8KVvFB4cU10ON0y2/5oOVmPJ43s2lTwA==}
 
   '@formatjs/icu-skeleton-parser@2.1.12':
     resolution: {integrity: sha512-ca7tZMLpfHX3sUD7hP6gE/qr6Iq89EDd3ZLeRhbsB7r0UD55DGJq+tmFLzrGrnx5StahUevQmQQVtbDRHsfDHA==}
@@ -1216,12 +1222,32 @@ packages:
       '@emnapi/core': ^1.7.1 || ^2.0.0-alpha.4
       '@emnapi/runtime': ^1.7.1 || ^2.0.0-alpha.4
 
+  '@noble/ciphers@2.2.0':
+    resolution: {integrity: sha512-Z6pjIZ/8IJcCGzb2S/0Px5J81yij85xASuk1teLNeg75bfT07MV3a/O2Mtn1I2se43k3lkVEcFaR10N4cgQcZA==}
+    engines: {node: '>= 20.19.0'}
+
   '@noble/ciphers@2.4.0':
     resolution: {integrity: sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw==}
     engines: {node: '>= 20.19.0'}
 
+  '@noble/curves@2.2.0':
+    resolution: {integrity: sha512-T/BoHgFXirb0ENSPBquzX0rcjXeM6Lo892a2jlYJkqk83LqZx0l1Of7DzlKJ6jkpvMrkHSnAcgb5JegL8SeIkQ==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/curves@2.3.0':
+    resolution: {integrity: sha512-v7cY+4oWYPQszRj6ZFGzTVL7uP2TaLo1xMhWHzYC5wj0ZhOXQ5x+sBre8rF3hi8cAoi0bh1qXoovoOkdFtvqEg==}
+    engines: {node: '>= 20.19.0'}
+
   '@noble/curves@2.4.0':
     resolution: {integrity: sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.2.0':
+    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.3.0':
+    resolution: {integrity: sha512-oN+QwyX7VSHotibwubG3kpzbwKrfnyR6OOO+3Nk/53ADL7FmgHHz4TgrbaYKvvOw09u6QTx0oiH1cNCIOuN0CQ==}
     engines: {node: '>= 20.19.0'}
 
   '@noble/hashes@2.4.0':
@@ -1468,11 +1494,20 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
+  '@scure/base@2.2.0':
+    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
+
   '@scure/base@2.4.0':
     resolution: {integrity: sha512-thZ1TuJwFwBblOhgsjDKvvGirBxNp+wSvY/DR6tJBJOTDhdAAcHJ8Vbr2eFnqaxeca4+t0i9KBf+uHYGWwZORg==}
 
+  '@scure/bip32@2.2.0':
+    resolution: {integrity: sha512-zFr7t2F+a9+5tB7QbarF2HQNYrgjCNaoLAupZdKkrFMYMozJf5zqH2WJCQibMzm1qQ0QogrxVGO3qXfQDYMaQg==}
+
   '@scure/bip32@2.4.0':
     resolution: {integrity: sha512-i3DS0CptAocyvqE4n3SUkpzeQK4vJMFwWLofTwRiiKo2aWojBOfyMCgfKw9HVpO6fSY5AK86sHS/Uzn8kK9Few==}
+
+  '@scure/bip39@2.2.0':
+    resolution: {integrity: sha512-T/Bj/YvYMNkIPq6EENO6/rcs2e7qTNuyoUXf0KBFDmp0ZDu0H2X4Lq6yC3i0c8PcWkov5EbW+yQZZbdMmk154A==}
 
   '@scure/bip39@2.4.0':
     resolution: {integrity: sha512-82dxFbZUYboyOf0AXiydsQrFQ5Q4h9mX+O2UkE91ROYmsc0BKMGZLwDmy96Jpa2+vrtoxomjUhy1RPIgH/r2nA==}
@@ -1522,94 +1557,150 @@ packages:
     peerDependencies:
       eslint: '>=7.7.0'
 
-  '@twin.org/api-core@0.10.1-next.6':
-    resolution: {integrity: sha512-mu4E9GHBQueBy5CmlBLEgcRGJqhErdHysbxKdiDvexnXYGjeXZzGh+Xz2hj6Z8f5SFRzn6hXY1+AyuEcn3ymCw==}
+  '@twin.org/api-core@0.11.0':
+    resolution: {integrity: sha512-zK9VVJ+kCQsdFhxtjsc5rU/mfVsdb3a7mpuw9aA8a+U5uuSJE055al7DJ9x+vZnEjzkbX335dYWUGDWETPBcNw==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/api-models@0.10.1-next.6':
-    resolution: {integrity: sha512-tHWC0gBPtl5YaqHNWNi/h3svoKnZq4xByOILQ81ORODJnaXhiDrA9hK06IYHccmtYydGnwCTjFP8JJGSuscN0Q==}
+  '@twin.org/api-models@0.10.0':
+    resolution: {integrity: sha512-cKJ9j8tePU92dvlEIm8Ju7nTmtp3eeu0HBHtAZ+5j+gxZ17NK13bekPDXLM556GbxKbcdwLFBpAPsbR5xjRSCQ==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/background-task-models@0.10.1-next.1':
-    resolution: {integrity: sha512-uopPfGHVwOkKbzB+aa3WboJOKERrsESFg8NLg/El7QcS4UANNbMCiDUpJTeejO5JPhvjEBmRclcYzfVS1bQ+jQ==}
+  '@twin.org/api-models@0.11.0':
+    resolution: {integrity: sha512-RmgdVe09mAgQkRwqs/pZ8N7R3X77OercXbVO75+pgQKBe109hwddmec6FGLxhlWGWpChWyVNIziz+ZGMtpAbSg==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/background-task-service@0.10.1-next.1':
-    resolution: {integrity: sha512-ZY4VoQJSHYEN0nOjEY7fwmLqf8eDUn6w/eoap5S7Eb1fUMiXrFnwZGJr0OmdR3qdPeQzcT7NlC/i+1T16ge9ug==}
+  '@twin.org/background-task-models@0.10.0':
+    resolution: {integrity: sha512-seWgdxFt7ngzRvOz7JrZt72n6xHltqVsJkosmDBCRc0Z3PN/qkzJt1X4gC8/3UDY2EFUATR4Ma+KwQvHQdwwOA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/cli-core@0.10.1-next.10':
-    resolution: {integrity: sha512-G+i9ge3XzLyscOd32lKxoFiz10BRsL+jJG8rfFLTnGqRo0p50gxac7CCNmJlZdwpf5XYYMtYsqV5tBwX8fTQRw==}
+  '@twin.org/background-task-service@0.10.0':
+    resolution: {integrity: sha512-VVR92t8Ka1cJWcb9FY6re+2RnJ0Ikq10WDlKp2qSK1nBMcVNh29b1Gv4y3B1UIDCDZPrT75fSif/2hLYS9Qa8g==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/context@0.10.1-next.10':
-    resolution: {integrity: sha512-RZXRmxXvbnpidhLVJx5KPy6UpI7QDcA/ZYbHA3JXNCGS14gIcMzl33ArKtVmYP27OETmddInLLGTVr/V6LHHFw==}
+  '@twin.org/cli-core@0.11.0':
+    resolution: {integrity: sha512-irL6PyoglapczSSGg0BsUpLISWREMRVM9BHZ+6ILTtZZk/TfdX2opctY6pHSibEmww3BgeK21SV/1b5qAwqjtw==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/core@0.10.1-next.10':
-    resolution: {integrity: sha512-VJe9xzydp1OtJ94aW2KFIMxzhxDp1fDopH1p6E7s/HZQjVsC8qJ32X1f7FlE0KFcxA3DfSdg7Ektg82La0J44g==}
+  '@twin.org/context@0.10.0':
+    resolution: {integrity: sha512-00U19M4NdVIH8rjgYR6/dMoXBYE/l/WzhI9HOAQE+xQoYJyGRWTsR4qfCk6ZwCmPOZKpx247T85ymP6OzvJkNQ==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/crypto@0.10.1-next.10':
-    resolution: {integrity: sha512-sCl+2Syse8J2kUF3ly4crLN3kIXgc6eSA4zoeWl4csjKpOwG9/qAhHcapgzkp1YT9KXxlnBVI3en7CDNEj2PTg==}
+  '@twin.org/context@0.11.0':
+    resolution: {integrity: sha512-++Oow7oAKBlmgW8GLpe+kO2KYupnThH8OraMlfiNLcC3ZCNHEpz/TIxPRYvU9LHT6Rc6Wg8/VcMETgu7Z/AGeA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/entity-storage-connector-file@0.10.1-next.10':
-    resolution: {integrity: sha512-v3gAMIvU6GDjvSBWlqEItOhLGJ9a+5UUhhUWlZPetCrDDrrT4hNfqHYJImm/jowz6utxdwRTJyLxkpesKzmflA==}
+  '@twin.org/core@0.10.0':
+    resolution: {integrity: sha512-K+Fqb+oKb6BqLlLC0YwmdbIx79cOiN30TT2os9nMu5PzEOTXiE3tY5s0rQ1NkSgasdmEn1E+15vcFCIM0hbUNQ==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/entity-storage-connector-memory@0.10.1-next.10':
-    resolution: {integrity: sha512-rUBGwWSNuKVNuObrlkf8WV/lA+Ov1sdNccJzZrSaXCoLov5V3GxmVDbaeLuuD0g+F3Af2+zqeM5vHjrVei2EeA==}
+  '@twin.org/core@0.11.0':
+    resolution: {integrity: sha512-yVWKgvSUJbXqJofVRYoTdQ0w/5piemIqunAnQOcLsZNpRXJIwrpcDoLnu5aAgXgliBra8WIgjyI3oBwzxmXFAQ==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/entity-storage-models@0.10.1-next.10':
-    resolution: {integrity: sha512-NNvQiIsL/JHgk4vruhRuY6LxzpJpSH6S+9xwRgAma2qLpRMlS0NEON2Np/9QWRCekNN2VeAG92SDFGDhap45tA==}
+  '@twin.org/core@0.9.2':
+    resolution: {integrity: sha512-f+Ckf56k224YYM197gybEHUqgTfQhW8Pf2gAfp8Gem5MhFky0lfoCVNp/UCdMQGwaqbNC18VXvHozyISoPQTFA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/entity@0.10.1-next.10':
-    resolution: {integrity: sha512-7EWfC+XyXgyNEf1DVB8IAmgqfIArWUhsLVwAbfsCkCo3TNtJlse32fQND49QHt4FNIC5QOpuO4v9N4Q61GjiLQ==}
+  '@twin.org/crypto@0.10.0':
+    resolution: {integrity: sha512-N8dMQCs12Wd5fWLJoiUrk/Vloo0E3H33qL8K3mclcFhZnLzfANwXXl4W3H0eAo+G4VibU4rI+JqanQ+t2gMOIA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/logging-models@0.10.1-next.3':
-    resolution: {integrity: sha512-UCy/SQCuHu5h+QwVXeeomSU1qJ86QoaPhAwdqaQQzNNfDgj121AEzGv/pY5p9uVRr+2lEdi3z+s+nAD5U7ynTQ==}
+  '@twin.org/crypto@0.11.0':
+    resolution: {integrity: sha512-z1NMxUhoKKAw/IosP1wPargDK2EQajIUNhnaqYdcoMK6WFWKgCMEQeraoDMCNtgNSA/aDJb/AXG/qSedvu3wBA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/modules@0.10.1-next.10':
-    resolution: {integrity: sha512-qua5z/W8jlk0Izhc1nuGhKsN8TLK27c2DrCJvofHpL+maDBr3tlgZmWxKWZ58SRtKdEQelMNCCd63xg+B1su7Q==}
+  '@twin.org/entity-storage-connector-file@0.11.0':
+    resolution: {integrity: sha512-/KDglwEhIGp/cFYiv33iUeIe0P/+1c6hgFMcgGzioxvyUEE6K8QfaQP5a/qQkuWUBH5rmP2Ozlao5WU3dqrg0g==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/nameof-transformer@0.10.1-next.10':
-    resolution: {integrity: sha512-ZgGHsOXjodmFHn1DqpBskBpMsz1MndfZ9rytxz2vK4uGhTq4+OItUEr04THtBfRd5FTUpTOZ66nVMupmlPObHQ==}
+  '@twin.org/entity-storage-connector-memory@0.11.0':
+    resolution: {integrity: sha512-TkryzSit9QuYh2icfw/Aqd4Dkp6jgRtaSmUCCca/XOzTRjbzJc4cqxys2yi7kEv1T9QlWMhXu8vDop7bPX2ngg==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/nameof-vitest-plugin@0.10.1-next.10':
-    resolution: {integrity: sha512-bjXGQqpwz5jzwOKr1U6OvInIPUKZ+qIFp96hJZS+odu80LkHlxMEeYjrK34imzISeaP5qHInozfWuMt5B0cfdA==}
+  '@twin.org/entity-storage-models@0.10.0':
+    resolution: {integrity: sha512-GAGPum243b0ce/Njazq+E9ug1AHVEC1Rr3wH1XJpCji2/7NrDjVSsyGFXKQgi+ahTH0RYPHtbsk9MVrgtjnrkg==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/nameof@0.10.1-next.10':
-    resolution: {integrity: sha512-A5y6oUF2DBdqtsyw+UnHF8ngcHpnx2CLNqzKykGVKfxv5OeE4bVWWIXQPDgcC8+N5b/1pd4XNwNWA4Jpr2RK+g==}
+  '@twin.org/entity-storage-models@0.11.0':
+    resolution: {integrity: sha512-KBQRQi9c++cx+FIx1gtJtzDsH70uGRsXYunDMVDiwqb2xIPqnZVLJgj5Fzybd25dZ2a2+i8s5I5dIT4P/Sqsjg==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/tools-core@0.9.3-next.1':
-    resolution: {integrity: sha512-RLbgAYB65n8TByCb8YdEbiw/+bl4KKfGGFs+hU6aFfsj/SNGljBl+yl1e400NJ2MZ1gOu8cFo5bbXSKGsglkyQ==}
+  '@twin.org/entity@0.10.0':
+    resolution: {integrity: sha512-sMhK1OWF0CohyNKjDi3F96havTQyszgyLEF27jFKjxrTxlU7+rwJW0Y0NLOGuJPNEMjs21qChzD4ba4mnNaMlA==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/tools-models@0.9.3-next.1':
-    resolution: {integrity: sha512-B1UgoaaQIm9HaiQW8NZY2afDAqj07p195iZ9uSWVh4SFnSQMnNyBEp7iYMmNGJoGuQ/Bz0Uia59hNFn3/0Lrew==}
+  '@twin.org/entity@0.11.0':
+    resolution: {integrity: sha512-hLihwOamnbWt1A8KiKkmbRtSWowTTkgDBbLVtJbpYD0FDcKizPKOT5N1Q97ugPrT5CDqVHdANk3SNCCPUVBKXg==}
     engines: {node: '>=24.0.0'}
 
-  '@twin.org/ts-to-openapi@0.9.3-next.1':
-    resolution: {integrity: sha512-qH0bvYPktD/9o964LpQqHS3GwisRIy7e6DcnTWcdsPb/MiGN5jPanfESGW4wPEfiu3u4J8XTMIOX7noO3QioWQ==}
+  '@twin.org/entity@0.9.2':
+    resolution: {integrity: sha512-wfKmsd5brLhhflW1OBlID8iihIeX9J1ddbi2vYx8uBujQ6h2W4zoCcvBH23vQqNneQRlj9pzFE+GYHO2Y1qbmg==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/logging-models@0.10.0':
+    resolution: {integrity: sha512-Y/9w8fzRlLj8PMC8pYEigBMT2nklqjVsZCp0piYzKawjbD+x19qVwlCslPE2867exQRePZAXcPSndFj1ln6I9w==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/logging-models@0.11.0':
+    resolution: {integrity: sha512-BZErc8pYSktuUc7e8LlzpxKjwqD089J/f2Lvkd8AK+hz7PY9yvb5C7GGmK3uACWCd/I5QtjzQkh3QcJ2QVh8sA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/logging-models@0.9.2':
+    resolution: {integrity: sha512-RSMN3+aWM5GYlY4Or2p/bH+GVuiR6Qfu/sLKKHpapKOD+pdXix0cmCC2/v4Luj5FcHyqDBFF2f6Gksh1bXk+AA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/modules@0.10.0':
+    resolution: {integrity: sha512-vkBHbfIOEOTlu1sP+GwD5FwZ3n8/TzbiRyo6jfJ6/vopf32FcPCHr/k5rmKEj612oR2SqbzVPqUnYGvbkFH+dQ==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/modules@0.11.0':
+    resolution: {integrity: sha512-xAky0IpymoqAViAw1oVKtvGfqiFQup5Htrelqxs/LBGnJ2EHKncGz997iiUT23O5S/1j7M9zp9DDAxDLtm8Ivg==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/nameof-transformer@0.11.0':
+    resolution: {integrity: sha512-Zvf/1HIBDI/2Sp0C8Qn1yqAtvtdFQtj04bXEPOVNKDIMCW8PfiMyEVDohhEe5iWSG4nBxRMnHT3+SxJA9jVsQA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/nameof-vitest-plugin@0.11.0':
+    resolution: {integrity: sha512-Az6jwMNrJ9B+NnFXC8nhprUwETRj7YqskhdROgipH1yABfISpv5+zbUCn25OOtohIhp3DBgMc+LjDvgG4lnpjQ==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/nameof@0.10.0':
+    resolution: {integrity: sha512-c2Z0G1K7Ukh/3wmNFiV8TFeqCrH77EjSL3iRFUWqM2XZ4D3GCZGnMXzjLK9l5T8McD2OHl9W6TSWE+XeMsy0JA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/nameof@0.11.0':
+    resolution: {integrity: sha512-CuS8XW+fgr+K0in9xrXxbnlhUq/ICFSYk6y6Ui3o/3KD33Q6DPkCQk5enMHw5x8hT+cQ45TfZCE+ZLPfn+cHJA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/nameof@0.9.2':
+    resolution: {integrity: sha512-Je9YXnSR8/OPOJ+/UmJswTjBSDHWAXdfbXXkuTFMlPwq+3nAo1Abpj6fHrhoIrJFI3n98Y4Bi2TvnsANEsMg/Q==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/tools-core@0.11.0':
+    resolution: {integrity: sha512-MduZ/abV9Srq9+MOtzZgMJBQlbST/GOijr9HjH1jWyLKp/b2Vqcj4XAtVIEILk852L6ymLeH2zJU6KV11EF9zw==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/tools-models@0.11.0':
+    resolution: {integrity: sha512-pVvZxCb62luvpeZsgj+nBjvYgm4sQ/m++PujoXCEyzmPjlOAwhbbwOob8s40kvdCvKlRUIg2e34ICvjQ9xdpCQ==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/ts-to-openapi@0.11.0':
+    resolution: {integrity: sha512-bxqgnieBnT4WzSvlcF0unG94/4kDZUQyqf5czPocxk3RPYfjP4njBiD5dMwwSVR/QjUkPwWX9971BhNlp+Mf4A==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
-  '@twin.org/validate-locales@0.10.1-next.10':
-    resolution: {integrity: sha512-MXcVGNzhuUVaCcvFCvr6tCnlCV/ftYCUr7LxNPmgCBtQur3HDNX6TKsZWX2ONuo+4DnBlDYf2kMex77Z0pmFjA==}
+  '@twin.org/validate-locales@0.11.0':
+    resolution: {integrity: sha512-51iIy6Yk8mf1tLSTENpy2UmPhOMq5U8Dbns9BxHC+2mikeCuEbuogCBR/YXIlUuq87kji9UqH1EPL65CwhLPuA==}
     engines: {node: '>=24.0.0'}
     hasBin: true
 
-  '@twin.org/web@0.10.1-next.10':
-    resolution: {integrity: sha512-UVbKlPveXGtHsu+xzva1AoHAl+UiF5xwzuhV234P1P9uEC3dxAaAmb3X4q+thYM0ey2octhcJ9Y0ndXcMpn4Hw==}
+  '@twin.org/web@0.10.0':
+    resolution: {integrity: sha512-cKytjcae1Ul3A7U91YEY/X3FIjc7xrrjaQMiyzXQa0931yXliFTqFN6fmY3y98Qx+b2nMaPs/7WXBMD7tqHcaA==}
+    engines: {node: '>=24.0.0'}
+
+  '@twin.org/web@0.11.0':
+    resolution: {integrity: sha512-FZ8mOAwxmjy2K0GflYa3QjH/F+dISvUdYltjb7C5X9AlI5W3zzfw7YQQCFtgGPVQ5edKvayyKOVlPdCfhu0+uQ==}
     engines: {node: '>=24.0.0'}
 
   '@tybys/wasm-util@0.10.4':
@@ -2268,11 +2359,6 @@ packages:
     resolution: {integrity: sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==}
     engines: {node: '>=8'}
 
-  dotenv@18.0.1:
-    resolution: {integrity: sha512-0eR4m4D/jH5eaI3evo2ZqqMii5mrTCR12v12VChdie6O1gPHs7XAjzTep0CWc1Bd+oNx3vVfbi734dK4zghigw==}
-    engines: {node: '>=12'}
-    hasBin: true
-
   dotenv@18.0.2:
     resolution: {integrity: sha512-wl0U3CxC0iobaryqEKpFJxzyp4AxQFYAKj/WWszXZr87vVHLi2yJv2syax5Vxt+u02xqNgE277rsc3lOKg9sPg==}
     engines: {node: '>=12'}
@@ -2711,6 +2797,9 @@ packages:
     resolution: {integrity: sha512-IBTdIkzZNOpqm7q3dRqJvMaldXjDHWkEDfrwGEQTs5eaQMWV+djAhR+wahyNNMAa+qpbDUhBMVt4ZKNwpPm7xQ==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
+  intl-messageformat@11.2.13:
+    resolution: {integrity: sha512-JaPaE6TIX+TAS5XLhDUh41geLw4QfBHX4s5pW8Km+L9fVC8HzB9yOuhbh4EMR/F1+8C6b9qk4763Cv+LdOG1kg==}
+
   intl-messageformat@12.1.2:
     resolution: {integrity: sha512-Y7ZnMtT/04nVJnjf1/x/AkfP5we/iN0AhckDdlFPtnetk6/VTuj2OPW5SE7steMd3UNaOtky4KJJY6jwyvWfJg==}
 
@@ -2796,6 +2885,9 @@ packages:
 
   jose@6.2.12:
     resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
+
+  jose@6.2.8:
+    resolution: {integrity: sha512-Bsdjwm3Qsd/P0jR+BHDe3LytDfY7WBq2HmCCLIwuVRHMuEC9ae7/R474GIUdF1NgCyZjzVo/A9DOiOBtXq8ZoQ==}
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
@@ -3025,8 +3117,16 @@ packages:
     resolution: {integrity: sha512-ApVEYeOhHwC4fsf54Jdt3Cf21eYfib/9GANrZCjlMCl1Sa71cXncS4J6wQ3IlbchBCvulOjQa2UoWf6/aE9XgA==}
     hasBin: true
 
+  micro-key-producer@0.9.0:
+    resolution: {integrity: sha512-987j9gtkxCxH0KyNzkj9nq7K6JK/f8J1EJV8qBkEJI50CA/zEM7jBl7im36819mAww7oiFgmHsYzIe0m9v9b3Q==}
+    hasBin: true
+
   micro-packed@0.11.1:
     resolution: {integrity: sha512-agQGBnBCw8OoKQZMUxcaQPaOowdfxyEmBsq4CNAXAXCyB8KxlRG0lTl5GADJIsMEDaFb0trhXBHKYsjTWa5kuw==}
+    engines: {node: '>= 20.19.0'}
+
+  micro-packed@0.9.0:
+    resolution: {integrity: sha512-gFdaWTxEXOwtSOcpxulO4AuXVtp3HWIRmB8eq8+3m1Zku0ubgva0UGpi03YhcvsTJasHngG9gTIUK5kHNKdesg==}
     engines: {node: '>= 20.19.0'}
 
   micromark-core-commonmark@2.0.3:
@@ -4389,9 +4489,15 @@ snapshots:
 
   '@formatjs/fast-memoize@3.1.7': {}
 
+  '@formatjs/icu-messageformat-parser@3.5.16':
+    dependencies:
+      '@formatjs/icu-skeleton-parser': 2.1.11
+
   '@formatjs/icu-messageformat-parser@3.5.20':
     dependencies:
       '@formatjs/icu-skeleton-parser': 2.1.12
+
+  '@formatjs/icu-skeleton-parser@2.1.11': {}
 
   '@formatjs/icu-skeleton-parser@2.1.12': {}
 
@@ -4458,11 +4564,25 @@ snapshots:
       '@tybys/wasm-util': 0.10.4
     optional: true
 
+  '@noble/ciphers@2.2.0': {}
+
   '@noble/ciphers@2.4.0': {}
+
+  '@noble/curves@2.2.0':
+    dependencies:
+      '@noble/hashes': 2.2.0
+
+  '@noble/curves@2.3.0':
+    dependencies:
+      '@noble/hashes': 2.3.0
 
   '@noble/curves@2.4.0':
     dependencies:
       '@noble/hashes': 2.4.0
+
+  '@noble/hashes@2.2.0': {}
+
+  '@noble/hashes@2.3.0': {}
 
   '@noble/hashes@2.4.0': {}
 
@@ -4669,13 +4789,26 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
+  '@scure/base@2.2.0': {}
+
   '@scure/base@2.4.0': {}
+
+  '@scure/bip32@2.2.0':
+    dependencies:
+      '@noble/curves': 2.2.0
+      '@noble/hashes': 2.2.0
+      '@scure/base': 2.2.0
 
   '@scure/bip32@2.4.0':
     dependencies:
       '@noble/curves': 2.4.0
       '@noble/hashes': 2.4.0
       '@scure/base': 2.4.0
+
+  '@scure/bip39@2.2.0':
+    dependencies:
+      '@noble/hashes': 2.2.0
+      '@scure/base': 2.2.0
 
   '@scure/bip39@2.4.0':
     dependencies:
@@ -4727,65 +4860,102 @@ snapshots:
     dependencies:
       eslint: 10.11.0(jiti@2.6.1)(supports-color@10.2.2)
 
-  '@twin.org/api-core@0.10.1-next.6(supports-color@10.2.2)':
+  '@twin.org/api-core@0.11.0(supports-color@10.2.2)':
     dependencies:
-      '@twin.org/api-models': 0.10.1-next.6
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
-      '@twin.org/web': 0.10.1-next.10
+      '@twin.org/api-models': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      '@twin.org/web': 0.11.0
       socket.io-client: 4.8.3(supports-color@10.2.2)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
       - utf-8-validate
 
-  '@twin.org/api-models@0.10.1-next.6':
+  '@twin.org/api-models@0.10.0':
     dependencies:
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
-      '@twin.org/web': 0.10.1-next.10
+      '@twin.org/context': 0.10.0
+      '@twin.org/core': 0.10.0
+      '@twin.org/entity': 0.10.0
+      '@twin.org/nameof': 0.10.0
+      '@twin.org/web': 0.10.0
 
-  '@twin.org/background-task-models@0.10.1-next.1':
+  '@twin.org/api-models@0.11.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/context': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/entity': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      '@twin.org/web': 0.11.0
 
-  '@twin.org/background-task-service@0.10.1-next.1':
+  '@twin.org/background-task-models@0.10.0':
     dependencies:
-      '@twin.org/api-models': 0.10.1-next.6
-      '@twin.org/background-task-models': 0.10.1-next.1
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/crypto': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/entity-storage-models': 0.10.1-next.10
-      '@twin.org/logging-models': 0.10.1-next.3
-      '@twin.org/modules': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.10.0
+      '@twin.org/entity': 0.10.0
+      '@twin.org/nameof': 0.10.0
 
-  '@twin.org/cli-core@0.10.1-next.10':
+  '@twin.org/background-task-service@0.10.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/api-models': 0.10.0
+      '@twin.org/background-task-models': 0.10.0
+      '@twin.org/context': 0.10.0
+      '@twin.org/core': 0.10.0
+      '@twin.org/crypto': 0.10.0
+      '@twin.org/entity': 0.10.0
+      '@twin.org/entity-storage-models': 0.10.0
+      '@twin.org/logging-models': 0.10.0
+      '@twin.org/modules': 0.10.0
+      '@twin.org/nameof': 0.10.0
+
+  '@twin.org/cli-core@0.11.0':
+    dependencies:
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
       chalk: 6.0.0
       commander: 15.0.0
-      dotenv: 18.0.1
+      dotenv: 18.0.2
 
-  '@twin.org/context@0.10.1-next.10':
+  '@twin.org/context@0.10.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.10.0
+      '@twin.org/nameof': 0.10.0
 
-  '@twin.org/core@0.10.1-next.10':
+  '@twin.org/context@0.11.0':
     dependencies:
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+
+  '@twin.org/core@0.10.0':
+    dependencies:
+      '@twin.org/nameof': 0.10.0
+      intl-messageformat: 11.2.13
+      rfc6902: 5.3.0
+
+  '@twin.org/core@0.11.0':
+    dependencies:
+      '@twin.org/nameof': 0.11.0
       intl-messageformat: 12.1.2
       rfc6902: 5.3.0
 
-  '@twin.org/crypto@0.10.1-next.10':
+  '@twin.org/core@0.9.2':
+    dependencies:
+      '@twin.org/nameof': 0.9.2
+      intl-messageformat: 11.2.13
+      rfc6902: 5.3.0
+
+  '@twin.org/crypto@0.10.0':
+    dependencies:
+      '@noble/ciphers': 2.2.0
+      '@noble/curves': 2.3.0
+      '@noble/hashes': 2.3.0
+      '@scure/base': 2.2.0
+      '@scure/bip32': 2.2.0
+      '@scure/bip39': 2.2.0
+      '@twin.org/core': 0.10.0
+      '@twin.org/nameof': 0.10.0
+      micro-key-producer: 0.9.0
+
+  '@twin.org/crypto@0.11.0':
     dependencies:
       '@noble/ciphers': 2.4.0
       '@noble/curves': 2.4.0
@@ -4793,65 +4963,107 @@ snapshots:
       '@scure/base': 2.4.0
       '@scure/bip32': 2.4.0
       '@scure/bip39': 2.4.0
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
       micro-key-producer: 0.10.2
 
-  '@twin.org/entity-storage-connector-file@0.10.1-next.10':
+  '@twin.org/entity-storage-connector-file@0.11.0':
     dependencies:
-      '@twin.org/api-models': 0.10.1-next.6
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/entity-storage-models': 0.10.1-next.10
-      '@twin.org/logging-models': 0.10.1-next.3
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/api-models': 0.10.0
+      '@twin.org/context': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/entity': 0.11.0
+      '@twin.org/entity-storage-models': 0.11.0
+      '@twin.org/logging-models': 0.10.0
+      '@twin.org/nameof': 0.11.0
 
-  '@twin.org/entity-storage-connector-memory@0.10.1-next.10':
+  '@twin.org/entity-storage-connector-memory@0.11.0':
     dependencies:
-      '@twin.org/api-models': 0.10.1-next.6
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/entity-storage-models': 0.10.1-next.10
-      '@twin.org/logging-models': 0.10.1-next.3
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/api-models': 0.10.0
+      '@twin.org/context': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/entity': 0.11.0
+      '@twin.org/entity-storage-models': 0.11.0
+      '@twin.org/logging-models': 0.10.0
+      '@twin.org/nameof': 0.11.0
 
-  '@twin.org/entity-storage-models@0.10.1-next.10':
+  '@twin.org/entity-storage-models@0.10.0':
     dependencies:
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/crypto': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/logging-models': 0.10.1-next.3
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/context': 0.10.0
+      '@twin.org/core': 0.10.0
+      '@twin.org/crypto': 0.10.0
+      '@twin.org/entity': 0.10.0
+      '@twin.org/logging-models': 0.9.2
+      '@twin.org/nameof': 0.10.0
 
-  '@twin.org/entity@0.10.1-next.10':
+  '@twin.org/entity-storage-models@0.11.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/context': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/crypto': 0.11.0
+      '@twin.org/entity': 0.11.0
+      '@twin.org/logging-models': 0.10.0
+      '@twin.org/nameof': 0.11.0
+
+  '@twin.org/entity@0.10.0':
+    dependencies:
+      '@twin.org/core': 0.10.0
+      '@twin.org/nameof': 0.10.0
       reflect-metadata: 0.2.2
       tslib: 2.8.1
 
-  '@twin.org/logging-models@0.10.1-next.3':
+  '@twin.org/entity@0.11.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/entity': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      reflect-metadata: 0.2.2
+      tslib: 2.8.1
 
-  '@twin.org/modules@0.10.1-next.10':
+  '@twin.org/entity@0.9.2':
     dependencies:
-      '@twin.org/context': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.9.2
+      '@twin.org/nameof': 0.9.2
+      reflect-metadata: 0.2.2
+      tslib: 2.8.1
 
-  '@twin.org/nameof-transformer@0.10.1-next.10':
+  '@twin.org/logging-models@0.10.0':
+    dependencies:
+      '@twin.org/core': 0.10.0
+      '@twin.org/entity': 0.10.0
+      '@twin.org/nameof': 0.10.0
+
+  '@twin.org/logging-models@0.11.0':
+    dependencies:
+      '@twin.org/core': 0.11.0
+      '@twin.org/entity': 0.11.0
+      '@twin.org/nameof': 0.11.0
+
+  '@twin.org/logging-models@0.9.2':
+    dependencies:
+      '@twin.org/core': 0.9.2
+      '@twin.org/entity': 0.9.2
+      '@twin.org/nameof': 0.9.2
+
+  '@twin.org/modules@0.10.0':
+    dependencies:
+      '@twin.org/context': 0.10.0
+      '@twin.org/core': 0.10.0
+      '@twin.org/nameof': 0.10.0
+
+  '@twin.org/modules@0.11.0':
+    dependencies:
+      '@twin.org/context': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/crypto': 0.11.0
+      '@twin.org/nameof': 0.11.0
+
+  '@twin.org/nameof-transformer@0.11.0':
     dependencies:
       typescript: 6.0.3
 
-  '@twin.org/nameof-vitest-plugin@0.10.1-next.10(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))':
+  '@twin.org/nameof-vitest-plugin@0.11.0(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))':
     dependencies:
-      '@twin.org/nameof-transformer': 0.10.1-next.10
+      '@twin.org/nameof-transformer': 0.11.0
       vitest: 5.0.1(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@5.0.1)(vite@8.3.0(@types/node@26.6.2)(jiti@2.6.1))
     transitivePeerDependencies:
       - '@edge-runtime/vm'
@@ -4868,47 +5080,58 @@ snapshots:
       - msw
       - vite
 
-  '@twin.org/nameof@0.10.1-next.10': {}
+  '@twin.org/nameof@0.10.0': {}
 
-  '@twin.org/tools-core@0.9.3-next.1':
+  '@twin.org/nameof@0.11.0': {}
+
+  '@twin.org/nameof@0.9.2': {}
+
+  '@twin.org/tools-core@0.11.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
-      '@twin.org/tools-models': 0.9.3-next.1
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      '@twin.org/tools-models': 0.11.0
       glob: 13.0.6
       typescript: 6.0.3
 
-  '@twin.org/tools-models@0.9.3-next.1':
+  '@twin.org/tools-models@0.11.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
 
-  '@twin.org/ts-to-openapi@0.9.3-next.1':
+  '@twin.org/ts-to-openapi@0.11.0':
     dependencies:
-      '@twin.org/cli-core': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
-      '@twin.org/tools-core': 0.9.3-next.1
-      '@twin.org/tools-models': 0.9.3-next.1
-      '@twin.org/web': 0.10.1-next.10
+      '@twin.org/cli-core': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      '@twin.org/tools-core': 0.11.0
+      '@twin.org/tools-models': 0.11.0
+      '@twin.org/web': 0.11.0
       commander: 15.0.0
       glob: 13.0.6
 
-  '@twin.org/validate-locales@0.10.1-next.10':
+  '@twin.org/validate-locales@0.11.0':
     dependencies:
-      '@twin.org/cli-core': 0.10.1-next.10
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
-      '@twin.org/nameof-transformer': 0.10.1-next.10
+      '@twin.org/cli-core': 0.11.0
+      '@twin.org/core': 0.11.0
+      '@twin.org/nameof': 0.11.0
+      '@twin.org/nameof-transformer': 0.11.0
       commander: 15.0.0
       glob: 13.0.6
       typescript: 6.0.3
 
-  '@twin.org/web@0.10.1-next.10':
+  '@twin.org/web@0.10.0':
     dependencies:
-      '@twin.org/core': 0.10.1-next.10
-      '@twin.org/crypto': 0.10.1-next.10
-      '@twin.org/nameof': 0.10.1-next.10
+      '@twin.org/core': 0.10.0
+      '@twin.org/crypto': 0.10.0
+      '@twin.org/nameof': 0.10.0
+      jose: 6.2.8
+
+  '@twin.org/web@0.11.0':
+    dependencies:
+      '@twin.org/core': 0.11.0
+      '@twin.org/crypto': 0.11.0
+      '@twin.org/nameof': 0.11.0
       jose: 6.2.12
 
   '@tybys/wasm-util@0.10.4':
@@ -5587,8 +5810,6 @@ snapshots:
     dependencies:
       is-obj: 2.0.0
 
-  dotenv@18.0.1: {}
-
   dotenv@18.0.2: {}
 
   electron-to-chromium@1.5.433: {}
@@ -6031,6 +6252,11 @@ snapshots:
 
   ini@6.0.0: {}
 
+  intl-messageformat@11.2.13:
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.7
+      '@formatjs/icu-messageformat-parser': 3.5.16
+
   intl-messageformat@12.1.2:
     dependencies:
       '@formatjs/fast-memoize': 3.1.7
@@ -6092,6 +6318,8 @@ snapshots:
   jiti@2.6.1: {}
 
   jose@6.2.12: {}
+
+  jose@6.2.8: {}
 
   js-tokens@10.0.0: {}
 
@@ -6318,9 +6546,21 @@ snapshots:
       '@scure/base': 2.4.0
       micro-packed: 0.11.1
 
+  micro-key-producer@0.9.0:
+    dependencies:
+      '@noble/ciphers': 2.4.0
+      '@noble/curves': 2.4.0
+      '@noble/hashes': 2.4.0
+      '@scure/base': 2.4.0
+      micro-packed: 0.9.0
+
   micro-packed@0.11.1:
     dependencies:
       '@scure/base': 2.4.0
+
+  micro-packed@0.9.0:
+    dependencies:
+      '@scure/base': 2.2.0
 
   micromark-core-commonmark@2.0.3:
     dependencies:

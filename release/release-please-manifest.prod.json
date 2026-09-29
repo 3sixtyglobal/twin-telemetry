@@ -1,9 +1,9 @@
 {
-	"packages/telemetry-models": "0.10.0",
-	"packages/telemetry-connector-entity-storage": "0.10.0",
-	"packages/telemetry-connector-opentelemetry": "0.10.0",
-	"packages/telemetry-service": "0.10.0",
-	"packages/telemetry-rest-client": "0.10.0",
-	"packages/telemetry-producers": "0.10.0",
-	"packages/telemetry-processors": "0.10.0"
+	"packages/telemetry-models": "0.11.0",
+	"packages/telemetry-connector-entity-storage": "0.11.0",
+	"packages/telemetry-connector-opentelemetry": "0.11.0",
+	"packages/telemetry-service": "0.11.0",
+	"packages/telemetry-rest-client": "0.11.0",
+	"packages/telemetry-producers": "0.11.0",
+	"packages/telemetry-processors": "0.11.0"
 }
