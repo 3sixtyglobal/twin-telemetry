@@ -4,7 +4,7 @@
 	"description": "Route processors for recording telemetry metrics.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/iotaledger/twin-telemetry.git",
+		"url": "git+https://github.com/3sixtyglobal/twin-telemetry.git",
 		"directory": "packages/telemetry-processors"
 	},
 	"author": "martyn.janes@iota.org",

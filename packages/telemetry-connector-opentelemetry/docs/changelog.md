@@ -1,49 +1,49 @@
 # Changelog
 
-## [0.11.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.11.0...telemetry-connector-opentelemetry-v0.11.0) (2026-09-29)
+## [0.11.0](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.11.0...telemetry-connector-opentelemetry-v0.11.0) (2026-09-29)
 
 
 ### Features
 
-* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
-* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
-* release to production ([#68](https://github.com/iotaledger/twin-telemetry/issues/68)) ([157c6a9](https://github.com/iotaledger/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
-* release to production ([#99](https://github.com/iotaledger/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/iotaledger/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
-* release to production [skip ci] ([#137](https://github.com/iotaledger/twin-telemetry/issues/137)) ([92a99c3](https://github.com/iotaledger/twin-telemetry/commit/92a99c3b59bc482d660de9e2f6f751439942b892))
-* release to production [skip ci] ([#145](https://github.com/iotaledger/twin-telemetry/issues/145)) ([9c78f19](https://github.com/iotaledger/twin-telemetry/commit/9c78f192ddfeda03e8b8305b7ab5a9ec144003f8))
+* release to production ([df2151d](https://github.com/3sixtyglobal/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/3sixtyglobal/twin-telemetry/issues/50)) ([192bfe3](https://github.com/3sixtyglobal/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([#68](https://github.com/3sixtyglobal/twin-telemetry/issues/68)) ([157c6a9](https://github.com/3sixtyglobal/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
+* release to production ([#99](https://github.com/3sixtyglobal/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/3sixtyglobal/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
+* release to production [skip ci] ([#137](https://github.com/3sixtyglobal/twin-telemetry/issues/137)) ([92a99c3](https://github.com/3sixtyglobal/twin-telemetry/commit/92a99c3b59bc482d660de9e2f6f751439942b892))
+* release to production [skip ci] ([#145](https://github.com/3sixtyglobal/twin-telemetry/issues/145)) ([9c78f19](https://github.com/3sixtyglobal/twin-telemetry/commit/9c78f192ddfeda03e8b8305b7ab5a9ec144003f8))
 
 
 ### Bug Fixes
 
-* test timeout ([0e36192](https://github.com/iotaledger/twin-telemetry/commit/0e361925a716b0ba18fe23a14a2c3270eb02df4c))
+* test timeout ([0e36192](https://github.com/3sixtyglobal/twin-telemetry/commit/0e361925a716b0ba18fe23a14a2c3270eb02df4c))
 
-## [0.10.1-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.10.1-next.0...telemetry-connector-opentelemetry-v0.10.1-next.1) (2026-09-18)
+## [0.10.1-next.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.10.1-next.0...telemetry-connector-opentelemetry-v0.10.1-next.1) (2026-09-18)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* batch metric entity storage writes ([e592add](https://github.com/iotaledger/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
-* improved testing ([#85](https://github.com/iotaledger/twin-telemetry/issues/85)) ([d73230f](https://github.com/iotaledger/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
-* linting and dependency update ([894df58](https://github.com/iotaledger/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
-* metric values in background ([#118](https://github.com/iotaledger/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/iotaledger/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
-* reduce mutex locks ([#94](https://github.com/iotaledger/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/iotaledger/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
-* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
-* update components ([a8583f3](https://github.com/iotaledger/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* batch metric entity storage writes ([e592add](https://github.com/3sixtyglobal/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* improved testing ([#85](https://github.com/3sixtyglobal/twin-telemetry/issues/85)) ([d73230f](https://github.com/3sixtyglobal/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
+* linting and dependency update ([894df58](https://github.com/3sixtyglobal/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
+* metric values in background ([#118](https://github.com/3sixtyglobal/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/3sixtyglobal/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
+* reduce mutex locks ([#94](https://github.com/3sixtyglobal/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/3sixtyglobal/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
+* rest enhancement ([#56](https://github.com/3sixtyglobal/twin-telemetry/issues/56)) ([28b79fc](https://github.com/3sixtyglobal/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update components ([a8583f3](https://github.com/3sixtyglobal/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* metric timestamp ordering ([#73](https://github.com/iotaledger/twin-telemetry/issues/73)) ([67829ac](https://github.com/iotaledger/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
-* resource partitioning ([#77](https://github.com/iotaledger/twin-telemetry/issues/77)) ([bae3093](https://github.com/iotaledger/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
-* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
-* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* metric timestamp ordering ([#73](https://github.com/3sixtyglobal/twin-telemetry/issues/73)) ([67829ac](https://github.com/3sixtyglobal/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* resource partitioning ([#77](https://github.com/3sixtyglobal/twin-telemetry/issues/77)) ([bae3093](https://github.com/3sixtyglobal/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
+* use async getStore in tests ([da1ea59](https://github.com/3sixtyglobal/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/3sixtyglobal/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
 
 
 ### Dependencies
@@ -53,18 +53,18 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.10.1-next.0 to 0.10.1-next.1
     * @twin.org/telemetry-models bumped from 0.10.1-next.0 to 0.10.1-next.1
 
-## [0.10.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.10.0...telemetry-connector-opentelemetry-v0.10.0) (2026-09-16)
+## [0.10.0](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.10.0...telemetry-connector-opentelemetry-v0.10.0) (2026-09-16)
 
 
 ### Features
 
-* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
-* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
-* release to production ([#68](https://github.com/iotaledger/twin-telemetry/issues/68)) ([157c6a9](https://github.com/iotaledger/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
-* release to production ([#99](https://github.com/iotaledger/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/iotaledger/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
-* release to production [skip ci] ([#137](https://github.com/iotaledger/twin-telemetry/issues/137)) ([92a99c3](https://github.com/iotaledger/twin-telemetry/commit/92a99c3b59bc482d660de9e2f6f751439942b892))
+* release to production ([df2151d](https://github.com/3sixtyglobal/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/3sixtyglobal/twin-telemetry/issues/50)) ([192bfe3](https://github.com/3sixtyglobal/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([#68](https://github.com/3sixtyglobal/twin-telemetry/issues/68)) ([157c6a9](https://github.com/3sixtyglobal/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
+* release to production ([#99](https://github.com/3sixtyglobal/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/3sixtyglobal/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
+* release to production [skip ci] ([#137](https://github.com/3sixtyglobal/twin-telemetry/issues/137)) ([92a99c3](https://github.com/3sixtyglobal/twin-telemetry/commit/92a99c3b59bc482d660de9e2f6f751439942b892))
 
-## [0.9.3-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.7...telemetry-connector-opentelemetry-v0.9.3-next.8) (2026-09-14)
+## [0.9.3-next.8](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.7...telemetry-connector-opentelemetry-v0.9.3-next.8) (2026-09-14)
 
 
 ### Miscellaneous Chores
@@ -79,7 +79,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.7 to 0.9.3-next.8
     * @twin.org/telemetry-models bumped from 0.9.3-next.7 to 0.9.3-next.8
 
-## [0.9.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.6...telemetry-connector-opentelemetry-v0.9.3-next.7) (2026-09-11)
+## [0.9.3-next.7](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.6...telemetry-connector-opentelemetry-v0.9.3-next.7) (2026-09-11)
 
 
 ### Miscellaneous Chores
@@ -94,7 +94,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.6 to 0.9.3-next.7
     * @twin.org/telemetry-models bumped from 0.9.3-next.6 to 0.9.3-next.7
 
-## [0.9.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.5...telemetry-connector-opentelemetry-v0.9.3-next.6) (2026-09-09)
+## [0.9.3-next.6](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.5...telemetry-connector-opentelemetry-v0.9.3-next.6) (2026-09-09)
 
 
 ### Miscellaneous Chores
@@ -109,7 +109,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.5 to 0.9.3-next.6
     * @twin.org/telemetry-models bumped from 0.9.3-next.5 to 0.9.3-next.6
 
-## [0.9.3-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.4...telemetry-connector-opentelemetry-v0.9.3-next.5) (2026-09-09)
+## [0.9.3-next.5](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.4...telemetry-connector-opentelemetry-v0.9.3-next.5) (2026-09-09)
 
 
 ### Miscellaneous Chores
@@ -124,12 +124,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.4 to 0.9.3-next.5
     * @twin.org/telemetry-models bumped from 0.9.3-next.4 to 0.9.3-next.5
 
-## [0.9.3-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.3...telemetry-connector-opentelemetry-v0.9.3-next.4) (2026-09-08)
+## [0.9.3-next.4](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.3...telemetry-connector-opentelemetry-v0.9.3-next.4) (2026-09-08)
 
 
 ### Features
 
-* metric values in background ([#118](https://github.com/iotaledger/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/iotaledger/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
+* metric values in background ([#118](https://github.com/3sixtyglobal/twin-telemetry/issues/118)) ([4a13bc4](https://github.com/3sixtyglobal/twin-telemetry/commit/4a13bc465847c64bd99ec19c2f6fbb10e303164e))
 
 
 ### Dependencies
@@ -139,7 +139,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.3 to 0.9.3-next.4
     * @twin.org/telemetry-models bumped from 0.9.3-next.3 to 0.9.3-next.4
 
-## [0.9.3-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.2...telemetry-connector-opentelemetry-v0.9.3-next.3) (2026-09-07)
+## [0.9.3-next.3](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.2...telemetry-connector-opentelemetry-v0.9.3-next.3) (2026-09-07)
 
 
 ### Miscellaneous Chores
@@ -154,7 +154,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.2 to 0.9.3-next.3
     * @twin.org/telemetry-models bumped from 0.9.3-next.2 to 0.9.3-next.3
 
-## [0.9.3-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.1...telemetry-connector-opentelemetry-v0.9.3-next.2) (2026-09-01)
+## [0.9.3-next.2](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.1...telemetry-connector-opentelemetry-v0.9.3-next.2) (2026-09-01)
 
 
 ### Miscellaneous Chores
@@ -169,32 +169,32 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.1 to 0.9.3-next.2
     * @twin.org/telemetry-models bumped from 0.9.3-next.1 to 0.9.3-next.2
 
-## [0.9.3-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.0...telemetry-connector-opentelemetry-v0.9.3-next.1) (2026-08-31)
+## [0.9.3-next.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.3-next.0...telemetry-connector-opentelemetry-v0.9.3-next.1) (2026-08-31)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* batch metric entity storage writes ([e592add](https://github.com/iotaledger/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
-* improved testing ([#85](https://github.com/iotaledger/twin-telemetry/issues/85)) ([d73230f](https://github.com/iotaledger/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
-* linting and dependency update ([894df58](https://github.com/iotaledger/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
-* reduce mutex locks ([#94](https://github.com/iotaledger/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/iotaledger/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
-* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
-* update components ([a8583f3](https://github.com/iotaledger/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* batch metric entity storage writes ([e592add](https://github.com/3sixtyglobal/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* improved testing ([#85](https://github.com/3sixtyglobal/twin-telemetry/issues/85)) ([d73230f](https://github.com/3sixtyglobal/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
+* linting and dependency update ([894df58](https://github.com/3sixtyglobal/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
+* reduce mutex locks ([#94](https://github.com/3sixtyglobal/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/3sixtyglobal/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
+* rest enhancement ([#56](https://github.com/3sixtyglobal/twin-telemetry/issues/56)) ([28b79fc](https://github.com/3sixtyglobal/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update components ([a8583f3](https://github.com/3sixtyglobal/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* metric timestamp ordering ([#73](https://github.com/iotaledger/twin-telemetry/issues/73)) ([67829ac](https://github.com/iotaledger/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
-* resource partitioning ([#77](https://github.com/iotaledger/twin-telemetry/issues/77)) ([bae3093](https://github.com/iotaledger/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
-* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
-* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* metric timestamp ordering ([#73](https://github.com/3sixtyglobal/twin-telemetry/issues/73)) ([67829ac](https://github.com/3sixtyglobal/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* resource partitioning ([#77](https://github.com/3sixtyglobal/twin-telemetry/issues/77)) ([bae3093](https://github.com/3sixtyglobal/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
+* use async getStore in tests ([da1ea59](https://github.com/3sixtyglobal/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/3sixtyglobal/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
 
 
 ### Dependencies
@@ -204,22 +204,22 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.3-next.0 to 0.9.3-next.1
     * @twin.org/telemetry-models bumped from 0.9.3-next.0 to 0.9.3-next.1
 
-## [0.9.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2...telemetry-connector-opentelemetry-v0.9.2) (2026-08-24)
+## [0.9.2](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2...telemetry-connector-opentelemetry-v0.9.2) (2026-08-24)
 
 
 ### Features
 
-* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
-* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
-* release to production ([#68](https://github.com/iotaledger/twin-telemetry/issues/68)) ([157c6a9](https://github.com/iotaledger/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
-* release to production ([#99](https://github.com/iotaledger/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/iotaledger/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
+* release to production ([df2151d](https://github.com/3sixtyglobal/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/3sixtyglobal/twin-telemetry/issues/50)) ([192bfe3](https://github.com/3sixtyglobal/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([#68](https://github.com/3sixtyglobal/twin-telemetry/issues/68)) ([157c6a9](https://github.com/3sixtyglobal/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
+* release to production ([#99](https://github.com/3sixtyglobal/twin-telemetry/issues/99)) ([b9d10ef](https://github.com/3sixtyglobal/twin-telemetry/commit/b9d10ef8722a8688718631095a8a5d03f739785a))
 
-## [0.9.2-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.7...telemetry-connector-opentelemetry-v0.9.2-next.8) (2026-08-21)
+## [0.9.2-next.8](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.7...telemetry-connector-opentelemetry-v0.9.2-next.8) (2026-08-21)
 
 
 ### Features
 
-* reduce mutex locks ([#94](https://github.com/iotaledger/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/iotaledger/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
+* reduce mutex locks ([#94](https://github.com/3sixtyglobal/twin-telemetry/issues/94)) ([8deb4eb](https://github.com/3sixtyglobal/twin-telemetry/commit/8deb4eb51649ed7d9c0828a632115fede8c6a436))
 
 
 ### Dependencies
@@ -229,12 +229,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.7 to 0.9.2-next.8
     * @twin.org/telemetry-models bumped from 0.9.2-next.7 to 0.9.2-next.8
 
-## [0.9.2-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.6...telemetry-connector-opentelemetry-v0.9.2-next.7) (2026-08-19)
+## [0.9.2-next.7](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.6...telemetry-connector-opentelemetry-v0.9.2-next.7) (2026-08-19)
 
 
 ### Features
 
-* batch metric entity storage writes ([e592add](https://github.com/iotaledger/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
+* batch metric entity storage writes ([e592add](https://github.com/3sixtyglobal/twin-telemetry/commit/e592adddc7b84b63c10f1c49e812190598325b2e))
 
 
 ### Dependencies
@@ -244,7 +244,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.6 to 0.9.2-next.7
     * @twin.org/telemetry-models bumped from 0.9.2-next.6 to 0.9.2-next.7
 
-## [0.9.2-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.5...telemetry-connector-opentelemetry-v0.9.2-next.6) (2026-08-19)
+## [0.9.2-next.6](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.5...telemetry-connector-opentelemetry-v0.9.2-next.6) (2026-08-19)
 
 
 ### Miscellaneous Chores
@@ -259,12 +259,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.5 to 0.9.2-next.6
     * @twin.org/telemetry-models bumped from 0.9.2-next.5 to 0.9.2-next.6
 
-## [0.9.2-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.4...telemetry-connector-opentelemetry-v0.9.2-next.5) (2026-08-19)
+## [0.9.2-next.5](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.4...telemetry-connector-opentelemetry-v0.9.2-next.5) (2026-08-19)
 
 
 ### Features
 
-* improved testing ([#85](https://github.com/iotaledger/twin-telemetry/issues/85)) ([d73230f](https://github.com/iotaledger/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
+* improved testing ([#85](https://github.com/3sixtyglobal/twin-telemetry/issues/85)) ([d73230f](https://github.com/3sixtyglobal/twin-telemetry/commit/d73230f3f0327b05bc705439714ff65eac396b6b))
 
 
 ### Dependencies
@@ -274,7 +274,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.4 to 0.9.2-next.5
     * @twin.org/telemetry-models bumped from 0.9.2-next.4 to 0.9.2-next.5
 
-## [0.9.2-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.3...telemetry-connector-opentelemetry-v0.9.2-next.4) (2026-08-17)
+## [0.9.2-next.4](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.3...telemetry-connector-opentelemetry-v0.9.2-next.4) (2026-08-17)
 
 
 ### Miscellaneous Chores
@@ -289,12 +289,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.3 to 0.9.2-next.4
     * @twin.org/telemetry-models bumped from 0.9.2-next.3 to 0.9.2-next.4
 
-## [0.9.2-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.2...telemetry-connector-opentelemetry-v0.9.2-next.3) (2026-08-07)
+## [0.9.2-next.3](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.2...telemetry-connector-opentelemetry-v0.9.2-next.3) (2026-08-07)
 
 
 ### Features
 
-* linting and dependency update ([894df58](https://github.com/iotaledger/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
+* linting and dependency update ([894df58](https://github.com/3sixtyglobal/twin-telemetry/commit/894df58aaf1cb49b9646ca94c0a2987883a3121c))
 
 
 ### Dependencies
@@ -304,12 +304,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.2 to 0.9.2-next.3
     * @twin.org/telemetry-models bumped from 0.9.2-next.2 to 0.9.2-next.3
 
-## [0.9.2-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.1...telemetry-connector-opentelemetry-v0.9.2-next.2) (2026-08-03)
+## [0.9.2-next.2](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.1...telemetry-connector-opentelemetry-v0.9.2-next.2) (2026-08-03)
 
 
 ### Bug Fixes
 
-* resource partitioning ([#77](https://github.com/iotaledger/twin-telemetry/issues/77)) ([bae3093](https://github.com/iotaledger/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
+* resource partitioning ([#77](https://github.com/3sixtyglobal/twin-telemetry/issues/77)) ([bae3093](https://github.com/3sixtyglobal/twin-telemetry/commit/bae3093d285b379f96dd95c9bbed59bb0895a2cd))
 
 
 ### Dependencies
@@ -319,27 +319,27 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.1 to 0.9.2-next.2
     * @twin.org/telemetry-models bumped from 0.9.2-next.1 to 0.9.2-next.2
 
-## [0.9.2-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.0...telemetry-connector-opentelemetry-v0.9.2-next.1) (2026-07-30)
+## [0.9.2-next.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.2-next.0...telemetry-connector-opentelemetry-v0.9.2-next.1) (2026-07-30)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
-* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
-* update components ([a8583f3](https://github.com/iotaledger/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* rest enhancement ([#56](https://github.com/3sixtyglobal/twin-telemetry/issues/56)) ([28b79fc](https://github.com/3sixtyglobal/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update components ([a8583f3](https://github.com/3sixtyglobal/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* metric timestamp ordering ([#73](https://github.com/iotaledger/twin-telemetry/issues/73)) ([67829ac](https://github.com/iotaledger/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
-* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
-* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* metric timestamp ordering ([#73](https://github.com/3sixtyglobal/twin-telemetry/issues/73)) ([67829ac](https://github.com/3sixtyglobal/twin-telemetry/commit/67829acdfa4d0272bde5ad51d71d0ada039c4ccc))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* use async getStore in tests ([da1ea59](https://github.com/3sixtyglobal/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/3sixtyglobal/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
 
 
 ### Dependencies
@@ -349,16 +349,16 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.2-next.0 to 0.9.2-next.1
     * @twin.org/telemetry-models bumped from 0.9.2-next.0 to 0.9.2-next.1
 
-## [0.9.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1...telemetry-connector-opentelemetry-v0.9.1) (2026-07-27)
+## [0.9.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1...telemetry-connector-opentelemetry-v0.9.1) (2026-07-27)
 
 
 ### Features
 
-* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
-* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
-* release to production ([#68](https://github.com/iotaledger/twin-telemetry/issues/68)) ([157c6a9](https://github.com/iotaledger/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
+* release to production ([df2151d](https://github.com/3sixtyglobal/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/3sixtyglobal/twin-telemetry/issues/50)) ([192bfe3](https://github.com/3sixtyglobal/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([#68](https://github.com/3sixtyglobal/twin-telemetry/issues/68)) ([157c6a9](https://github.com/3sixtyglobal/twin-telemetry/commit/157c6a944553e5fb2b5a017586cda1b117c4037a))
 
-## [0.9.1-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.4...telemetry-connector-opentelemetry-v0.9.1-next.5) (2026-07-24)
+## [0.9.1-next.5](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.4...telemetry-connector-opentelemetry-v0.9.1-next.5) (2026-07-24)
 
 
 ### Miscellaneous Chores
@@ -373,7 +373,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.1-next.4 to 0.9.1-next.5
     * @twin.org/telemetry-models bumped from 0.9.1-next.4 to 0.9.1-next.5
 
-## [0.9.1-next.4](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.3...telemetry-connector-opentelemetry-v0.9.1-next.4) (2026-07-02)
+## [0.9.1-next.4](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.3...telemetry-connector-opentelemetry-v0.9.1-next.4) (2026-07-02)
 
 
 ### Miscellaneous Chores
@@ -388,12 +388,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.1-next.3 to 0.9.1-next.4
     * @twin.org/telemetry-models bumped from 0.9.1-next.3 to 0.9.1-next.4
 
-## [0.9.1-next.3](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.2...telemetry-connector-opentelemetry-v0.9.1-next.3) (2026-06-30)
+## [0.9.1-next.3](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.2...telemetry-connector-opentelemetry-v0.9.1-next.3) (2026-06-30)
 
 
 ### Features
 
-* rest enhancement ([#56](https://github.com/iotaledger/twin-telemetry/issues/56)) ([28b79fc](https://github.com/iotaledger/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
+* rest enhancement ([#56](https://github.com/3sixtyglobal/twin-telemetry/issues/56)) ([28b79fc](https://github.com/3sixtyglobal/twin-telemetry/commit/28b79fc2fb66f1e5c28cde325d018e5878d899b5))
 
 
 ### Dependencies
@@ -403,7 +403,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.1-next.2 to 0.9.1-next.3
     * @twin.org/telemetry-models bumped from 0.9.1-next.2 to 0.9.1-next.3
 
-## [0.9.1-next.2](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.1...telemetry-connector-opentelemetry-v0.9.1-next.2) (2026-06-29)
+## [0.9.1-next.2](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.1...telemetry-connector-opentelemetry-v0.9.1-next.2) (2026-06-29)
 
 
 ### Miscellaneous Chores
@@ -418,25 +418,25 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.1-next.1 to 0.9.1-next.2
     * @twin.org/telemetry-models bumped from 0.9.1-next.1 to 0.9.1-next.2
 
-## [0.9.1-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.0...telemetry-connector-opentelemetry-v0.9.1-next.1) (2026-06-26)
+## [0.9.1-next.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.1-next.0...telemetry-connector-opentelemetry-v0.9.1-next.1) (2026-06-26)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
-* update components ([a8583f3](https://github.com/iotaledger/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* update components ([a8583f3](https://github.com/3sixtyglobal/twin-telemetry/commit/a8583f361218e65f5b85cf8ac4f8114d6d2c0079))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
-* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
-* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* use async getStore in tests ([da1ea59](https://github.com/3sixtyglobal/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/3sixtyglobal/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
 
 
 ### Dependencies
@@ -446,32 +446,32 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.1-next.0 to 0.9.1-next.1
     * @twin.org/telemetry-models bumped from 0.9.1-next.0 to 0.9.1-next.1
 
-## [0.9.0](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.0...telemetry-connector-opentelemetry-v0.9.0) (2026-06-24)
+## [0.9.0](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.0...telemetry-connector-opentelemetry-v0.9.0) (2026-06-24)
 
 
 ### Features
 
-* release to production ([df2151d](https://github.com/iotaledger/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
-* release to production ([#50](https://github.com/iotaledger/twin-telemetry/issues/50)) ([192bfe3](https://github.com/iotaledger/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
+* release to production ([df2151d](https://github.com/3sixtyglobal/twin-telemetry/commit/df2151d24844fd2c3e6092ce3a6f888ac16219a0))
+* release to production ([#50](https://github.com/3sixtyglobal/twin-telemetry/issues/50)) ([192bfe3](https://github.com/3sixtyglobal/twin-telemetry/commit/192bfe3bea060163f2887e51fc6c2ceb74a7683f))
 
-## [0.9.0-next.1](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.0-next.0...telemetry-connector-opentelemetry-v0.9.0-next.1) (2026-06-23)
+## [0.9.0-next.1](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.9.0-next.0...telemetry-connector-opentelemetry-v0.9.0-next.1) (2026-06-23)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
-* use async getStore in tests ([da1ea59](https://github.com/iotaledger/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
-* use async getStore in tests ([38dade0](https://github.com/iotaledger/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* use async getStore in tests ([da1ea59](https://github.com/3sixtyglobal/twin-telemetry/commit/da1ea5948c7ece9c614d9e9056fe6a4efab16180))
+* use async getStore in tests ([38dade0](https://github.com/3sixtyglobal/twin-telemetry/commit/38dade0537b30e10ef598d3303328136f5c113eb))
 
 
 ### Dependencies
@@ -481,7 +481,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.9.0-next.0 to 0.9.0-next.1
     * @twin.org/telemetry-models bumped from 0.9.0-next.0 to 0.9.0-next.1
 
-## [0.0.3-next.13](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.12...telemetry-connector-opentelemetry-v0.0.3-next.13) (2026-06-11)
+## [0.0.3-next.13](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.12...telemetry-connector-opentelemetry-v0.0.3-next.13) (2026-06-11)
 
 
 ### Miscellaneous Chores
@@ -496,7 +496,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.12 to 0.0.3-next.13
     * @twin.org/telemetry-models bumped from 0.0.3-next.12 to 0.0.3-next.13
 
-## [0.0.3-next.12](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.11...telemetry-connector-opentelemetry-v0.0.3-next.12) (2026-06-08)
+## [0.0.3-next.12](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.11...telemetry-connector-opentelemetry-v0.0.3-next.12) (2026-06-08)
 
 
 ### Miscellaneous Chores
@@ -511,7 +511,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.11 to 0.0.3-next.12
     * @twin.org/telemetry-models bumped from 0.0.3-next.11 to 0.0.3-next.12
 
-## [0.0.3-next.11](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.10...telemetry-connector-opentelemetry-v0.0.3-next.11) (2026-06-04)
+## [0.0.3-next.11](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.10...telemetry-connector-opentelemetry-v0.0.3-next.11) (2026-06-04)
 
 
 ### Miscellaneous Chores
@@ -526,7 +526,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.10 to 0.0.3-next.11
     * @twin.org/telemetry-models bumped from 0.0.3-next.10 to 0.0.3-next.11
 
-## [0.0.3-next.10](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.9...telemetry-connector-opentelemetry-v0.0.3-next.10) (2026-05-20)
+## [0.0.3-next.10](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.9...telemetry-connector-opentelemetry-v0.0.3-next.10) (2026-05-20)
 
 
 ### Miscellaneous Chores
@@ -541,12 +541,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.9 to 0.0.3-next.10
     * @twin.org/telemetry-models bumped from 0.0.3-next.9 to 0.0.3-next.10
 
-## [0.0.3-next.9](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.8...telemetry-connector-opentelemetry-v0.0.3-next.9) (2026-05-20)
+## [0.0.3-next.9](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.8...telemetry-connector-opentelemetry-v0.0.3-next.9) (2026-05-20)
 
 
 ### Features
 
-* add helper and command types ([7166013](https://github.com/iotaledger/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
+* add helper and command types ([7166013](https://github.com/3sixtyglobal/twin-telemetry/commit/7166013f8a0693a1d92101cb600c37a1aba66417))
 
 
 ### Dependencies
@@ -556,7 +556,7 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.8 to 0.0.3-next.9
     * @twin.org/telemetry-models bumped from 0.0.3-next.8 to 0.0.3-next.9
 
-## [0.0.3-next.8](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.7...telemetry-connector-opentelemetry-v0.0.3-next.8) (2026-05-19)
+## [0.0.3-next.8](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.7...telemetry-connector-opentelemetry-v0.0.3-next.8) (2026-05-19)
 
 
 ### Miscellaneous Chores
@@ -571,12 +571,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.7 to 0.0.3-next.8
     * @twin.org/telemetry-models bumped from 0.0.3-next.7 to 0.0.3-next.8
 
-## [0.0.3-next.7](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.6...telemetry-connector-opentelemetry-v0.0.3-next.7) (2026-05-19)
+## [0.0.3-next.7](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.6...telemetry-connector-opentelemetry-v0.0.3-next.7) (2026-05-19)
 
 
 ### Features
 
-* add metrics producer infrastructure ([#30](https://github.com/iotaledger/twin-telemetry/issues/30)) ([8990b99](https://github.com/iotaledger/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
+* add metrics producer infrastructure ([#30](https://github.com/3sixtyglobal/twin-telemetry/issues/30)) ([8990b99](https://github.com/3sixtyglobal/twin-telemetry/commit/8990b990d22f331d44562c2781c9b6ddf846db88))
 
 
 ### Dependencies
@@ -586,12 +586,12 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.6 to 0.0.3-next.7
     * @twin.org/telemetry-models bumped from 0.0.3-next.6 to 0.0.3-next.7
 
-## [0.0.3-next.6](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.5...telemetry-connector-opentelemetry-v0.0.3-next.6) (2026-05-11)
+## [0.0.3-next.6](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.5...telemetry-connector-opentelemetry-v0.0.3-next.6) (2026-05-11)
 
 
 ### Features
 
-* improve open telemetry config ([8803201](https://github.com/iotaledger/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
+* improve open telemetry config ([8803201](https://github.com/3sixtyglobal/twin-telemetry/commit/8803201611b1799a00cd657e0675f85596c4edce))
 
 
 ### Dependencies
@@ -601,19 +601,19 @@
     * @twin.org/telemetry-connector-entity-storage bumped from 0.0.3-next.5 to 0.0.3-next.6
     * @twin.org/telemetry-models bumped from 0.0.3-next.5 to 0.0.3-next.6
 
-## [0.0.3-next.5](https://github.com/iotaledger/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.4...telemetry-connector-opentelemetry-v0.0.3-next.5) (2026-05-11)
+## [0.0.3-next.5](https://github.com/3sixtyglobal/twin-telemetry/compare/telemetry-connector-opentelemetry-v0.0.3-next.4...telemetry-connector-opentelemetry-v0.0.3-next.5) (2026-05-11)
 
 
 ### Features
 
-* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/iotaledger/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/iotaledger/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
-* typescript 6 update ([0acecc2](https://github.com/iotaledger/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
+* add OpenTelemetry connector, tests and a graphana example ([#22](https://github.com/3sixtyglobal/twin-telemetry/issues/22)) ([ae3e08f](https://github.com/3sixtyglobal/twin-telemetry/commit/ae3e08f459cb20ff5d2a149982676de8c2f90ae1))
+* typescript 6 update ([0acecc2](https://github.com/3sixtyglobal/twin-telemetry/commit/0acecc2692b174fbaec6a8a89bd9277fa3530b5f))
 
 
 ### Bug Fixes
 
-* docs ([acc23a6](https://github.com/iotaledger/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
-* open-telemetry config options ([c35ee76](https://github.com/iotaledger/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
+* docs ([acc23a6](https://github.com/3sixtyglobal/twin-telemetry/commit/acc23a674e75752e3817e2717d6b029d0b1404ff))
+* open-telemetry config options ([c35ee76](https://github.com/3sixtyglobal/twin-telemetry/commit/c35ee764ccad9168985fcac6efc3461422884ce4))
 
 
 ### Dependencies
