@@ -1,4 +1,4 @@
-# TWIN Telemetry — Grafana Integration Demo
+# 3Sixty Telemetry — Grafana Integration Demo
 
 End-to-end proof that `OpenTelemetryTelemetryConnector` emits real metrics that Grafana
 can visualise. The demo uses the following stack:

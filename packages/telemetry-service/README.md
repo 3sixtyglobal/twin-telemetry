@@ -1,11 +1,11 @@
-# TWIN Telemetry Service
+# 3Sixty Telemetry Service
 
 Telemetry service implementation with REST entry points.
 
 ## Installation
 
 ```shell
-npm install @twin.org/telemetry-service
+npm install @3sixty/telemetry-service
 ```
 
 ## Examples

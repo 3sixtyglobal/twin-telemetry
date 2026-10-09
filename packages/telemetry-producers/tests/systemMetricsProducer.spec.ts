@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { ComponentFactory } from "@twin.org/core";
-import type { ITelemetryComponent, ITelemetryMetricValueEntry } from "@twin.org/telemetry-models";
+import { ComponentFactory } from "@3sixty/core";
+import type { ITelemetryComponent, ITelemetryMetricValueEntry } from "@3sixty/telemetry-models";
 import { SystemMetricsProducer } from "../src/systemMetricsProducer.js";
 
 const { mockCpus, mockTotalmem, mockFreemem, mockUptime } = vi.hoisted(() => ({

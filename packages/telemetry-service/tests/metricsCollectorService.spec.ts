@@ -1,13 +1,13 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { IPlatformComponent } from "@twin.org/api-models";
-import { ComponentFactory, GuardError, ValidationError } from "@twin.org/core";
+import type { IPlatformComponent } from "@3sixty/api-models";
+import { ComponentFactory, GuardError, ValidationError } from "@3sixty/core";
 import {
 	MetricsProducerFactory,
 	type IMetricsProducer,
 	type ITelemetryComponent,
 	type ITelemetryMetricValueEntry
-} from "@twin.org/telemetry-models";
+} from "@3sixty/telemetry-models";
 import { MetricsCollectorService } from "../src/metricsCollectorService.js";
 
 const DEFAULT_PLATFORM_TYPE = "platform";

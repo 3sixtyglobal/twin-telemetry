@@ -1,6 +1,6 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { IComponent } from "@twin.org/core";
+import type { IComponent } from "@3sixty/core";
 import type { ITelemetryMetric } from "./ITelemetryMetric.js";
 import type { ITelemetryMetricValue } from "./ITelemetryMetricValue.js";
 import type { ITelemetryMetricValueEntry } from "./ITelemetryMetricValueEntry.js";

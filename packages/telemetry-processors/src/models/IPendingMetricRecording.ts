@@ -1,6 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { IContextIds } from "@twin.org/context";
+import type { IContextIds } from "@3sixty/context";
 
 /**
  * A request metric queued by the metrics route processor, waiting to be handed to the

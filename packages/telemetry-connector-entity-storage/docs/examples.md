@@ -5,16 +5,16 @@ These examples show how to initialise in-memory entity stores, write telemetry d
 ## EntityStorageTelemetryConnector
 
 ```typescript
-import { MemoryEntityStorageConnector } from '@twin.org/entity-storage-connector-memory';
-import { EntityStorageConnectorFactory } from '@twin.org/entity-storage-models';
-import { nameof } from '@twin.org/nameof';
-import { MetricType } from '@twin.org/telemetry-models';
+import { MemoryEntityStorageConnector } from '@3sixty/entity-storage-connector-memory';
+import { EntityStorageConnectorFactory } from '@3sixty/entity-storage-models';
+import { nameof } from '@3sixty/nameof';
+import { MetricType } from '@3sixty/telemetry-models';
 import {
   EntityStorageTelemetryConnector,
   type TelemetryMetric,
   type TelemetryMetricValue,
   initSchema
-} from '@twin.org/telemetry-connector-entity-storage';
+} from '@3sixty/telemetry-connector-entity-storage';
 
 initSchema();
 
@@ -54,8 +54,8 @@ console.log(latest.value.value); // 5
 ```
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { EntityStorageTelemetryConnector } from '@twin.org/telemetry-connector-entity-storage';
+import { MetricType } from '@3sixty/telemetry-models';
+import { EntityStorageTelemetryConnector } from '@3sixty/telemetry-connector-entity-storage';
 
 const connector = new EntityStorageTelemetryConnector();
 
@@ -80,7 +80,7 @@ console.log(valuesPage.entities.length); // 2
 ```
 
 ```typescript
-import { EntityStorageTelemetryConnector } from '@twin.org/telemetry-connector-entity-storage';
+import { EntityStorageTelemetryConnector } from '@3sixty/telemetry-connector-entity-storage';
 
 const connector = new EntityStorageTelemetryConnector();
 
@@ -93,8 +93,8 @@ console.log(metricsAfterRemoval.entities.length); // 0
 ## TelemetryMetric
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { TelemetryMetric } from '@twin.org/telemetry-connector-entity-storage';
+import { MetricType } from '@3sixty/telemetry-models';
+import { TelemetryMetric } from '@3sixty/telemetry-connector-entity-storage';
 
 const metric: TelemetryMetric = {
   id: 'processor-temperature',
@@ -110,7 +110,7 @@ console.log(metric.label); // Processor Temperature
 ## TelemetryMetricValue
 
 ```typescript
-import { TelemetryMetricValue } from '@twin.org/telemetry-connector-entity-storage';
+import { TelemetryMetricValue } from '@3sixty/telemetry-connector-entity-storage';
 
 const metricValue: TelemetryMetricValue = {
   id: 'f1f2f3f4f5f6f7f8f9f0a1a2a3a4a5a6',

@@ -1,9 +1,9 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { ContextIdStore } from "@twin.org/context";
-import { Guards, Is } from "@twin.org/core";
-import { ModuleHelper } from "@twin.org/modules";
-import { nameof } from "@twin.org/nameof";
+import { ContextIdStore } from "@3sixty/context";
+import { Guards, Is } from "@3sixty/core";
+import { ModuleHelper } from "@3sixty/modules";
+import { nameof } from "@3sixty/nameof";
 import type { TelemetryMetric } from "./entities/telemetryMetric.js";
 import type { TelemetryMetricValue } from "./entities/telemetryMetricValue.js";
 import { MetricValueWriter } from "./metricValueWriter.js";
@@ -50,7 +50,7 @@ export async function telemetryMetricValueTaskStart(
 			engine = await ModuleHelper.execModuleMethod<{
 				start: () => Promise<void>;
 				stop: () => Promise<void>;
-			}>("@twin.org/engine-core", "EngineCoreBuilder.fromClone", [
+			}>("@3sixty/engine-core", "EngineCoreBuilder.fromClone", [
 				"engine",
 				engineCloneData,
 				await ContextIdStore.getContextIds(),

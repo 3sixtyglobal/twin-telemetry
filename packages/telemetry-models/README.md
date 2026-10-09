@@ -1,11 +1,11 @@
-# TWIN Telemetry Models
+# 3Sixty Telemetry Models
 
 Shared telemetry models for connectors and services.
 
 ## Installation
 
 ```shell
-npm install @twin.org/telemetry-models
+npm install @3sixty/telemetry-models
 ```
 
 ## Examples

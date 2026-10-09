@@ -1,4 +1,4 @@
-# @twin.org/telemetry-producers
+# @3sixty/telemetry-producers
 
 ## Classes
 

@@ -1,4 +1,4 @@
-# @twin.org/telemetry-connector-entity-storage
+# @3sixty/telemetry-connector-entity-storage
 
 ## Classes
 

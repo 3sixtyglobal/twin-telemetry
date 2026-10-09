@@ -1,10 +1,10 @@
 {
-	"name": "@twin.org/telemetry-producers",
-	"version": "0.11.1-next.0",
+	"name": "@3sixty/telemetry-producers",
+	"version": "0.20.0-next.0",
 	"description": "Metrics producers for collecting Node.js process and system telemetry.",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/3sixtyglobal/twin-telemetry.git",
+		"url": "git+https://github.com/3sixtyglobal/telemetry.git",
 		"directory": "packages/telemetry-producers"
 	},
 	"author": "adrian.sanchez.sequeira@iota.org",
@@ -28,14 +28,14 @@
 		"dist:no-test": "pnpm run clean && concurrently -g -n build,locales,types \"pnpm run build\" \"pnpm run validate-locales\" \"pnpm run test:build\""
 	},
 	"dependencies": {
-		"@twin.org/core": "next",
-		"@twin.org/nameof": "next",
-		"@twin.org/telemetry-models": "0.11.1-next.0"
+		"@3sixty/core": "next",
+		"@3sixty/nameof": "next",
+		"@3sixty/telemetry-models": "0.20.0-next.0"
 	},
 	"devDependencies": {
-		"@twin.org/nameof-transformer": "next",
-		"@twin.org/nameof-vitest-plugin": "next",
-		"@twin.org/validate-locales": "next",
+		"@3sixty/nameof-transformer": "next",
+		"@3sixty/nameof-vitest-plugin": "next",
+		"@3sixty/validate-locales": "next",
 		"@types/node": "26.6.2",
 		"@vitest/coverage-v8": "5.0.1",
 		"concurrently": "10.0.5",
@@ -76,7 +76,7 @@
 		"business-logic"
 	],
 	"bugs": {
-		"url": "git+https://github.com/3sixtyglobal/twin-telemetry/issues"
+		"url": "git+https://github.com/3sixtyglobal/telemetry/issues"
 	},
-	"homepage": "https://twindev.org"
+	"homepage": "https://3sixty.global"
 }

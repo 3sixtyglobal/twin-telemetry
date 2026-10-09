@@ -5,8 +5,8 @@ These snippets show how to call telemetry endpoints from application code and pr
 ## TelemetryRestClient
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { TelemetryRestClient } from '@twin.org/telemetry-rest-client';
+import { MetricType } from '@3sixty/telemetry-models';
+import { TelemetryRestClient } from '@3sixty/telemetry-rest-client';
 
 const client = new TelemetryRestClient({
   endpoint: 'http://localhost:8080'
@@ -30,8 +30,8 @@ console.log(addedValueId.length > 0); // true
 ```
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { TelemetryRestClient } from '@twin.org/telemetry-rest-client';
+import { MetricType } from '@3sixty/telemetry-models';
+import { TelemetryRestClient } from '@3sixty/telemetry-rest-client';
 
 const client = new TelemetryRestClient({ endpoint: 'http://localhost:8080' });
 
@@ -59,7 +59,7 @@ console.log(values.entities.length); // 1
 ```
 
 ```typescript
-import { TelemetryRestClient } from '@twin.org/telemetry-rest-client';
+import { TelemetryRestClient } from '@3sixty/telemetry-rest-client';
 
 const client = new TelemetryRestClient({ endpoint: 'http://localhost:8080' });
 

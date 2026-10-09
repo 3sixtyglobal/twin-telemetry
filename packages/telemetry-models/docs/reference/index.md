@@ -1,4 +1,4 @@
-# @twin.org/telemetry-models
+# @3sixty/telemetry-models
 
 ## Classes
 

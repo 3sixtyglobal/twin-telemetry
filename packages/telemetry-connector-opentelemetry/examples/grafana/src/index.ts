@@ -1,14 +1,14 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
-import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
+import { MemoryEntityStorageConnector } from "@3sixty/entity-storage-connector-memory";
+import { EntityStorageConnectorFactory } from "@3sixty/entity-storage-models";
 import {
 	type TelemetryMetric,
 	type TelemetryMetricValue,
 	initSchema
-} from "@twin.org/telemetry-connector-entity-storage";
-import { OpenTelemetryTelemetryConnector } from "@twin.org/telemetry-connector-opentelemetry";
-import { MetricType } from "@twin.org/telemetry-models";
+} from "@3sixty/telemetry-connector-entity-storage";
+import { OpenTelemetryTelemetryConnector } from "@3sixty/telemetry-connector-opentelemetry";
+import { MetricType } from "@3sixty/telemetry-models";
 
 const PROMETHEUS_PORT = 9464;
 const EMIT_INTERVAL_MS = 2000;

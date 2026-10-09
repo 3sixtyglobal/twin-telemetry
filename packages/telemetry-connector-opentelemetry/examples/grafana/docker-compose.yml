@@ -3,7 +3,7 @@ name: twin-telemetry-demo
 services:
   prometheus:
     image: prom/prometheus:latest
-    container_name: twin-prometheus
+    container_name: 3sixty-prometheus
     ports:
       - '9090:9090'
     volumes:
@@ -15,7 +15,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: twin-grafana
+    container_name: 3sixty-grafana
     ports:
       - '3000:3000'
     environment:

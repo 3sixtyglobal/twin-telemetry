@@ -1,15 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
-import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
-import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import {
-	MeterProvider,
-	PeriodicExportingMetricReader,
-	type MetricReader
-} from "@opentelemetry/sdk-metrics";
-import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@3sixty/context";
 import {
 	AlreadyExistsError,
 	BaseError,
@@ -20,16 +11,25 @@ import {
 	Is,
 	NotFoundError,
 	RandomHelper
-} from "@twin.org/core";
-import type { ILoggingComponent } from "@twin.org/logging-models";
-import { nameof } from "@twin.org/nameof";
+} from "@3sixty/core";
+import type { ILoggingComponent } from "@3sixty/logging-models";
+import { nameof } from "@3sixty/nameof";
 import {
 	type ITelemetryConnector,
 	type ITelemetryMetric,
 	type ITelemetryMetricValueEntry,
 	MetricCounterOperation,
 	MetricType
-} from "@twin.org/telemetry-models";
+} from "@3sixty/telemetry-models";
+import type { Attributes, Counter, Gauge, Meter, UpDownCounter } from "@opentelemetry/api";
+import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
+import { PrometheusExporter } from "@opentelemetry/exporter-prometheus";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import {
+	MeterProvider,
+	PeriodicExportingMetricReader,
+	type MetricReader
+} from "@opentelemetry/sdk-metrics";
 import type { IOpenTelemetryTelemetryConnectorConfig } from "./models/IOpenTelemetryTelemetryConnectorConfig.js";
 import type { IOpenTelemetryTelemetryConnectorConstructorOptions } from "./models/IOpenTelemetryTelemetryConnectorConstructorOptions.js";
 import { OpenTelemetryReaderTypes } from "./models/openTelemetryReaderTypes.js";

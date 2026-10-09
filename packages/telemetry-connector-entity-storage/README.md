@@ -1,11 +1,11 @@
-# TWIN Telemetry Connector Entity Storage
+# 3Sixty Telemetry Connector Entity Storage
 
 Entity storage connector for persisting telemetry metrics.
 
 ## Installation
 
 ```shell
-npm install @twin.org/telemetry-connector-entity-storage
+npm install @3sixty/telemetry-connector-entity-storage
 ```
 
 ## Examples

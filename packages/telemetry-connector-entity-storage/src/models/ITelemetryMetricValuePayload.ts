@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { IContextIds } from "@twin.org/context";
-import type { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+import type { IContextIds } from "@3sixty/context";
+import type { MetricCounterOperation, MetricType } from "@3sixty/telemetry-models";
 
 /**
  * The details of a metric value handed to the background thread to be written.

@@ -1,6 +1,6 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { AlreadyExistsError, BaseError, Is } from "@twin.org/core";
+import { AlreadyExistsError, BaseError, Is } from "@3sixty/core";
 import type { ITelemetryComponent } from "../models/ITelemetryComponent.js";
 import type { ITelemetryMetric } from "../models/ITelemetryMetric.js";
 import type { ITelemetryMetricValueEntry } from "../models/ITelemetryMetricValueEntry.js";

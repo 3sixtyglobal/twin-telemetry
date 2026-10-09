@@ -28,15 +28,15 @@ Pass a `readers` config map to the connector constructor. The connector instanti
 exporter internally when `start()` is called — no manual `MeterProvider` wiring is needed.
 
 ```typescript
-import { EntityStorageConnectorFactory } from '@twin.org/entity-storage-models';
-import { MemoryEntityStorageConnector } from '@twin.org/entity-storage-connector-memory';
-import { TelemetryConnectorFactory } from '@twin.org/telemetry-models';
+import { EntityStorageConnectorFactory } from '@3sixty/entity-storage-models';
+import { MemoryEntityStorageConnector } from '@3sixty/entity-storage-connector-memory';
+import { TelemetryConnectorFactory } from '@3sixty/telemetry-models';
 import {
   OpenTelemetryTelemetryConnector,
   initSchema,
   type TelemetryMetric,
   type TelemetryMetricValue
-} from '@twin.org/telemetry-connector-opentelemetry';
+} from '@3sixty/telemetry-connector-opentelemetry';
 
 // Register entity storage so the connector can persist metric definitions and history.
 initSchema();
@@ -68,8 +68,8 @@ TelemetryConnectorFactory.register('telemetry', () => connector);
 ## Creating and Recording Metrics
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { OpenTelemetryTelemetryConnector } from '@twin.org/telemetry-connector-opentelemetry';
+import { MetricType } from '@3sixty/telemetry-models';
+import { OpenTelemetryTelemetryConnector } from '@3sixty/telemetry-connector-opentelemetry';
 
 const connector = new OpenTelemetryTelemetryConnector();
 
@@ -120,8 +120,8 @@ console.log(latest.value.value); // 68.1
 The connector keeps an in-memory mirror of all recorded values so you can read back metrics without a separate query backend.
 
 ```typescript
-import { MetricType } from '@twin.org/telemetry-models';
-import { OpenTelemetryTelemetryConnector } from '@twin.org/telemetry-connector-opentelemetry';
+import { MetricType } from '@3sixty/telemetry-models';
+import { OpenTelemetryTelemetryConnector } from '@3sixty/telemetry-connector-opentelemetry';
 
 const connector = new OpenTelemetryTelemetryConnector();
 
@@ -148,7 +148,7 @@ if (page1.cursor) {
 ## Updating and Removing Metrics
 
 ```typescript
-import { OpenTelemetryTelemetryConnector } from '@twin.org/telemetry-connector-opentelemetry';
+import { OpenTelemetryTelemetryConnector } from '@3sixty/telemetry-connector-opentelemetry';
 
 const connector = new OpenTelemetryTelemetryConnector();
 

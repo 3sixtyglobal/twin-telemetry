@@ -1,4 +1,4 @@
-# @twin.org/telemetry-processors
+# @3sixty/telemetry-processors
 
 ## Classes
 

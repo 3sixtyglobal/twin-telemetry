@@ -9,10 +9,10 @@ import {
 	type INoContentResponse,
 	type IRestRoute,
 	type ITag
-} from "@twin.org/api-models";
-import { ContextIdStore } from "@twin.org/context";
-import { Coerce, ComponentFactory, Guards, Is } from "@twin.org/core";
-import { nameof } from "@twin.org/nameof";
+} from "@3sixty/api-models";
+import { ContextIdStore } from "@3sixty/context";
+import { Coerce, ComponentFactory, Guards, Is } from "@3sixty/core";
+import { nameof } from "@3sixty/nameof";
 import {
 	MetricType,
 	type ITelemetryAddMetricValueRequest,
@@ -29,8 +29,8 @@ import {
 	type ITelemetryUpdateMetricRequest,
 	type ITelemetryValuesListRequest,
 	type ITelemetryValuesListResponse
-} from "@twin.org/telemetry-models";
-import { HeaderTypes, HttpStatusCode, type IHttpHeaders } from "@twin.org/web";
+} from "@3sixty/telemetry-models";
+import { HeaderTypes, HttpStatusCode, type IHttpHeaders } from "@3sixty/web";
 
 /**
  * The source used when communicating about these routes.

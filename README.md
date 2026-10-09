@@ -1,4 +1,4 @@
-# TWIN Telemetry
+# 3Sixty Telemetry
 
 This repository provides a set of telemetry building blocks that make it easier to collect, produce, persist, expose, and consume operational metrics across distributed systems. The packages are designed to work together so service-side and client-side integrations can share a consistent model for telemetry data.
 

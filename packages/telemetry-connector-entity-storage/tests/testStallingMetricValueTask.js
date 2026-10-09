@@ -4,7 +4,7 @@
 // A handler whose task never completes, so the worker stays busy for good. This is the state
 // the scheduler cannot recover from on its own: it goes on waiting for the one worker it
 // believes is working, so nothing is dispatched for the task type again.
-export { telemetryMetricValueTaskEnd } from '@twin.org/telemetry-connector-entity-storage';
+export { telemetryMetricValueTaskEnd } from '@3sixty/telemetry-connector-entity-storage';
 
 /**
  * Start the task, doing nothing at all.

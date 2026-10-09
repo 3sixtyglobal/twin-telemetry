@@ -18,7 +18,7 @@ runs:
       if: inputs.package == 'packages/telemetry-connector-opentelemetry' || inputs.package == 'all'
       shell: bash
       run: |
-        docker run -d --name twin-opentelemetry \
+        docker run -d --name 3sixty-opentelemetry \
           -p 4317:4317 -p 4318:4318 \
           -p 3123:3000 -p 3200:3200 \
           grafana/otel-lgtm

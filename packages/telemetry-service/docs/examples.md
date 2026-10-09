@@ -9,8 +9,8 @@ import {
   MetricType,
   SilentTelemetryConnector,
   TelemetryConnectorFactory
-} from '@twin.org/telemetry-models';
-import { TelemetryService } from '@twin.org/telemetry-service';
+} from '@3sixty/telemetry-models';
+import { TelemetryService } from '@3sixty/telemetry-service';
 
 TelemetryConnectorFactory.register('silent', () => new SilentTelemetryConnector());
 
@@ -46,8 +46,8 @@ import {
   MetricType,
   SilentTelemetryConnector,
   TelemetryConnectorFactory
-} from '@twin.org/telemetry-models';
-import { TelemetryService } from '@twin.org/telemetry-service';
+} from '@3sixty/telemetry-models';
+import { TelemetryService } from '@3sixty/telemetry-service';
 
 TelemetryConnectorFactory.register('silent', () => new SilentTelemetryConnector());
 
@@ -74,7 +74,7 @@ await service.removeMetric('requests-per-minute');
 ## generateRestRoutesTelemetry
 
 ```typescript
-import { generateRestRoutesTelemetry } from '@twin.org/telemetry-service';
+import { generateRestRoutesTelemetry } from '@3sixty/telemetry-service';
 
 const routes = generateRestRoutesTelemetry('/api', 'telemetry');
 

@@ -6,20 +6,20 @@ import {
 	type IBackgroundTask,
 	type IBackgroundTaskComponent,
 	TaskStatus
-} from "@twin.org/background-task-models";
+} from "@3sixty/background-task-models";
 import {
 	BackgroundTaskService,
 	initSchema as initBackgroundTaskSchema,
 	type BackgroundTask
-} from "@twin.org/background-task-service";
-import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { ComponentFactory } from "@twin.org/core";
-import { FileEntityStorageConnector } from "@twin.org/entity-storage-connector-file";
-import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
-import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
-import type { ILogEntry } from "@twin.org/logging-models";
-import { nameof } from "@twin.org/nameof";
-import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+} from "@3sixty/background-task-service";
+import { ContextIdKeys, ContextIdStore } from "@3sixty/context";
+import { ComponentFactory } from "@3sixty/core";
+import { FileEntityStorageConnector } from "@3sixty/entity-storage-connector-file";
+import { MemoryEntityStorageConnector } from "@3sixty/entity-storage-connector-memory";
+import { EntityStorageConnectorFactory } from "@3sixty/entity-storage-models";
+import type { ILogEntry } from "@3sixty/logging-models";
+import { nameof } from "@3sixty/nameof";
+import { MetricCounterOperation, MetricType } from "@3sixty/telemetry-models";
 import type { Mock } from "vitest";
 import type { TelemetryMetric } from "../src/entities/telemetryMetric.js";
 import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";

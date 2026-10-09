@@ -1,11 +1,11 @@
-# TWIN Telemetry REST Client
+# 3Sixty Telemetry REST Client
 
 REST client for interacting with telemetry service endpoints.
 
 ## Installation
 
 ```shell
-npm install @twin.org/telemetry-rest-client
+npm install @3sixty/telemetry-rest-client
 ```
 
 ## Examples

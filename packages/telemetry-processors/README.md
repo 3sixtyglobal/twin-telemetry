@@ -1,11 +1,11 @@
-# TWIN Telemetry Processors
+# 3Sixty Telemetry Processors
 
 Route processors for recording telemetry metrics from the web server.
 
 ## Installation
 
 ```shell
-npm install @twin.org/telemetry-processors
+npm install @3sixty/telemetry-processors
 ```
 
 ## Examples

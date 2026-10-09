@@ -1,20 +1,20 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
-import { BaseError, Coerce, ComponentFactory, Is } from "@twin.org/core";
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@3sixty/context";
+import { BaseError, Coerce, ComponentFactory, Is } from "@3sixty/core";
 import {
 	ComparisonOperator,
 	type EntityCondition,
 	LogicalOperator,
 	SortDirection
-} from "@twin.org/entity";
+} from "@3sixty/entity";
 import {
 	EntityStorageConnectorFactory,
 	type IEntityStorageConnector
-} from "@twin.org/entity-storage-models";
-import type { ILoggingComponent } from "@twin.org/logging-models";
-import { nameof } from "@twin.org/nameof";
-import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+} from "@3sixty/entity-storage-models";
+import type { ILoggingComponent } from "@3sixty/logging-models";
+import { nameof } from "@3sixty/nameof";
+import { MetricCounterOperation, MetricType } from "@3sixty/telemetry-models";
 import type { TelemetryMetricValue } from "./entities/telemetryMetricValue.js";
 import type { ITelemetryMetricValuePayload } from "./models/ITelemetryMetricValuePayload.js";
 import type { ITelemetryMetricValueWriterConfig } from "./models/ITelemetryMetricValueWriterConfig.js";

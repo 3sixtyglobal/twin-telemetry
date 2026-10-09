@@ -1,14 +1,14 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { BaseRestClient } from "@twin.org/api-core";
+import { BaseRestClient } from "@3sixty/api-core";
 import {
 	HttpHeaderHelper,
 	type IBaseRestClientConfig,
 	type ICreatedResponse,
 	type INoContentResponse
-} from "@twin.org/api-models";
-import { Coerce, Guards } from "@twin.org/core";
-import { nameof } from "@twin.org/nameof";
+} from "@3sixty/api-models";
+import { Coerce, Guards } from "@3sixty/core";
+import { nameof } from "@3sixty/nameof";
 import type {
 	ITelemetryAddMetricValueRequest,
 	ITelemetryComponent,
@@ -28,8 +28,8 @@ import type {
 	ITelemetryValuesListResponse,
 	MetricCounterOperation,
 	MetricType
-} from "@twin.org/telemetry-models";
-import { HttpMethod } from "@twin.org/web";
+} from "@3sixty/telemetry-models";
+import { HttpMethod } from "@3sixty/web";
 
 /**
  * Client for performing telemetry through to REST endpoints.

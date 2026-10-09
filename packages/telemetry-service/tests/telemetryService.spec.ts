@@ -1,12 +1,12 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
-import { ComponentFactory } from "@twin.org/core";
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@3sixty/context";
+import { ComponentFactory } from "@3sixty/core";
 import {
 	MetricCounterOperation,
 	TelemetryConnectorFactory,
 	type ITelemetryConnector
-} from "@twin.org/telemetry-models";
+} from "@3sixty/telemetry-models";
 import { TelemetryService } from "../src/telemetryService.js";
 
 const TENANT_IDS = ["tenant-a", "tenant-b"];

@@ -1,16 +1,16 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import type { IBaseRoute, IHttpServerRequest } from "@twin.org/api-models";
-import { ContextIdKeys, ContextIdStore, type IContextIds } from "@twin.org/context";
-import { ComponentFactory } from "@twin.org/core";
-import type { ILogEntry, ILoggingComponent } from "@twin.org/logging-models";
+import type { IBaseRoute, IHttpServerRequest } from "@3sixty/api-models";
+import { ContextIdKeys, ContextIdStore, type IContextIds } from "@3sixty/context";
+import { ComponentFactory } from "@3sixty/core";
+import type { ILogEntry, ILoggingComponent } from "@3sixty/logging-models";
 import {
 	MetricCounterOperation,
 	type ITelemetryComponent,
 	type ITelemetryMetric,
 	type ITelemetryMetricValueEntry
-} from "@twin.org/telemetry-models";
-import { HttpMethod, HttpStatusCode } from "@twin.org/web";
+} from "@3sixty/telemetry-models";
+import { HttpMethod, HttpStatusCode } from "@3sixty/web";
 import { MetricsRouteProcessor } from "../src/metricsRouteProcessor.js";
 import { TelemetryMetricIds } from "../src/models/telemetryMetricIds.js";
 

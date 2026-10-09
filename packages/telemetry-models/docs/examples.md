@@ -10,7 +10,7 @@ import {
   MultiTelemetryConnector,
   SilentTelemetryConnector,
   TelemetryConnectorFactory
-} from '@twin.org/telemetry-models';
+} from '@3sixty/telemetry-models';
 
 TelemetryConnectorFactory.register('silent-a', () => new SilentTelemetryConnector());
 TelemetryConnectorFactory.register('silent-b', () => new SilentTelemetryConnector());
@@ -49,7 +49,7 @@ import {
   MultiTelemetryConnector,
   SilentTelemetryConnector,
   TelemetryConnectorFactory
-} from '@twin.org/telemetry-models';
+} from '@3sixty/telemetry-models';
 
 TelemetryConnectorFactory.register('silent-a', () => new SilentTelemetryConnector());
 TelemetryConnectorFactory.register('silent-b', () => new SilentTelemetryConnector());
@@ -79,7 +79,7 @@ console.log(metric.metric.id); // heartbeat-total
 ## SilentTelemetryConnector
 
 ```typescript
-import { MetricType, SilentTelemetryConnector } from '@twin.org/telemetry-models';
+import { MetricType, SilentTelemetryConnector } from '@3sixty/telemetry-models';
 
 const silent = new SilentTelemetryConnector();
 
@@ -101,7 +101,7 @@ await silent.removeMetric('dropped-messages');
 ```
 
 ```typescript
-import { SilentTelemetryConnector } from '@twin.org/telemetry-models';
+import { SilentTelemetryConnector } from '@3sixty/telemetry-models';
 
 const silent = new SilentTelemetryConnector();
 
@@ -133,7 +133,7 @@ try {
 ## TelemetryConnectorFactory
 
 ```typescript
-import { SilentTelemetryConnector, TelemetryConnectorFactory } from '@twin.org/telemetry-models';
+import { SilentTelemetryConnector, TelemetryConnectorFactory } from '@3sixty/telemetry-models';
 
 TelemetryConnectorFactory.register('silent-default', () => new SilentTelemetryConnector());
 

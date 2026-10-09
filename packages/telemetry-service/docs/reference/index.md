@@ -1,4 +1,4 @@
-# @twin.org/telemetry-service
+# @3sixty/telemetry-service
 
 ## Classes
 

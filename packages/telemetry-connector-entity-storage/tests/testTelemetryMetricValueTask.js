@@ -1,11 +1,11 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { FileEntityStorageConnector } from '@twin.org/entity-storage-connector-file';
-import { EntityStorageConnectorFactory } from '@twin.org/entity-storage-models';
+import { FileEntityStorageConnector } from '@3sixty/entity-storage-connector-file';
+import { EntityStorageConnectorFactory } from '@3sixty/entity-storage-models';
 import {
 	initSchema,
 	telemetryMetricValueTaskStart as realTaskStart
-} from '@twin.org/telemetry-connector-entity-storage';
+} from '@3sixty/telemetry-connector-entity-storage';
 
 // The real handler processes and ends the task; only the startup is wrapped, to register the
 // value storage the engine clone provides in production. There is no engine to clone from in
@@ -14,7 +14,7 @@ import {
 export {
 	telemetryMetricValueTask,
 	telemetryMetricValueTaskEnd
-} from '@twin.org/telemetry-connector-entity-storage';
+} from '@3sixty/telemetry-connector-entity-storage';
 
 const directory = process.env.TEST_TELEMETRY_VALUE_DIRECTORY;
 const partitionContextIds = (process.env.TEST_TELEMETRY_VALUE_PARTITIONS ?? '')

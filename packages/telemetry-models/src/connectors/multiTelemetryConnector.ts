@@ -1,7 +1,7 @@
 // Copyright 2024 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { Guards, Is, NotImplementedError, NotSupportedError } from "@twin.org/core";
-import { nameof } from "@twin.org/nameof";
+import { Guards, Is, NotImplementedError, NotSupportedError } from "@3sixty/core";
+import { nameof } from "@3sixty/nameof";
 import { TelemetryConnectorFactory } from "../factories/telemetryConnectorFactory.js";
 import type { IMultiTelemetryConnectorConstructorOptions } from "../models/IMultiTelemetryConnectorConstructorOptions.js";
 import type { ITelemetryConnector } from "../models/ITelemetryConnector.js";

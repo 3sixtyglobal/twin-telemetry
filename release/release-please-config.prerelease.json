@@ -10,6 +10,7 @@
 	"versioning": "prerelease",
 	"prerelease": true,
 	"prerelease-type": "next",
+	"last-release-sha": "ccbc2a966f2c7c8001ec0484372e54b38e6f6960",
 	"packages": {
 		"packages/telemetry-models": {
 			"package-name": "telemetry-models",

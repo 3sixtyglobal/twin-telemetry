@@ -8,6 +8,7 @@
 	"release-type": "node",
 	"initial-version": "0.0.1",
 	"versioning": "default",
+	"last-release-sha": "37875af4e1725606d402b9f772805465799f40e6",
 	"packages": {
 		"packages/telemetry-models": {
 			"package-name": "telemetry-models",

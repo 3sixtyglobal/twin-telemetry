@@ -1,7 +1,7 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { ContextIdKeys, ContextIdStore } from "@twin.org/context";
-import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+import { ContextIdKeys, ContextIdStore } from "@3sixty/context";
+import { MetricCounterOperation, MetricType } from "@3sixty/telemetry-models";
 import { TEST_OTLP_ENDPOINT_METRICS } from "./setupTestEnv.js";
 import { OpenTelemetryReaderTypes } from "../src/models/openTelemetryReaderTypes.js";
 import { OpenTelemetryTelemetryConnector } from "../src/openTelemetryTelemetryConnector.js";

@@ -5,9 +5,9 @@ These examples show how to register the request counter and record route metrics
 ## MetricsRouteProcessor
 
 ```typescript
-import { ComponentFactory } from '@twin.org/core';
-import { SilentTelemetryConnector } from '@twin.org/telemetry-models';
-import { MetricsRouteProcessor } from '@twin.org/telemetry-processors';
+import { ComponentFactory } from '@3sixty/core';
+import { SilentTelemetryConnector } from '@3sixty/telemetry-models';
+import { MetricsRouteProcessor } from '@3sixty/telemetry-processors';
 
 ComponentFactory.register('telemetry', () => new SilentTelemetryConnector());
 

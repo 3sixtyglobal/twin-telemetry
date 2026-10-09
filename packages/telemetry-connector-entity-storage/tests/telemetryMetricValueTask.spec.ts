@@ -1,9 +1,9 @@
 // Copyright 2026 IOTA Stiftung.
 // SPDX-License-Identifier: Apache-2.0.
-import { MemoryEntityStorageConnector } from "@twin.org/entity-storage-connector-memory";
-import { EntityStorageConnectorFactory } from "@twin.org/entity-storage-models";
-import { nameof } from "@twin.org/nameof";
-import { MetricCounterOperation, MetricType } from "@twin.org/telemetry-models";
+import { MemoryEntityStorageConnector } from "@3sixty/entity-storage-connector-memory";
+import { EntityStorageConnectorFactory } from "@3sixty/entity-storage-models";
+import { nameof } from "@3sixty/nameof";
+import { MetricCounterOperation, MetricType } from "@3sixty/telemetry-models";
 import type { TelemetryMetricValue } from "../src/entities/telemetryMetricValue.js";
 import type { ITelemetryMetricValuePayload } from "../src/models/ITelemetryMetricValuePayload.js";
 import { initSchema } from "../src/schema.js";

@@ -5,7 +5,7 @@ These examples show how to register runtime and host metrics with a telemetry co
 ## ProcessMetricsProducer
 
 ```typescript
-import { ProcessMetricsProducer } from '@twin.org/telemetry-producers';
+import { ProcessMetricsProducer } from '@3sixty/telemetry-producers';
 
 const producer = new ProcessMetricsProducer({
   telemetryComponentType: 'telemetry',
@@ -28,7 +28,7 @@ console.log(uptimeValues.entities.length); // 1
 ## SystemMetricsProducer
 
 ```typescript
-import { SystemMetricsProducer } from '@twin.org/telemetry-producers';
+import { SystemMetricsProducer } from '@3sixty/telemetry-producers';
 
 const producer = new SystemMetricsProducer({
   telemetryComponentType: 'telemetry',

@@ -1,4 +1,4 @@
-# @twin.org/telemetry-rest-client
+# @3sixty/telemetry-rest-client
 
 ## Classes
 

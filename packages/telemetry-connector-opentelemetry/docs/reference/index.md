@@ -1,4 +1,4 @@
-# @twin.org/telemetry-connector-opentelemetry
+# @3sixty/telemetry-connector-opentelemetry
 
 ## Classes
 
